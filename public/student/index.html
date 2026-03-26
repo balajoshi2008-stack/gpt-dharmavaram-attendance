@@ -1,0 +1,2708 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT Dharmavaram - Student Portal</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            padding: 14px 20px 18px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 17px;
+            margin-bottom: 3px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .header-college {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2a5298;
+            letter-spacing: 0.3px;
+            margin-bottom: 1px;
+        }
+
+        .credits-badge {
+            display: inline-block;
+            background: #f0f4ff;
+            border: 1px solid #d0d9ff;
+            border-radius: 20px;
+            padding: 3px 14px;
+            margin: 4px 0 0;
+            font-size: 11px;
+            color: #555;
+        }
+
+        .credits-badge .credits-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2a5298;
+        }
+
+        .content {
+            background: white;
+            border-radius: 0 0 20px 20px;
+            padding: 30px 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .login-screen {
+            text-align: center;
+        }
+
+        .pin-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            letter-spacing: 5px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .success {
+            background: #efe;
+            border: 2px solid #cfc;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-card {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .month-selector {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .calendar-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 10px 5px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 14px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .calendar-day .date {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .calendar-day .status {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .calendar-day.present {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .calendar-day.present .status {
+            color: #2e7d32;
+        }
+
+        .calendar-day.absent {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+
+        .calendar-day.absent .status {
+            color: #c62828;
+        }
+
+        .calendar-day.holiday {
+            background: #f5f5f5;
+            opacity: 0.5;
+        }
+
+        .periods-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .period-card {
+            text-align: center;
+            padding: 15px 5px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .period-card .period-num {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .period-card .period-status {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .period-card.present {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .period-card.present .period-status {
+            color: #2e7d32;
+        }
+
+        .period-card.absent {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+
+        .period-card.absent .period-status {
+            color: #c62828;
+        }
+
+        .period-card.pending {
+            background: #fff8e1;
+            border-color: #ffa726;
+        }
+
+        .period-card.pending .period-status {
+            color: #f57c00;
+            font-size: 16px;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .unit-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .unit-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .subject-mark {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+        }
+
+        .subject-mark:last-child {
+            border-bottom: none;
+        }
+
+        .subject-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .subject-code {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .mark-value {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 8px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .mark-pass {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .mark-border {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .mark-fail {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .mark-na {
+            background: #fff8e1;
+            color: #f57c00;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .percentage {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            margin: 16px 0;
+            padding: 18px 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.35);
+            letter-spacing: 1px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ══ Notifications ═══════════════════════════════════════════════ */
+
+        /* 1. Scrolling Message Bar */
+        #scrollBar {
+            display: none;
+            position: sticky;
+            top: 0;
+            z-index: 900;
+            background: linear-gradient(135deg, #f44336 0%, #e91e63 100%);
+            color: white;
+            height: 40px;
+            line-height: 40px;
+            overflow: hidden;
+            white-space: nowrap;
+            box-shadow: 0 2px 10px rgba(244, 67, 54, 0.4);
+        }
+
+        #scrollBar .scroll-track {
+            display: inline-block;
+            animation: scrollLeft 30s linear infinite;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            padding-left: 100%;
+        }
+
+        #scrollBar .scroll-track.slow {
+            animation-duration: 40s;
+        }
+
+        #scrollBar .scroll-track.medium {
+            animation-duration: 30s;
+        }
+
+        #scrollBar .scroll-track.fast {
+            animation-duration: 20s;
+        }
+
+        @keyframes scrollLeft {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* 2. Notification Cards */
+        .notif-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .notif-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e53935;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            padding: 0 5px;
+            line-height: 1;
+        }
+
+        /* ── Notifications Accordion ── */
+        .notif-accordion-header {
+            background: linear-gradient(135deg, #7c4dff 0%, #b39ddb 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            box-shadow: 0 2px 8px rgba(124,77,255,0.25);
+        }
+
+        .notif-accordion-body {
+            border: 1px solid #d1c4e9;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            padding: 12px;
+            background: white;
+        }
+
+        .notif-accordion-body.hidden { display: none; }
+
+        .notif-card {
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #667eea;
+            cursor: default;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .notif-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+        }
+
+        .notif-card.pri-high {
+            background: #ffebee;
+            border-left-color: #e53935;
+        }
+
+        .notif-card.pri-medium {
+            background: #fff3e0;
+            border-left-color: #fb8c00;
+        }
+
+        .notif-card.pri-low {
+            background: #e3f2fd;
+            border-left-color: #1e88e5;
+        }
+
+        .notif-card-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #2a5298;
+            margin-bottom: 4px;
+        }
+
+        .notif-card-meta {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .notif-view-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .notif-view-btn:hover {
+            opacity: 0.88;
+            transform: scale(1.03);
+        }
+
+        /* 3. Modals */
+        .sn-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9990;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: fadeInBackdrop 0.2s ease;
+        }
+
+        @keyframes fadeInBackdrop {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .sn-modal {
+            background: white;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.88);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .sn-modal-head {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+        }
+
+        #notifPopupModal .sn-modal-head {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        .sn-modal-body {
+            padding: 20px;
+        }
+
+        .sn-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            line-height: 1;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+
+        .sn-close-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        /* 4. Timetable inside modal */
+        .sn-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .sn-table thead tr {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .sn-table th {
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .sn-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .sn-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .sn-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .sn-table tbody tr.today-row {
+            background: #fff9c4;
+        }
+
+        /* 5. Modal action buttons */
+        .sn-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .sn-btn-primary:hover {
+            opacity: 0.88;
+            transform: translateY(-1px);
+        }
+
+        .sn-btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .sn-btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        /* ════════════════════════════════════════════════════════════ */
+
+        /* ── Update Banner ──────────────────────────────────────────── */
+        #updateBanner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 20px;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+            animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-110%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        #updateBanner .ub-inner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        #updateBanner .ub-emoji {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        #updateBanner .ub-text {
+            flex: 1;
+        }
+
+        #updateBanner .ub-title {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        #updateBanner .ub-sub {
+            font-size: 11px;
+            opacity: 0.88;
+            margin-top: 2px;
+        }
+
+        #updateBanner .ub-btn-now {
+            background: white;
+            color: #764ba2;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.15s;
+        }
+
+        #updateBanner .ub-btn-now:hover {
+            transform: scale(1.05);
+        }
+
+        #updateBanner .ub-btn-later {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* ── Assignments Accordion ───────────────────────────────────── */
+        .assign-accordion-header {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+            color: white;
+            padding: 13px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 15px;
+            user-select: none;
+            transition: box-shadow 0.2s;
+        }
+
+        .assign-accordion-header:hover {
+            box-shadow: 0 4px 15px rgba(42, 82, 152, 0.3);
+        }
+
+        .assign-accordion-body {
+            border: 1px solid #e0e0e0;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            padding: 10px;
+            background: #f8f9fa;
+        }
+
+        .assign-subject-frame {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .assign-subject-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 9px 14px;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+        }
+
+        .assign-card {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f0f0f0;
+            border-left: 4px solid #ccc;
+        }
+
+        .assign-card:last-child {
+            border-bottom: none;
+        }
+
+        .assign-card.urgent {
+            border-left-color: #dc3545;
+        }
+
+        .assign-card.soon {
+            border-left-color: #fd7e14;
+        }
+
+        .assign-card.ontime {
+            border-left-color: #28a745;
+        }
+
+        .assign-card.expired {
+            border-left-color: #aaa;
+            opacity: 0.75;
+        }
+
+        .assign-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .assign-view-btn {
+            margin-top: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .assign-view-btn:hover {
+            opacity: 0.88;
+            transform: scale(1.03);
+        }
+
+        /* ── Assignment Detail Modal ────────────────────────────────────── */
+        #assignDetailModal .sn-modal-head {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+        }
+
+        .assign-questions-box {
+            background: #f5f6fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 14px 16px;
+            white-space: pre-wrap;
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #333;
+            margin-top: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        /* ───────────────────────────────────────────────────────────────── */
+    </style>
+</head>
+
+<body>
+    <!-- ── Auto-Update Banner ──────────────────────────────────────── -->
+    <div id="updateBanner">
+        <div class="ub-inner">
+            <span class="ub-emoji">🎉</span>
+            <div class="ub-text">
+                <div class="ub-title">New Update Available!</div>
+                <div class="ub-sub">Click Update Now to get the latest features</div>
+            </div>
+            <button class="ub-btn-now" id="updateNowBtn" onclick="applyUpdate()">Update Now</button>
+            <button class="ub-btn-later" onclick="dismissUpdate()">Later</button>
+        </div>
+    </div>
+    <!-- ─────────────────────────────────────────────────────────────── -->
+
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" style="
+        display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white; padding: 16px 20px;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+        animation: slideUp 0.4s ease;
+    ">
+        <style>
+            @keyframes slideUp {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+            }
+        </style>
+        <div style="display: flex; align-items: center; gap: 12px; max-width: 500px; margin: 0 auto;">
+            <span style="font-size: 28px;">📱</span>
+            <div style="flex: 1;">
+                <div style="font-weight: bold; font-size: 15px;">Install GPT Attendance App</div>
+                <div style="font-size: 12px; opacity: 0.85; margin-top: 2px;">Add to home screen for fast access</div>
+            </div>
+            <button onclick="installApp()" style="
+                background: white; color: #2a5298; border: none;
+                padding: 8px 16px; border-radius: 20px;
+                font-weight: bold; font-size: 13px; cursor: pointer; white-space: nowrap;
+            ">Install</button>
+            <button onclick="dismissInstallBanner()" style="
+                background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5);
+                padding: 8px 14px; border-radius: 20px;
+                font-size: 13px; cursor: pointer; white-space: nowrap;
+            ">Not Now</button>
+        </div>
+    </div>
+
+    <!-- ── Scrolling Message Bar ─────────────────────────────────────── -->
+    <div id="scrollBar">
+        <span class="scroll-track" id="scrollTrack"></span>
+    </div>
+
+    <!-- ── Assignment Detail Modal ────────────────────────────────── -->
+    <div class="sn-modal-backdrop" id="assignDetailModal" onclick="if(event.target===this)closeAssignModal()">
+        <div class="sn-modal">
+            <div class="sn-modal-head" style="background:linear-gradient(135deg,#2a5298,#1e3c72);">
+                <span style="font-size:15px;font-weight:700;" id="assignDetailTitle">📝 Assignment/Material</span>
+                <button class="sn-close-btn" onclick="closeAssignModal()">×</button>
+            </div>
+            <div class="sn-modal-body" id="assignDetailBody"></div>
+        </div>
+    </div>
+    <!-- ──────────────────────────────────────────────────────────── -->
+
+    <!-- ── Notification Popup Modal (login) ───────────────────────── -->
+    <div class="sn-modal-backdrop" id="notifPopupModal">
+        <div class="sn-modal">
+            <div class="sn-modal-head">
+                <span style="font-size:15px;font-weight:700;" id="popupTitle">📅 Exam Timetable</span>
+                <button class="sn-close-btn" onclick="closePopup()">×</button>
+            </div>
+            <div class="sn-modal-body" id="popupBody"></div>
+        </div>
+    </div>
+
+    <!-- ── Notification Detail Modal (card click) ─────────────────────── -->
+    <div class="sn-modal-backdrop" id="notifDetailModal">
+        <div class="sn-modal">
+            <div class="sn-modal-head">
+                <span style="font-size:15px;font-weight:700;" id="detailTitle"></span>
+                <button class="sn-close-btn" onclick="closeDetailModal()">×</button>
+            </div>
+            <div class="sn-modal-body" id="detailBody"></div>
+        </div>
+    </div>
+
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" style="
+        display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white; padding: 16px 20px;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+        animation: slideUp 0.4s ease;
+    ">
+        <style>
+            @keyframes slideUp {
+                from {
+                    transform: translateY(100%);
+                }
+
+                to {
+                    transform: translateY(0);
+                }
+            }
+        </style>
+        <div style="display: flex; align-items: center; gap: 12px; max-width: 500px; margin: 0 auto;">
+            <span style="font-size: 28px;">📱</span>
+            <div style="flex: 1;">
+                <div style="font-weight: bold; font-size: 15px;">Install GPT Attendance App</div>
+                <div style="font-size: 12px; opacity: 0.85; margin-top: 2px;">Add to home screen for quick access</div>
+            </div>
+            <button id="pwaInstallBtn" onclick="triggerInstall()" style="
+                background: white; color: #2a5298; border: none;
+                padding: 8px 16px; border-radius: 20px;
+                font-weight: bold; font-size: 13px; cursor: pointer; white-space: nowrap;
+            ">Install</button>
+            <button onclick="dismissInstall()" style="
+                background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5);
+                padding: 8px 14px; border-radius: 20px;
+                font-size: 13px; cursor: pointer; white-space: nowrap;
+            ">Not Now</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="loginScreen">
+            <div class="header">
+                <h1>🎓 GPT Dharmavaram</h1>
+                <p>Student Attendance Portal</p>
+            </div>
+            <div class="content login-screen">
+                <p style="color: #666; margin-bottom: 20px;">Enter your PIN to view attendance</p>
+                <input type="text" id="pinInput" class="pin-input" placeholder="Enter PIN" maxlength="20"
+                    autocomplete="off">
+                <div id="loginError" class="error"></div>
+                <button class="btn" onclick="login()">View My Attendance</button>
+                <p style="color: #999; font-size: 12px; margin-top: 20px;">👨‍👩‍👧 Parent-Friendly • No Password Needed
+                </p>
+            </div>
+        </div>
+
+        <!-- Main App -->
+        <div id="mainApp" class="hidden">
+            <div class="header" style="display:flex;flex-direction:column;">
+                <div class="header-college" style="text-align:center;">GPT, Dharmavaram</div>
+                <h1>🎓 My Attendance</h1>
+                <p id="studentInfo"></p>
+                <button id="installBtn" class="hidden" onclick="installApp()"
+                    style="margin-top: 6px; padding: 6px 14px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                    📱 Install App
+                </button>
+                <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">
+                    <span style="display:inline-block;
+                                 background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+                                 border-radius:20px;
+                                 padding:5px 16px;
+                                 font-size:13px;font-weight:500;color:#fff;
+                                 box-shadow:0 2px 6px rgba(102,126,234,0.4);
+                                 white-space:nowrap;letter-spacing:0.2px;">
+                        Developed by <strong>Joshi</strong>, SL/CME
+                    </span>
+                </div>
+            </div>
+            <div class="content">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('today')">📊 Today</button>
+                    <button class="tab" onclick="showTab('monthly')">📅 Monthly</button>
+                    <button class="tab" onclick="showTab('unitmarks')">📝 Unit Marks</button>
+                    <button class="tab" onclick="showTab('pqp')">📚 PQP</button>
+                </div>
+
+                <!-- Today's Attendance Tab (FIRST) -->
+                <div id="todayTab" class="tab-content active">
+
+                    <!-- ── Assignments Accordion ── -->
+                    <div id="assignSection" style="display:none;margin-bottom:16px;">
+                        <div class="assign-accordion-header" onclick="toggleAssignAccordion()">
+                            <span id="assignAccordionTitle">📝 Assign/Material</span>
+                            <span id="assignAccordionArrow" style="transition:transform 0.2s;">▼</span>
+                        </div>
+                        <div id="assignAccordionBody" class="assign-accordion-body hidden"></div>
+                    </div>
+
+                    <!-- ── Notification Cards Section ── -->
+                    <div id="notifSection" style="display:none;margin-bottom:16px;">
+                        <div class="notif-accordion-header" onclick="toggleNotifAccordion()">
+                            <span id="notifAccordionTitle">🔔 Notifications</span>
+                            <span id="notifAccordionArrow" style="transition:transform 0.25s;">&#9660;</span>
+                        </div>
+                        <div id="notifAccordionBody" class="notif-accordion-body hidden">
+                            <div id="notifCards"></div>
+                        </div>
+                    </div>
+
+                    <!-- Cumulative Attendance Card -->
+                    <div class="info-card"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
+                        <div style="text-align: center; padding: 10px 0;">
+                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 3px;">Overall Attendance (Till Today)</div>
+                            <div id="cumulativePercentage" style="font-size: 36px; font-weight: bold; margin: 5px 0;">
+                                --%</div>
+                            <div id="cumulativeStats" style="font-size: 11px; opacity: 0.9;">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-row">
+                            <span class="info-label">Date</span>
+                            <span class="info-value" id="todayDate"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Day</span>
+                            <span class="info-value" id="todayDay"></span>
+                        </div>
+                    </div>
+                    <div id="todayLoading" class="loading hidden">Loading today's attendance...</div>
+                    <div id="todayContent" class="hidden">
+                        <h3 style="margin: 20px 0 10px; color: #333;">Period-wise Status:</h3>
+                        <div class="periods-grid" id="periodsGrid"></div>
+                    </div>
+                    <div id="todayNoData" class="no-data hidden">
+                        <div id="todayNoDataInner">
+                            <p>🏖️ No attendance today</p>
+                            <p style="font-size:14px;margin-top:10px;">May be a holiday or attendance not yet marked</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Report Tab (SECOND) -->
+                <div id="monthlyTab" class="tab-content">
+                    <select id="monthSelector" class="month-selector" onchange="loadMonthlyReport()">
+                        <option value="">Select Month</option>
+                    </select>
+                    <div id="monthlyLoading" class="loading hidden">Loading attendance...</div>
+                    <div id="monthlyContent" class="hidden">
+                        <div class="info-card">
+                            <div class="info-row">
+                                <span class="info-label">Working Days</span>
+                                <span class="info-value" id="workingDays">0</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Days Present</span>
+                                <span class="info-value" id="daysPresent">0</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Days Absent</span>
+                                <span class="info-value" id="daysAbsent">0</span>
+                            </div>
+                        </div>
+                        <div class="percentage" id="percentage">0%</div>
+                        <div class="calendar">
+                            <div class="calendar-header">Mon</div>
+                            <div class="calendar-header">Tue</div>
+                            <div class="calendar-header">Wed</div>
+                            <div class="calendar-header">Thu</div>
+                            <div class="calendar-header">Fri</div>
+                            <div class="calendar-header">Sat</div>
+                            <div class="calendar-header">Sun</div>
+                        </div>
+                        <div id="calendarGrid" class="calendar"></div>
+                    </div>
+                    <div id="monthlyNoData" class="no-data hidden">
+                        <p>📅 No attendance data for this month</p>
+                        <p style="font-size: 14px; margin-top: 10px;">Select another month or check back later</p>
+                    </div>
+                </div>
+
+                <!-- Unit Marks Tab (THIRD) -->
+                <div id="unitmarksTab" class="tab-content">
+                    <h3 style="margin-bottom: 20px; color: #333;">📝 Unit Test Marks</h3>
+
+                    <div id="unitMarksContent"></div>
+
+                    <div id="unitMarksNoData" class="no-data hidden">
+                        <p>📝 No unit marks available</p>
+                        <p style="font-size: 14px; margin-top: 10px;">Unit test marks will appear here once faculty
+                            posts them</p>
+                    </div>
+                </div>
+
+                <!-- PQP Tab (FOURTH) -->
+                <div id="pqpTab" class="tab-content">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h3 style="color:#6a1b9a;margin:0;">📚 Previous Question Papers</h3>
+                    </div>
+                    <div id="pqpLoading" style="text-align:center;padding:30px;color:#999;">
+                        <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+                        <div>Loading PQP materials…</div>
+                    </div>
+                    <div id="pqpList" style="display:none;"></div>
+                    <div id="pqpEmpty" style="display:none;text-align:center;padding:40px 20px;">
+                        <div style="font-size:48px;margin-bottom:12px;">📚</div>
+                        <div style="font-size:16px;font-weight:600;color:#6a1b9a;">No PQP materials yet</div>
+                        <div style="font-size:13px;color:#999;margin-top:6px;">Previous Question Papers will appear here once they are added.</div>
+                    </div>
+                </div>
+
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Helper: get local date string (YYYY-MM-DD) without UTC offset issues
+        function toLocalDateStr(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        // Firebase Configuration - YOUR ACTUAL CREDENTIALS
+        const firebaseConfig = {
+            apiKey: "AIzaSyC9nMFnZGdnOm5zXgpSMKiTFpzEBTuPfRM",
+            authDomain: "gpt-dharmavaram-attendance.firebaseapp.com",
+            projectId: "gpt-dharmavaram-attendance",
+            storageBucket: "gpt-dharmavaram-attendance.firebasestorage.app",
+            messagingSenderId: "471911252737",
+            appId: "1:471911252737:web:a88dcdfafbe0307e7a1100"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentStudent = null;
+        let allAttendance = {}; // Cache: { 'YYYY-MM-DD': { pin: { 1: {status,faculty,subject}, ... } } }
+        let allUnitMarks = {};  // Cache: { 'markKey': { pin: mark, ... } }
+        const MIN_PERIODS_FOR_PRESENT = 3;
+
+        // ✅ Auto-restore session: if student was logged in before, skip PIN screen
+        window.addEventListener('load', async () => {
+            const saved = localStorage.getItem('studentSession');
+            if (saved) {
+                try {
+                    currentStudent = JSON.parse(saved);
+                    showStudentApp();
+                    // Fetch attendance data in background
+                    const [attSnap, marksSnap] = await Promise.all([
+                        db.collection('attendance').get(),
+                        db.collection('unitMarks').get()
+                    ]);
+                    allAttendance = {};
+                    attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
+                    allUnitMarks = {};
+                    marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
+                    loadMonthlyReport();
+                    loadTodayAttendance();
+                    loadStudentNotifications(false); // auto-restore: no popup
+                    loadStudentAssignments();
+                } catch (e) {
+                    // Corrupted session — clear and show login
+                    localStorage.removeItem('studentSession');
+                    currentStudent = null;
+                }
+            }
+        });
+
+        // Populate month selector
+        function populateMonthSelector() {
+            const selector = document.getElementById('monthSelector');
+            const now = new Date();
+            for (let i = 0; i < 6; i++) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                const text = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = text;
+                selector.appendChild(option);
+            }
+            // Select current month
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            selector.value = currentMonth;
+        }
+
+        async function login() {
+            const pin = document.getElementById('pinInput').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            const btn = document.querySelector('.btn');
+
+            if (!pin) {
+                errorDiv.textContent = '⚠️ Please enter your PIN';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Show loading
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            errorDiv.style.display = 'none';
+
+            try {
+                // Search for student across all years and semesters.
+                // Admin stores: students/{year} doc with { sem: [{pin,name,...}] } structure.
+                const pinUpper = pin.toUpperCase();
+                const yearSems = [
+                    { year: '1', sem: '1', key: '1-1' },
+                    { year: '2', sem: '3', key: '2-3' },
+                    { year: '2', sem: '4', key: '2-4' },
+                    { year: '3', sem: '5', key: '3-5' }
+                ];
+                let found = false;
+                const yearDocCache = {};
+
+                for (const { year, sem, key } of yearSems) {
+                    if (!yearDocCache[year]) {
+                        yearDocCache[year] = await db.collection('students').doc(year).get();
+                    }
+                    const snapshot = yearDocCache[year];
+                    if (snapshot.exists) {
+                        const data = snapshot.data();
+                        const students = data[sem] || [];
+                        const student = students.find(s => s.pin && s.pin.toString().toUpperCase() === pinUpper);
+                        if (student) {
+                            currentStudent = { ...student, yearSem: key };
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    // ✅ Save session to localStorage (stay logged in)
+                    localStorage.setItem('studentSession', JSON.stringify(currentStudent));
+
+                    // Show app immediately — don't wait for attendance to load
+                    showStudentApp();
+
+                    // Batch-fetch ALL attendance and unit marks in parallel (avoids blocking UI)
+                    const [attSnap, marksSnap] = await Promise.all([
+                        db.collection('attendance').get(),
+                        db.collection('unitMarks').get()
+                    ]);
+                    allAttendance = {};
+                    attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
+                    allUnitMarks = {};
+                    marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
+
+                    // Now load content after data is ready
+                    loadMonthlyReport();
+                    loadTodayAttendance();
+                    loadStudentNotifications(true); // true = fresh login → show popup
+                    loadStudentAssignments();
+                } else {
+                    errorDiv.innerHTML = '❌ Invalid PIN<br><small style="font-size:12px;">Please check your PIN and try again</small>';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                if (error.code === 'permission-denied') {
+                    errorDiv.innerHTML = '🔒 <strong>Database Access Issue</strong><br><small>Please contact admin to enable Firestore database</small>';
+                } else if (error.code === 'unavailable') {
+                    errorDiv.innerHTML = '🌐 <strong>Connection Error</strong><br><small>Check your internet connection and try again</small>';
+                } else {
+                    errorDiv.innerHTML = `❌ <strong>Error: ${error.message || 'Connection failed'}</strong>`;
+                }
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'View My Attendance';
+            }
+        }
+
+        function logout() {
+            // ✅ Clear saved session on logout
+            localStorage.removeItem('studentSession');
+            currentStudent = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('pinInput').value = '';
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        // ✅ Helper: show the main app UI (used by both fresh login and auto-restore)
+        function showStudentApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('studentInfo').textContent = `${currentStudent.name} (${currentStudent.pin})`;
+            populateMonthSelector();
+
+            // Show loading indicators
+            document.getElementById('todayLoading').classList.remove('hidden');
+            document.getElementById('todayContent').classList.add('hidden');
+            document.getElementById('todayNoData').classList.add('hidden');
+            document.getElementById('monthlyLoading').classList.remove('hidden');
+            document.getElementById('monthlyContent').classList.add('hidden');
+            document.getElementById('monthlyNoData').classList.add('hidden');
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+            if (tab === 'today') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('todayTab').classList.add('active');
+                loadTodayAttendance();
+            } else if (tab === 'monthly') {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('monthlyTab').classList.add('active');
+            } else if (tab === 'unitmarks') {
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+                document.getElementById('unitmarksTab').classList.add('active');
+                loadUnitMarks();
+            } else if (tab === 'pqp') {
+                document.querySelector('.tab:nth-child(4)').classList.add('active');
+                document.getElementById('pqpTab').classList.add('active');
+                loadStudentPQP();
+            }
+        }
+
+        async function loadMonthlyReport() {
+            const month = document.getElementById('monthSelector').value;
+            if (!month || !currentStudent) return;
+
+            const [year, mon] = month.split('-');
+            const [y, s] = currentStudent.yearSem.split('-');
+
+            document.getElementById('monthlyLoading').classList.remove('hidden');
+            document.getElementById('monthlyContent').classList.add('hidden');
+            document.getElementById('monthlyNoData').classList.add('hidden');
+
+            try {
+                // Get all dates in month
+                const startDate = new Date(parseInt(year), parseInt(mon) - 1, 1);
+                const endDate = new Date(parseInt(year), parseInt(mon), 0);
+                const dates = [];
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    dates.push(toLocalDateStr(d));
+                }
+
+                // Fetch attendance for all dates
+                let workingDays = 0;
+                let presentDays = 0;
+                const dayStatus = {};
+
+                for (const date of dates) {
+                    // Use in-memory cache (loaded at login) — no extra Firestore reads
+                    const attData = allAttendance[date] || {};
+                    if (attData[currentStudent.pin]) {
+                        workingDays++;
+                        const periods = attData[currentStudent.pin];
+                        let presentCount = 0;
+                        for (let p = 1; p <= 7; p++) {
+                            if (periods[p] && periods[p].status === 'P') presentCount++;
+                        }
+                        if (presentCount >= MIN_PERIODS_FOR_PRESENT) {
+                            presentDays++;
+                            dayStatus[date] = 'P';
+                        } else {
+                            dayStatus[date] = 'A';
+                        }
+                    }
+                }
+
+                if (workingDays === 0) {
+                    document.getElementById('monthlyLoading').classList.add('hidden');
+                    document.getElementById('monthlyNoData').classList.remove('hidden');
+                    return;
+                }
+
+                // Update stats
+                document.getElementById('workingDays').textContent = workingDays;
+                document.getElementById('daysPresent').textContent = presentDays;
+                document.getElementById('daysAbsent').textContent = workingDays - presentDays;
+                const percentage = Math.round((presentDays / workingDays) * 100);
+                document.getElementById('percentage').textContent = percentage + '%';
+
+                // Build calendar
+                buildCalendar(year, mon, dayStatus);
+
+                document.getElementById('monthlyLoading').classList.add('hidden');
+                document.getElementById('monthlyContent').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading monthly report:', error);
+                document.getElementById('monthlyLoading').classList.add('hidden');
+                document.getElementById('monthlyNoData').classList.remove('hidden');
+            }
+        }
+
+        function buildCalendar(year, month, dayStatus) {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            const firstDay = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const lastDay = new Date(parseInt(year), parseInt(month), 0);
+            const startDayOfWeek = firstDay.getDay(); // 0=Sun, 1=Mon
+            const daysInMonth = lastDay.getDate();
+
+            // Adjust for Monday start (0=Mon, 6=Sun)
+            const startOffset = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+            // Empty cells before first day
+            for (let i = 0; i < startOffset; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day holiday';
+                grid.appendChild(emptyCell);
+            }
+
+            // Days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${month}-${String(day).padStart(2, '0')}`;
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day';
+
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'date';
+                dateDiv.textContent = day;
+
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'status';
+
+                const todayStr = toLocalDateStr(new Date());
+                const now = new Date();
+                const afterCutoff = now.getHours() > 16 || (now.getHours() === 16 && now.getMinutes() >= 30);
+                const showToday = (dateStr !== todayStr) || afterCutoff;
+
+                if (dayStatus[dateStr] === 'P' && showToday) {
+                    cell.classList.add('present');
+                    statusDiv.textContent = 'P';
+                } else if (dayStatus[dateStr] === 'A' && showToday) {
+                    cell.classList.add('absent');
+                    statusDiv.textContent = 'A';
+                } else {
+                    cell.classList.add('holiday');
+                    statusDiv.textContent = '-';
+                }
+
+                cell.appendChild(dateDiv);
+                cell.appendChild(statusDiv);
+                grid.appendChild(cell);
+            }
+        }
+
+        // ── Show specific reason in todayNoData ───────────────────────────────
+        function showTodayNoDataMsg({ emoji = '🏖️', headline, sub, color = '#2a5298' }) {
+            document.getElementById('todayNoDataInner').innerHTML = `
+                <div style="font-size:48px;margin-bottom:15px;">${emoji}</div>
+                <div style="font-size:18px;font-weight:700;color:${color};">${headline}</div>
+                <div style="font-size:14px;margin-top:8px;color:#999;">${sub}</div>`;
+            document.getElementById('todayLoading').classList.add('hidden');
+            document.getElementById('todayContent').classList.add('hidden');
+            document.getElementById('todayNoData').classList.remove('hidden');
+        }
+
+        async function loadTodayAttendance() {
+            if (!currentStudent) return;
+
+            const today = new Date();
+            const dateStr = toLocalDateStr(today);
+            const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+
+            document.getElementById('todayDate').textContent = today.toLocaleDateString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            document.getElementById('todayDay').textContent = dayName;
+
+            document.getElementById('todayLoading').classList.remove('hidden');
+            document.getElementById('todayContent').classList.add('hidden');
+            document.getElementById('todayNoData').classList.add('hidden');
+
+            // ── 1. Sunday check ─────────────────────────────────────────
+            if (dayName === 'Sunday') {
+                document.getElementById('cumulativePercentage').textContent = '—';
+                document.getElementById('cumulativeStats').textContent = 'No classes today';
+                showTodayNoDataMsg({
+                    emoji: '🏖️',
+                    headline: 'No Attendance – Sunday',
+                    sub: 'Enjoy your weekend!'
+                });
+                return;
+            }
+
+            try {
+                // ── 2. Holiday check (settings/holidays doc) ────────────────────
+                const holDoc = await db.collection('settings').doc('holidays').get();
+                const holidayList = holDoc.exists ? (holDoc.data().list || []) : [];
+                const todayHoliday = holidayList.find(h => h.date === dateStr);
+
+                if (todayHoliday) {
+                    const name = todayHoliday.reason || 'Holiday';
+                    document.getElementById('cumulativePercentage').textContent = '—';
+                    document.getElementById('cumulativeStats').textContent = 'No classes today';
+                    showTodayNoDataMsg({
+                        emoji: '🎉',
+                        headline: `No Attendance – ${name}`,
+                        sub: 'College Holiday'
+                    });
+                    return;
+                }
+
+                // ── 3. Normal day — load cumulative then attendance ───────────────
+                await calculateCumulativePercentage();
+
+                const periods = (allAttendance[dateStr] || {})[currentStudent.pin];
+
+                if (!periods) {
+                    showTodayNoDataMsg({
+                        emoji: '⏳',
+                        headline: 'Attendance Not Yet Marked',
+                        sub: 'Please check back later or contact your faculty',
+                        color: '#ff9800'
+                    });
+                    return;
+                }
+
+                // ── 4. Render period cards ─────────────────────────────────
+                const grid = document.getElementById('periodsGrid');
+                grid.innerHTML = '';
+
+                for (let p = 1; p <= 7; p++) {
+                    const card = document.createElement('div');
+                    card.className = 'period-card';
+
+                    const numDiv = document.createElement('div');
+                    numDiv.className = 'period-num';
+                    numDiv.textContent = `P${p}`;
+
+                    const statusDiv = document.createElement('div');
+                    statusDiv.className = 'period-status';
+
+                    if (periods[p]) {
+                        if (periods[p].status === 'P') {
+                            card.classList.add('present');
+                            statusDiv.textContent = 'P';
+                        } else {
+                            card.classList.add('absent');
+                            statusDiv.textContent = 'A';
+                        }
+                    } else {
+                        card.classList.add('pending');
+                        statusDiv.textContent = '-';
+                    }
+
+                    card.appendChild(numDiv);
+                    card.appendChild(statusDiv);
+                    grid.appendChild(card);
+                }
+
+                document.getElementById('todayLoading').classList.add('hidden');
+                document.getElementById('todayContent').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading today attendance:', error);
+                showTodayNoDataMsg({
+                    emoji: '⚠️',
+                    headline: 'Could Not Load Attendance',
+                    sub: 'Check your internet connection and try again',
+                    color: '#dc3545'
+                });
+            }
+        }
+
+        async function calculateCumulativePercentage() {
+            const [y, s] = currentStudent.yearSem.split('-');
+            const today = new Date();
+
+            // Get all attendance from start of academic year till today
+            // For simplicity, assuming academic year starts July 1st
+            const currentYear = today.getFullYear();
+            const academicStartYear = today.getMonth() >= 6 ? currentYear : currentYear - 1;
+            const startDate = new Date(academicStartYear, 6, 1); // July 1st
+
+            let totalWorkingDays = 0;
+            let totalPresentDays = 0;
+
+            // Use in-memory cache to calculate cumulative (no per-day Firestore reads)
+            for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+                const dateStr = toLocalDateStr(d);
+                const attData = allAttendance[dateStr] || {};
+
+                if (attData[currentStudent.pin]) {
+                    totalWorkingDays++;
+                    const periods = attData[currentStudent.pin];
+                    let presentCount = 0;
+                    for (let p = 1; p <= 7; p++) {
+                        if (periods[p] && periods[p].status === 'P') presentCount++;
+                    }
+                    if (presentCount >= MIN_PERIODS_FOR_PRESENT) totalPresentDays++;
+                }
+            }
+
+            // Update display
+            const percentage = totalWorkingDays > 0 ? Math.round((totalPresentDays / totalWorkingDays) * 100) : 0;
+            document.getElementById('cumulativePercentage').textContent = percentage + '%';
+            document.getElementById('cumulativeStats').textContent =
+                `${totalPresentDays} Present / ${totalWorkingDays} Working Days`;
+        }
+
+        // Allow Enter key to login
+        document.getElementById('pinInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        // Load unit marks for student (uses in-memory cache — no Firestore reads)
+        async function loadUnitMarks() {
+            if (!currentStudent) return;
+
+            const [y, s] = currentStudent.yearSem.split('-');
+            const contentDiv = document.getElementById('unitMarksContent');
+            const noDataDiv = document.getElementById('unitMarksNoData');
+
+            contentDiv.innerHTML = '<div class="loading">Loading unit marks...</div>';
+            noDataDiv.classList.add('hidden');
+
+            // Determine number of units based on year
+            const units = y == '1' ? ['I', 'II', 'III'] : ['I', 'II'];
+
+            // Get all theory subjects for this year/sem from cached unit marks data
+            // First try to get subjects from local cache (allUnitMarks keys)
+            let theorySubjects = [];
+            try {
+                // Read subjects from settings cache if available, else from allUnitMarks keys
+                const subjectsDoc = await db.collection('settings').doc('subjects').get();
+                if (subjectsDoc.exists) {
+                    const subjects = subjectsDoc.data();
+                    Object.keys(subjects).forEach(code => {
+                        const sub = subjects[code];
+                        if (sub && typeof sub === 'object' && sub.type === 'Theory') {
+                            const belongsToClass =
+                                (y == '1' && code.startsWith('CM-1')) ||
+                                (s == '3' && code.startsWith('CM-3')) ||
+                                (s == '4' && code.startsWith('CM-4')) ||
+                                (s == '5' && code.startsWith('CM-5'));
+                            if (belongsToClass) {
+                                theorySubjects.push({ code, name: sub.name });
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading subjects:', err);
+            }
+
+            contentDiv.innerHTML = '';
+
+            if (theorySubjects.length === 0) {
+                noDataDiv.classList.remove('hidden');
+                return;
+            }
+
+            theorySubjects.sort((a, b) => a.code.localeCompare(b.code));
+
+            let hasAnyMarks = false;
+
+            // Create cards for each unit — reads from in-memory cache (instant, no Firestore)
+            for (const unit of units) {
+                const unitCard = document.createElement('div');
+                unitCard.className = 'unit-card';
+
+                const unitHeader = document.createElement('div');
+                unitHeader.className = 'unit-header';
+                unitHeader.textContent = `UNIT-${unit}`;
+                unitCard.appendChild(unitHeader);
+
+                for (const subject of theorySubjects) {
+                    const markKey = `${y}-${s}_${subject.code}_UNIT-${unit}`;
+
+                    // Read from in-memory cache — zero Firestore calls
+                    const marksData = allUnitMarks[markKey] || {};
+                    const mark = marksData[currentStudent.pin];
+
+                    const subjectDiv = document.createElement('div');
+                    subjectDiv.className = 'subject-mark';
+
+                    const nameDiv = document.createElement('div');
+                    nameDiv.innerHTML = `
+                        <div class="subject-name">${subject.name}</div>
+                        <div class="subject-code">${subject.code}</div>
+                    `;
+
+                    const markDiv = document.createElement('div');
+                    markDiv.className = 'mark-value';
+
+                    if (mark !== undefined && mark !== null) {
+                        markDiv.textContent = mark;
+                        if (mark >= 30) markDiv.classList.add('mark-pass');
+                        else if (mark >= 20) markDiv.classList.add('mark-border');
+                        else markDiv.classList.add('mark-fail');
+                        hasAnyMarks = true;
+                    } else {
+                        markDiv.textContent = 'NA';
+                        markDiv.classList.add('mark-na');
+                    }
+
+                    subjectDiv.appendChild(nameDiv);
+                    subjectDiv.appendChild(markDiv);
+                    unitCard.appendChild(subjectDiv);
+                }
+
+                contentDiv.appendChild(unitCard);
+            }
+
+            if (!hasAnyMarks) {
+                noDataDiv.classList.remove('hidden');
+            }
+        }
+
+        // Register service worker for PWA — use relative path so it works on any host/port
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('✅ Service Worker registered', reg.scope))
+                    .catch(err => console.log('❌ Service Worker failed:', err));
+            });
+        }
+
+        // PWA Install Banner — only shown when browser fires beforeinstallprompt
+        let deferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show bottom banner
+            if (!localStorage.getItem('pwaInstallDismissed')) {
+                document.getElementById('pwaInstallBanner').style.display = 'block';
+            }
+            // Show the Install App button in the app header
+            const installBtn = document.getElementById('installBtn');
+            if (installBtn) installBtn.classList.remove('hidden');
+        });
+
+        function triggerInstall() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(({ outcome }) => {
+                deferredPrompt = null;
+                document.getElementById('pwaInstallBanner').style.display = 'none';
+                const installBtn = document.getElementById('installBtn');
+                if (installBtn) installBtn.classList.add('hidden');
+            });
+        }
+
+        // Called by the Install App button inside the main app header
+        function installApp() {
+            triggerInstall();
+        }
+
+        function dismissInstall() {
+            localStorage.setItem('pwaInstallDismissed', '1');
+            document.getElementById('pwaInstallBanner').style.display = 'none';
+        }
+
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('pwaInstallBanner').style.display = 'none';
+            deferredPrompt = null;
+            const installBtn = document.getElementById('installBtn');
+            if (installBtn) installBtn.classList.add('hidden');
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        //  STUDENT NOTIFICATIONS MODULE
+        // ═══════════════════════════════════════════════════════════════
+
+        let _notifInterval = null;
+        let _notifCache = {}; // id → notification object
+
+        // ── Format YYYY-MM-DD → "15 Mar 2026" ────────────────────────
+        function formatDate(d) {
+            if (!d) return '—';
+            const [y, m, day] = d.split('-');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${parseInt(day)} ${months[parseInt(m) - 1]} ${y}`;
+        }
+
+        // ── Main loader ───────────────────────────────────────────────
+        async function loadStudentNotifications(isFreshLogin = false) {
+            if (!currentStudent) return;
+
+            // Guard: parse year/sem safely
+            if (!currentStudent.yearSem || !currentStudent.yearSem.includes('-')) {
+                console.warn('[Notifications] Missing or invalid yearSem:', currentStudent.yearSem);
+                return;
+            }
+            const [year, sem] = currentStudent.yearSem.split('-').map(Number);
+            if (!year || !sem) {
+                console.warn('[Notifications] Could not parse year/sem from:', currentStudent.yearSem);
+                return;
+            }
+            const today = toLocalDateStr(new Date());
+
+            // Retry up to 3 times with back-off
+            let snap = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    snap = await db.collection('notifications').get();
+                    break;
+                } catch (e) {
+                    if (attempt === 3) {
+                        // Show brief error in the notif section (non-blocking)
+                        const section = document.getElementById('notifSection');
+                        if (section) {
+                            section.style.display = 'block';
+                            document.getElementById('notifSectionTitle').innerHTML = '🔔 Notifications';
+                            document.getElementById('notifCards').innerHTML =
+                                '<p style="color:#dc3545;font-size:13px;">⚠️ Could not load notifications. Will retry automatically.</p>';
+                        }
+                        console.warn('[Notifications] All 3 fetch attempts failed:', e);
+                        return;
+                    }
+                    await new Promise(r => setTimeout(r, 600 * attempt));
+                }
+            }
+
+            const active = [];
+            snap.forEach(doc => {
+                const n = { id: doc.id, ...doc.data() };
+                // Date filter
+                if (!n.validFrom || !n.validTo) return;
+                if (today < n.validFrom || today > n.validTo) return;
+                // Target filter
+                const ty = n.target?.year;
+                const ts = n.target?.semester;
+                if (ty !== 'all' && parseInt(ty) !== year) return;
+                if (ts !== 'all' && parseInt(ts) !== sem) return;
+                active.push(n);
+            });
+
+            displayScrollingMessages(active);
+            displayNotifications(active);
+            if (isFreshLogin) showPopupIfNeeded(active);
+
+            // Auto-refresh every 60 s (only set up once)
+            if (!_notifInterval) {
+                _notifInterval = setInterval(() => loadStudentNotifications(false), 60000);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') loadStudentNotifications(false);
+                });
+            }
+        }
+
+        // ── A) Scrolling bar ─────────────────────────────────────────
+        function displayScrollingMessages(active) {
+            const bar = document.getElementById('scrollBar');
+            const track = document.getElementById('scrollTrack');
+            const msgs = active.filter(n => n.type === 'scroll');
+            if (!msgs.length) { bar.style.display = 'none'; return; }
+
+            // Combine messages with separator
+            const text = msgs.map(n => `📢 ${n.title}: ${n.message}`).join('  ┃  ');
+            track.textContent = text;
+
+            // Speed: use the first scroll msg's speed (or medium)
+            track.className = 'scroll-track';
+            track.classList.add(msgs[0].speed || 'medium');
+
+            bar.style.display = 'block';
+        }
+
+        // ── B) Dashboard notification cards ──────────────────────────
+        function displayNotifications(active) {
+            const section = document.getElementById('notifSection');
+            const cardsDiv = document.getElementById('notifCards');
+            const titleEl = document.getElementById('notifAccordionTitle');
+
+            // Show timetables and general notices as cards (not scroll)
+            const cards = active.filter(n => n.type !== 'scroll');
+            if (!cards.length) { section.style.display = 'none'; return; }
+
+            // Update header with count
+            titleEl.innerHTML = `🔔 Notifications <span class="notif-badge">${cards.length}</span>`;
+
+            const iconMap = { timetable: '📅', notice: '📋', scroll: '⚡' };
+            const priMap = { high: 'pri-high', medium: 'pri-medium', low: 'pri-low' };
+
+            // Cache for modal lookup (avoids unsafe JSON in onclick attrs)
+            _notifCache = {};
+            cards.forEach(n => { _notifCache[n.id] = n; });
+
+            cardsDiv.innerHTML = cards.map(n => {
+                const hasMsg  = !!(n.message && n.message.trim());
+                const hasLink = !!(n.driveLink && n.driveLink.trim());
+
+                let btns = '';
+                if (n.type === 'timetable') {
+                    btns = `<button class="notif-view-btn" onclick="event.stopPropagation();viewNotification('${n.id}')">View Timetable</button>`;
+                } else {
+                    if (hasMsg)  btns += `<button class="notif-view-btn" style="margin-right:6px;" onclick="event.stopPropagation();viewNotification('${n.id}')">View Notice</button>`;
+                    if (hasLink) btns += `<a href="${n.driveLink}" target="_blank" rel="noopener"
+                        onclick="event.stopPropagation()"
+                        style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#43a047,#1b5e20);color:white;
+                               padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;">📎 View Document</a>`;
+                    if (!hasMsg && !hasLink) {
+                        btns = `<button class="notif-view-btn" onclick="event.stopPropagation();viewNotification('${n.id}')">View Details</button>`;
+                    }
+                }
+
+                return `
+                <div class="notif-card ${priMap[n.priority] || 'pri-medium'}">
+                    <div class="notif-card-title">${iconMap[n.type] || '📢'} ${n.title}</div>
+                    <div class="notif-card-meta">
+                        ${n.type === 'timetable' ? `${(n.timetable || []).length} exam(s)` : 'Notice'}
+                        &nbsp;•&nbsp; Valid till ${formatDate(n.validTo)}
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${btns}</div>
+                </div>`;
+            }).join('');
+
+            section.style.display = 'block';
+            // Keep accordion collapsed by default — notifAccordionBody stays hidden
+        }
+
+        // ── C) Popup on fresh login (high priority timetables) ────────
+        function showPopupIfNeeded(active) {
+            const today = toLocalDateStr(new Date());
+            const dismissed = localStorage.getItem('notifPopupDismissed');
+            if (dismissed === today) return; // already dismissed today
+
+            const popup = active.find(n => n.type === 'timetable' && n.priority === 'high' && n.showPopup);
+            if (!popup) return;
+
+            document.getElementById('popupTitle').textContent = `📅 ${popup.title}`;
+            document.getElementById('popupBody').innerHTML = buildTimetableBody(popup, today, true);
+            document.getElementById('notifPopupModal').style.display = 'flex';
+        }
+
+        function closePopup() {
+            const cb = document.getElementById('popupDontShow');
+            if (cb && cb.checked) {
+                localStorage.setItem('notifPopupDismissed', toLocalDateStr(new Date()));
+            }
+            document.getElementById('notifPopupModal').style.display = 'none';
+        }
+
+        // ── View / Detail modal ───────────────────────────────────────
+        function viewNotification(id) {
+            const n = _notifCache[id];
+            if (!n) return;
+            const iconMap = { timetable: '📅', notice: '📋', scroll: '⚡' };
+            document.getElementById('detailTitle').textContent = `${iconMap[n.type] || '📢'} ${n.title}`;
+            document.getElementById('detailBody').innerHTML =
+                n.type === 'timetable' ? buildTimetableBody(n, null, false) : buildNoticeBody(n);
+            document.getElementById('notifDetailModal').style.display = 'flex';
+        }
+
+        function closeDetailModal() {
+            document.getElementById('notifDetailModal').style.display = 'none';
+        }
+
+        // ── Toggle accordion ––––––––––––––––––––––––––
+        function toggleNotifAccordion() {
+            const body  = document.getElementById('notifAccordionBody');
+            const arrow = document.getElementById('notifAccordionArrow');
+            const isHidden = body.classList.contains('hidden');
+            body.classList.toggle('hidden', !isHidden);
+            arrow.style.transform = isHidden ? 'rotate(180deg)' : '';
+        }
+
+        // ── Close on backdrop click ––––––––––––––––––––––––───────────
+        document.getElementById('notifPopupModal').addEventListener('click', function (e) {
+            if (e.target === this) closePopup();
+        });
+        document.getElementById('notifDetailModal').addEventListener('click', function (e) {
+            if (e.target === this) closeDetailModal();
+        });
+
+        // ── HTML builders ─────────────────────────────────────────────
+        function buildTimetableBody(n, today, isPopup) {
+            const entries = (n.timetable || []);
+            let html = `<div style="font-size:13px;color:#888;margin-bottom:14px;">
+                <strong>Valid:</strong> ${formatDate(n.validFrom)} &rarr; ${formatDate(n.validTo)}</div>`;
+
+            if (entries.length) {
+                html += `<div style="overflow-x:auto;margin-bottom:4px;">
+                <table class="sn-table">
+                    <thead><tr>
+                        <th>Code</th>
+                        <th>Subject</th>
+                        <th>Date</th>
+                        <th>Day</th>
+                        <th>Time</th>
+                    </tr></thead>
+                    <tbody>`;
+                const _DAY3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                entries.forEach(e => {
+                    const isToday = today && e.date === today;
+                    const dayLabel = e.date
+                        ? _DAY3[new Date(e.date + 'T00:00:00').getDay()]
+                        : (e.day || '&mdash;');
+                    html += `<tr${isToday ? ' class="today-row"' : ''}>
+                        <td style="font-weight:700;color:#667eea;">${e.subjectCode || '&mdash;'}</td>
+                        <td>${e.subjectName || '&mdash;'}${isToday ? ' 📌' : ''}</td>
+                        <td>${e.date ? formatDate(e.date) : '&mdash;'}</td>
+                        <td><strong>${dayLabel}</strong></td>
+                        <td>${e.time || '&mdash;'}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<p style="color:#999;">No exam entries available.</p>';
+            }
+
+            if ((n.instructions || []).length) {
+                html += `<div style="margin-top:14px;background:#fff3e0;border-left:4px solid #fb8c00;
+                               padding:12px 14px;border-radius:8px;">
+                    <strong>📋 Instructions:</strong>
+                    <ul style="margin:8px 0 0 18px;padding:0;font-size:13px;line-height:1.7;">
+                        ${n.instructions.map(i => `<li>${i}</li>`).join('')}
+                    </ul>
+                </div>`;
+            }
+
+            if (isPopup) {
+                html += `<div style="margin-top:18px;display:flex;align-items:center;
+                                   justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;
+                                  color:#666;cursor:pointer;">
+                        <input type="checkbox" id="popupDontShow" style="width:16px;height:16px;">
+                        Don't show again today
+                    </label>
+                    <button class="sn-btn-primary" onclick="closePopup()">
+                        Got It! &check;
+                    </button>
+                </div>`;
+            } else {
+                html += `<div style="margin-top:16px;text-align:right;">
+                    <button class="sn-btn-secondary" onclick="closeDetailModal()">Close</button>
+                </div>`;
+            }
+            return html;
+        }
+
+        function buildNoticeBody(n) {
+            const hasMsg  = !!(n.message && n.message.trim());
+            const hasLink = !!(n.driveLink && n.driveLink.trim());
+
+            let content = '';
+            if (hasMsg) {
+                content += `
+                <div style="background:#e3f2fd;border-left:4px solid #1e88e5;padding:16px;
+                            border-radius:8px;font-size:14px;line-height:1.7;color:#333;
+                            margin-bottom:${hasLink ? '14px' : '0'}">
+                    ${(n.message || '').replace(/\n/g, '<br>')}
+                </div>`;
+            }
+            if (hasLink) {
+                content += `
+                <div style="margin-top:${hasMsg ? '0' : '0'}">
+                    <a href="${n.driveLink}" target="_blank" rel="noopener"
+                        style="display:inline-flex;align-items:center;gap:8px;
+                               background:linear-gradient(135deg,#43a047,#1b5e20);
+                               color:white;padding:10px 20px;border-radius:8px;
+                               font-size:14px;font-weight:600;text-decoration:none;
+                               box-shadow:0 2px 8px rgba(67,160,71,0.35);">
+                        📎 Open Document
+                    </a>
+                </div>`;
+            }
+            if (!hasMsg && !hasLink) {
+                content = '<p style="color:#999;font-style:italic;">No content available.</p>';
+            }
+
+            return `
+                <div style="font-size:13px;color:#888;margin-bottom:14px;">
+                    <strong>Valid:</strong> ${formatDate(n.validFrom)} &rarr; ${formatDate(n.validTo)}
+                </div>
+                ${content}
+                <div style="margin-top:18px;text-align:right;">
+                    <button class="sn-btn-secondary" onclick="closeDetailModal()">Close</button>
+                </div>`;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+    </script>
+
+    <!-- ── Service Worker Registration + Auto-Update Detection ─────── -->
+    <script>
+        let swRegistration = null;
+        let newWorker = null;
+        let _reloading = false; // guard against double-reload on Android
+
+        function _applySWUpdate(worker) {
+            // Silently activate the waiting SW — controllerchange will reload the page
+            if (worker) worker.postMessage({ type: 'SKIP_WAITING' });
+            // Hard-reload fallback in case controllerchange doesn't fire within 3 s
+            setTimeout(() => { if (!_reloading) { _reloading = true; window.location.reload(); } }, 3000);
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/student/service-worker.js')
+                .then(reg => {
+                    swRegistration = reg;
+                    console.log('[Student] SW registered, scope:', reg.scope);
+
+                    // If a new SW is already waiting on first load, apply it immediately
+                    if (reg.waiting) _applySWUpdate(reg.waiting);
+
+                    // When a new SW finishes installing, apply it silently
+                    reg.addEventListener('updatefound', () => {
+                        const installing = reg.installing;
+                        if (!installing) return;
+                        installing.addEventListener('statechange', () => {
+                            if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                                _applySWUpdate(installing);
+                            }
+                        });
+                    });
+
+                    // Poll every 60 s — safe for Android background
+                    setInterval(() => reg.update(), 60000);
+
+                    // Check on every app-resume (visibility change)
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') reg.update();
+                    });
+                })
+                .catch(err => console.error('[Student] SW registration failed:', err));
+
+            // Reload exactly once when the new SW takes control
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (_reloading) return;
+                _reloading = true;
+                window.location.reload();
+            });
+        }
+
+        // Banner functions kept for backward-compat but banner is hidden by default
+        function showUpdateBanner(worker) { newWorker = worker; }
+        function applyUpdate() { _applySWUpdate(newWorker); }
+        function dismissUpdate() {}
+
+        // ══════════════════════════════════════════════════════════════════
+        //  STUDENT ASSIGNMENTS
+        // ══════════════════════════════════════════════════════════════════
+
+        let _assignCache = [];  // cached assignment list
+
+        function calculateDaysLeft(dueDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const due = new Date(dueDate);
+            return Math.ceil((due - today) / 86400000);
+        }
+
+        function getUrgencyClass(daysLeft) {
+            if (daysLeft < 0) return { cls: 'expired', badge: '⏰ Expired', bg: '#e0e0e0', color: '#666' };
+            if (daysLeft <= 2) return { cls: 'urgent', badge: `🔴 ${daysLeft}d left`, bg: '#f8d7da', color: '#dc3545' };
+            if (daysLeft <= 5) return { cls: 'soon', badge: `🟡 ${daysLeft}d left`, bg: '#ffe8d6', color: '#fd7e14' };
+            return { cls: 'ontime', badge: `🟢 ${daysLeft}d left`, bg: '#d4edda', color: '#28a745' };
+        }
+
+        function toggleAssignAccordion() {
+            const body = document.getElementById('assignAccordionBody');
+            const arrow = document.getElementById('assignAccordionArrow');
+            const open = !body.classList.contains('hidden');
+            body.classList.toggle('hidden', open);
+            arrow.style.transform = open ? '' : 'rotate(180deg)';
+        }
+
+        async function loadStudentAssignments() {
+            if (!currentStudent) return;
+            const [y, s] = currentStudent.yearSem.split('-');
+
+            try {
+                const snap = await db.collection('assignments').get();
+                const list = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    // Match year & semester
+                    if (String(d.target?.year) !== y || String(d.target?.semester) !== s) return;
+                    list.push({ id: doc.id, ...d });
+                });
+
+                // Sort: active first (urgent first), then expired
+                list.sort((a, b) => {
+                    const da = calculateDaysLeft(a.dueDate);
+                    const db2 = calculateDaysLeft(b.dueDate);
+                    // active assignments sorted by days left (ascending); expired go last
+                    if (da >= 0 && db2 >= 0) return da - db2;
+                    if (da < 0 && db2 < 0) return db2 - da;
+                    return da < 0 ? 1 : -1;
+                });
+
+                _assignCache = list;
+                displayAssignmentsBySubject(list);
+            } catch (e) {
+                console.warn('loadStudentAssignments:', e);
+            }
+        }
+
+        function displayAssignmentsBySubject(list) {
+            const section = document.getElementById('assignSection');
+            const body = document.getElementById('assignAccordionBody');
+            const titleEl = document.getElementById('assignAccordionTitle');
+
+            if (!list.length) { section.style.display = 'none'; return; }
+
+            // Count active
+            const activeCount = list.filter(a => calculateDaysLeft(a.dueDate) >= 0).length;
+            titleEl.textContent = `📝 Assignment/Material${activeCount ? ' (' + activeCount + ' Active)' : ''}`;
+            section.style.display = 'block';
+
+            // Group by subject
+            const groups = {};
+            list.forEach(a => {
+                const key = a.subjectCode || 'Other';
+                if (!groups[key]) groups[key] = { name: a.subjectName || key, items: [] };
+                groups[key].items.push(a);
+            });
+
+            let html = '';
+            Object.entries(groups).forEach(([code, grp]) => {
+                html += `<div class="assign-subject-frame">
+                    <div class="assign-subject-header">📚 ${code}: ${grp.name.toUpperCase()}</div>`;
+
+                grp.items.forEach(a => {
+                    const days = calculateDaysLeft(a.dueDate);
+                    const urg = getUrgencyClass(days);
+                    const dueFmt = a.dueDate
+                        ? (() => { const [y, m, d] = a.dueDate.split('-'); return `${d}-${m}-${y}`; })()
+                        : '?';
+
+                    html += `<div class="assign-card ${urg.cls}" data-id="${a.id}">
+                        <div style="font-weight:700;font-size:14px;color:#2a5298;">📋 ${a.title || 'Untitled'}</div>
+                        <div style="font-size:12px;color:#666;margin-top:3px;">
+                            Due: ${dueFmt}
+                        </div>
+                        <span class="assign-badge" style="background:${urg.bg};color:${urg.color};">${urg.badge}</span>
+                        <br>
+                        <button class="assign-view-btn" onclick="showAssignmentDetail('${a.id}')">View Details →</button>
+                    </div>`;
+                });
+                html += `</div>`;
+            });
+
+            body.innerHTML = html;
+        }
+
+        function showAssignmentDetail(id) {
+            const a = _assignCache.find(x => x.id === id);
+            if (!a) return;
+
+            document.getElementById('assignDetailTitle').textContent = '📝 ' + (a.title || 'Assignment');
+
+            const days = calculateDaysLeft(a.dueDate);
+            const urg = getUrgencyClass(days);
+            const dLabel = days < 0 ? 'Expired' : days === 0 ? 'Due Today!' : `${days} days left`;
+            const fmtDate = d => { if (!d) return '—'; const [y, m, dd] = d.split('-'); return `${dd}-${m}-${y}`; };
+
+            let body = `
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:13px;color:#666;line-height:1.9;">
+                        <div><strong>Subject:</strong> ${a.subjectCode} – ${a.subjectName || a.subjectCode}</div>
+                        <div><strong>Posted:</strong> ${fmtDate(a.postedDate)}</div>
+                        <div><strong>Due:</strong> ${fmtDate(a.dueDate)}
+                            &nbsp;<span style="background:${urg.bg};color:${urg.color};
+                                padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;">${dLabel}</span>
+                        </div>
+                    </div>
+                </div>`;
+
+            if (a.questions && a.contentType !== 'link') {
+                body += `<div style="margin-bottom:14px;">
+                    <div style="font-weight:700;color:#2a5298;margin-bottom:4px;">📋 Questions / Instructions:</div>
+                    <div class="assign-questions-box">${escAssign(a.questions)}</div>
+                </div>`;
+            }
+
+            if (a.driveLink && a.contentType !== 'questions' && a.contentType !== 'file') {
+                body += `<div style="margin-bottom:14px;">
+                    <div style="font-weight:700;color:#2a5298;margin-bottom:6px;">📎 Assignment/Material:</div>
+                    <a href="${a.driveLink}" target="_blank" rel="noopener"
+                       style="display:inline-flex;align-items:center;gap:8px;
+                              background:linear-gradient(135deg,#4285f4,#0d6efd);
+                              color:white;padding:10px 20px;border-radius:8px;
+                              font-weight:600;font-size:14px;text-decoration:none;
+                              box-shadow:0 2px 8px rgba(66,133,244,0.3);">
+                        🔗 Open Google Drive
+                    </a>
+                </div>`;
+            }
+
+            if (a.fileUrl && a.contentType === 'file') {
+                const safeFn = (a.fileName || 'attachment').replace(/"/g, '&quot;');
+                body += `<div style="margin-bottom:14px;">
+                    <div style="font-weight:700;color:#2a5298;margin-bottom:8px;">📎 Attached File: <span style="font-weight:400;font-size:13px;color:#555;">${safeFn}</span></div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <a href="${a.fileUrl}" target="_blank" rel="noopener"
+                           style="display:inline-flex;align-items:center;gap:7px;
+                                  background:linear-gradient(135deg,#667eea,#764ba2);
+                                  color:white;padding:10px 20px;border-radius:8px;
+                                  font-weight:600;font-size:14px;text-decoration:none;
+                                  box-shadow:0 2px 8px rgba(102,126,234,0.35);">
+                            👁️ View File
+                        </a>
+                        <button onclick="downloadAssignFile('${a.fileUrl}','${safeFn}')"
+                           style="display:inline-flex;align-items:center;gap:7px;
+                                  background:linear-gradient(135deg,#28a745,#20c997);
+                                  color:white;padding:10px 20px;border-radius:8px;
+                                  font-weight:600;font-size:14px;border:none;cursor:pointer;
+                                  box-shadow:0 2px 8px rgba(40,167,69,0.35);">
+                            📥 Download
+                        </button>
+                    </div>
+                </div>`;
+            }
+
+            body += `<div style="text-align:right;margin-top:16px;">
+                <button class="sn-btn-secondary" onclick="closeAssignModal()">Close</button>
+            </div>`;
+
+            document.getElementById('assignDetailBody').innerHTML = body;
+            document.getElementById('assignDetailModal').style.display = 'flex';
+        }
+
+        function escAssign(text) {
+            return text
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assignDetailModal').style.display = 'none';
+        }
+
+
+        // ── PQP: load previous question papers filtered by student's year/sem ─
+        async function loadStudentPQP() {
+            if (!currentStudent) return;
+            const loadingEl = document.getElementById('pqpLoading');
+            const listEl    = document.getElementById('pqpList');
+            const emptyEl   = document.getElementById('pqpEmpty');
+
+            loadingEl.style.display = 'block';
+            listEl.style.display    = 'none';
+            emptyEl.style.display   = 'none';
+
+            try {
+                // Read from both pqpLinks (new) and notifications type=pqp (old)
+                const [newSnap, oldSnap] = await Promise.all([
+                    db.collection('pqpLinks').orderBy('addedAt', 'desc').get(),
+                    db.collection('notifications').where('type', '==', 'pqp').get()
+                ]);
+
+                // Build unified list
+                const allItems = [];
+                newSnap.forEach(doc => allItems.push({ id: doc.id, ...doc.data() }));
+                oldSnap.forEach(doc => {
+                    const d = doc.data();
+                    allItems.push({
+                        id: doc.id,
+                        title: d.title || 'Previous Question Papers',
+                        target: d.targetYear === 'all' ? 'all'
+                            : (d.targetYear ? d.targetYear + (d.targetSem ? '-' + d.targetSem : '') : 'all'),
+                        driveLink: d.driveLink || d.message || '#',
+                        addedAt: d.createdAt || ''
+                    });
+                });
+
+                // Reuse snap variable name as alias
+                const snap = { forEach: (fn) => allItems.forEach(d => fn({ id: d.id, data: () => d })) };
+
+                // Filter by student's year/sem
+                const yearSem = currentStudent.yearSem || ''; // e.g. "1-1", "2-3", "3-5"
+                const [year] = yearSem.split('-'); // just the year part
+
+                const items = [];
+                snap.forEach(doc => {
+                    const d = { id: doc.id, ...doc.data() };
+                    const t = d.target || 'all';
+                    if (t === 'all') { items.push(d); return; }
+                    // Year-1 target: matches any 1st year student (e.g. "1-1")
+                    if (t === '1' && year === '1') { items.push(d); return; }
+                    // Exact semester match (e.g. "2-3", "2-4", "3-5")
+                    if (t === yearSem) { items.push(d); return; }
+                });
+
+                loadingEl.style.display = 'none';
+
+                if (!items.length) {
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+
+                const targetLabels = {
+                    'all': 'All Students',
+                    '1': 'Year 1',
+                    '2-3': 'Sem 3 (2nd Year)',
+                    '2-4': 'Sem 4 (2nd Year)',
+                    '3-5': 'Sem 5 (3rd Year)'
+                };
+
+                let html = '';
+                items.forEach((d) => {
+                    const targetLabel = targetLabels[d.target] || d.target || 'All';
+                    const addedDate = d.addedAt ? new Date(d.addedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                    html += `<div style="background:linear-gradient(135deg,#f3e5f5,#fce4ec);
+                                        border:1px solid #ce93d8;border-left:5px solid #9c27b0;
+                                        border-radius:12px;padding:18px 20px;margin-bottom:14px;
+                                        box-shadow:0 2px 10px rgba(156,39,176,0.12);">
+                        <div style="font-size:16px;font-weight:700;color:#6a1b9a;margin-bottom:6px;">📚 ${d.title || 'Previous Question Papers'}</div>
+                        <div style="margin-bottom:12px;">
+                            <span style="background:linear-gradient(135deg,#9c27b0,#6a1b9a);color:white;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">${targetLabel}</span>
+                            ${addedDate ? `<span style="color:#999;font-size:12px;margin-left:10px;">Added ${addedDate}</span>` : ''}
+                        </div>
+                        <a href="${d.driveLink}" target="_blank" rel="noopener"
+                           style="display:inline-flex;align-items:center;gap:8px;
+                                  background:linear-gradient(135deg,#9c27b0,#6a1b9a);
+                                  color:white;padding:10px 20px;border-radius:8px;
+                                  font-size:14px;font-weight:600;text-decoration:none;
+                                  box-shadow:0 2px 8px rgba(156,39,176,0.35);">
+                            🔗 Open in Google Drive
+                        </a>
+                    </div>`;
+                });
+
+                listEl.innerHTML = html;
+                listEl.style.display = 'block';
+            } catch (e) {
+                loadingEl.style.display = 'none';
+                listEl.innerHTML = '<p style="color:red;text-align:center;">❌ Error loading PQP: ' + e.message + '</p>';
+                listEl.style.display = 'block';
+            }
+        }
+
+        // Force-download an assignment file with its original filename
+        async function downloadAssignFile(url, fileName) {
+            try {
+                const btn = event.currentTarget;
+                const orig = btn.innerHTML;
+                btn.innerHTML = '⏳ Downloading…';
+                btn.disabled = true;
+
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = fileName || 'assignment_file';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    URL.revokeObjectURL(a.href);
+                    a.remove();
+                    btn.innerHTML = orig;
+                    btn.disabled = false;
+                }, 1500);
+            } catch (e) {
+                // Fallback: open in new tab
+                window.open(url, '_blank');
+                if (event && event.currentTarget) {
+                    event.currentTarget.innerHTML = '📥 Download';
+                    event.currentTarget.disabled = false;
+                }
+            }
+        }
+        // ─────────────────────────────────────────────────────────────
+
+        // ── Service Worker Registration + Auto-Update ─────────────────
+        if ('serviceWorker' in navigator) {
+            let pendingWorker = null;
+
+            navigator.serviceWorker.register('/student/service-worker.js').then((reg) => {
+                // Poll for a new SW every 30 seconds
+                setInterval(() => reg.update(), 30000);
+
+                reg.addEventListener('updatefound', () => {
+                    pendingWorker = reg.installing;
+                    pendingWorker.addEventListener('statechange', () => {
+                        if (pendingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateBanner();
+                        }
+                    });
+                });
+            }).catch((err) => console.warn('[SW] Registration failed:', err));
+
+            // Once new SW takes control → reload to apply update
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) { refreshing = true; window.location.reload(); }
+            });
+        }
+
+        function showUpdateBanner() {
+            const b = document.getElementById('updateBanner');
+            if (b) b.style.display = 'block';
+        }
+
+        function dismissUpdate() {
+            const b = document.getElementById('updateBanner');
+            if (b) b.style.display = 'none';
+        }
+
+        function applyUpdate() {
+            const btn = document.getElementById('updateNowBtn');
+            if (btn) btn.textContent = 'Updating…';
+            navigator.serviceWorker.ready.then((reg) => {
+                if (reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                } else {
+                    window.location.reload();
+                }
+            });
+        }
+        // ─────────────────────────────────────────────────────────────
+
+        // ── PWA Install Prompt ────────────────────────────────────────
+        let _installPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            _installPrompt = e;
+            // Don't show banner if already installed (standalone mode)
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                const banner = document.getElementById('pwaInstallBanner');
+                if (banner) banner.style.display = 'block';
+            }
+        });
+
+        function installApp() {
+            if (!_installPrompt) return;
+            _installPrompt.prompt();
+            _installPrompt.userChoice.then(() => {
+                _installPrompt = null;
+                dismissInstallBanner();
+            });
+        }
+
+        function dismissInstallBanner() {
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) banner.style.display = 'none';
+        }
+        // ─────────────────────────────────────────────────────────────
+    </script>
+    <!-- ──────────────────────────────────────────────────────────── -->
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/student/**",
+        "destination": "/student/index.html"
+      },
+      {
+        "source": "/student",
+        "destination": "/student/index.html"
+      }
+    ],
+    "errorPage": "404.html"
+  }
+}

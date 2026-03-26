@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow all reads and writes for the attendance app.
+    // This app uses its own username/password system (not Firebase Auth),
+    // so we allow open access. Match the same policy as firestore.rules.
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
