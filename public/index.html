@@ -1700,6 +1700,64 @@
                 </div>
             </div>
 
+            <!-- LAB ASSESSMENT TAB (Faculty) -->
+            <div id="labassessment" class="tab-content">
+                <h2 style="color:#2a5298;margin-bottom:6px;">🧪 Lab Assessment</h2>
+                <p style="color:#888;font-size:13px;margin-bottom:20px;">Generate and download Excel for lab experiments per student.</p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Lab Subject</label>
+                        <select id="labSubjectSel" onchange="onLabSubjectChange()">
+                            <option value="">Select Lab Subject</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Academic Year (A.Y)</label>
+                        <select id="labAcadYear">
+                            <option value="">Select A.Y.</option>
+                            <option value="2023-2024">2023-2024</option>
+                            <option value="2024-2025">2024-2025</option>
+                            <option value="2025-2026">2025-2026</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Number of Experiments (1–40)</label>
+                        <input type="number" id="labTotalExp" value="10" min="1" max="40" placeholder="e.g. 10">
+                    </div>
+                </div>
+
+                <!-- Selected lab info -->
+                <div id="labInfoBox" class="info-box hidden" style="margin-bottom:16px;"></div>
+
+                <!-- Load Students button -->
+                <button class="btn btn-primary" onclick="loadLabStudents()">Load Students</button>
+
+                <!-- Students table =>  avg mark inputs -->
+                <div id="labStudentSection" class="hidden" style="margin-top:24px;">
+                    <h3 style="color:#2a5298;margin-bottom:12px;">📋 Students — Enter Average Marks</h3>
+                    <p style="color:#888;font-size:12px;margin-bottom:10px;">Enter the average mark (0–20) per student. Smart variation will be applied per experiment.</p>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;background:white;font-size:13px;">
+                            <thead>
+                                <tr style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;">
+                                    <th style="padding:10px 8px;border:1px solid #ddd;text-align:center;">S.No</th>
+                                    <th style="padding:10px 8px;border:1px solid #ddd;text-align:left;">PIN</th>
+                                    <th style="padding:10px 8px;border:1px solid #ddd;text-align:left;">Name</th>
+                                    <th style="padding:10px 8px;border:1px solid #ddd;text-align:center;">Avg Marks (0–20)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="labStudentTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top:20px;">
+                        <button class="btn btn-success" onclick="generateLabAssessmentExcel()">📥 Generate Excel</button>
+                    </div>
+                    <div id="labAssessMsg" class="success-message hidden" style="margin-top:14px;"></div>
+                </div>
+            </div>
+
             <!-- UNIT MARKS TAB (Admin) -->
             <div id="unitmarks" class="tab-content">
                 <h2 style="color: #2a5298; margin-bottom: 20px;">📝 Unit Test Marks Report</h2>
@@ -2673,6 +2731,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logbook\'); initLogbookTab();">📔 Logbook</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'extraclass\'); initExtraClassTab();">📚 Extra Class</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'unittests\')">📝 Unit Marks</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'labassessment\'); initLabAssessmentTab();">🧪 Lab Assessment</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'profile\')">👤 Profile</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'assignments\'); loadMyAssignments();">📝 Assignments</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'pqpView\'); loadFacultyPQP();"> PQP</button>';
@@ -8965,6 +9024,383 @@
                 msgEl.textContent = '❌ PDF Error: ' + e.message;
                 console.error('[ClassLogbook PDF]', e);
             }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  LAB ASSESSMENT MODULE (Faculty only)
+        // ════════════════════════════════════════════════════════════════
+
+        // In-memory state for the current lab session
+        let _labSubjectCode = '';
+        let _labSubjectName = '';
+        let _labYear = '';
+        let _labSem  = '';
+        let _labBranch = '';
+        let _labStudents = []; // [{pin, name}, ...]
+
+        /** Called when the Lab Assessment tab is shown. Populates the lab subject dropdown. */
+        function initLabAssessmentTab() {
+            const sel = document.getElementById('labSubjectSel');
+            sel.innerHTML = '<option value="">Select Lab Subject</option>';
+
+            // Collect all lab subjects assigned to this faculty
+            const labCodes = Object.keys(FACULTY_MAP).filter(code => {
+                return FACULTY_MAP[code] === currentUser && getSubjectType(code) === 'Lab';
+            });
+
+            if (labCodes.length === 0) {
+                sel.innerHTML = '<option value="">No Lab subjects assigned</option>';
+                sel.disabled = true;
+            } else {
+                labCodes.sort().forEach(code => {
+                    const opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = `${code} – ${getSubjectName(code)}`;
+                    sel.appendChild(opt);
+                });
+                sel.disabled = false;
+            }
+
+            // Reset dependent sections
+            document.getElementById('labInfoBox').classList.add('hidden');
+            document.getElementById('labStudentSection').classList.add('hidden');
+            document.getElementById('labAssessMsg').classList.add('hidden');
+            document.getElementById('labStudentTableBody').innerHTML = '';
+        }
+
+        /** Shows info box when a lab subject is chosen. */
+        function onLabSubjectChange() {
+            const code = document.getElementById('labSubjectSel').value;
+            const infoBox = document.getElementById('labInfoBox');
+            document.getElementById('labStudentSection').classList.add('hidden');
+            document.getElementById('labAssessMsg').classList.add('hidden');
+
+            if (!code) { infoBox.classList.add('hidden'); return; }
+
+            // Derive year/sem from subject code numbering (same as isSubjectForYearSem)
+            const num = parseInt(code.replace('CM-', ''));
+            const prefix = Math.floor(num / 100);
+            // prefix → year/sem mapping used in this codebase:
+            // 1xx → Year1/Sem1, 3xx → Year2/Sem3, 4xx → Year2/Sem4, 5xx → Year3/Sem5
+            let year = '', sem = '';
+            if (prefix === 1)      { year = '1'; sem = '1'; }
+            else if (prefix === 3) { year = '2'; sem = '3'; }
+            else if (prefix === 4) { year = '2'; sem = '4'; }
+            else if (prefix === 5) { year = '3'; sem = '5'; }
+
+            _labSubjectCode = code;
+            _labSubjectName = getSubjectName(code);
+            _labYear   = year;
+            _labSem    = sem;
+            _labBranch = 'Computer Engineering';
+
+            const yearLabel = year === '1' ? '1st Year' : year === '2' ? '2nd Year' : '3rd Year';
+            const semLabel  = year === '1' ? 'Sem 1' : `Sem ${sem}`;
+
+            infoBox.innerHTML = `<strong>Subject:</strong> ${code} – ${_labSubjectName} &nbsp;|&nbsp;
+                <strong>Class:</strong> ${yearLabel}, ${semLabel} &nbsp;|&nbsp;
+                <strong>Branch:</strong> ${_labBranch}`;
+            infoBox.classList.remove('hidden');
+        }
+
+        /** Loads students for the selected lab subject and renders the avg-marks table. */
+        function loadLabStudents() {
+            const code = document.getElementById('labSubjectSel').value;
+            if (!code) { alert('Please select a Lab Subject.'); return; }
+            if (!_labYear || !_labSem) { alert('Could not determine Year/Sem for selected subject.'); return; }
+
+            const students = STUDENTS[_labYear]?.[_labSem] || [];
+            if (students.length === 0) {
+                alert('No students found for this Year/Semester. Please ensure student data is loaded.');
+                return;
+            }
+
+            _labStudents = students;
+
+            const tbody = document.getElementById('labStudentTableBody');
+            tbody.innerHTML = '';
+            students.forEach((st, idx) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #eee';
+                tr.innerHTML = `
+                    <td style="padding:9px 8px;border:1px solid #ddd;text-align:center;">${idx + 1}</td>
+                    <td style="padding:9px 8px;border:1px solid #ddd;">${st.pin}</td>
+                    <td style="padding:9px 8px;border:1px solid #ddd;">${st.name}</td>
+                    <td style="padding:9px 8px;border:1px solid #ddd;text-align:center;">
+                        <input type="number"
+                               id="labAvg_${idx}"
+                               data-pin="${st.pin}"
+                               value="15"
+                               min="0" max="20"
+                               style="width:70px;padding:6px;text-align:center;border:1px solid #ccc;border-radius:4px;">
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('labStudentSection').classList.remove('hidden');
+            document.getElementById('labAssessMsg').classList.add('hidden');
+        }
+
+        // ── Mark generation helpers ──────────────────────────────────────
+
+        /**
+         * Generate a pseudo-random-but-deterministic mark for a student/experiment.
+         * Variation is ±2 around the faculty-supplied average, clamped to [10, 20].
+         */
+        function getSmartMark(avgMark, studentPin, expNo, facultyId) {
+            // Convert facultyId string to a numeric seed via char codes
+            let facNum = 0;
+            for (let i = 0; i < facultyId.length; i++) facNum += facultyId.charCodeAt(i);
+
+            // Convert PIN to numeric seed
+            let pinNum = 0;
+            for (let i = 0; i < String(studentPin).length; i++) pinNum += String(studentPin).charCodeAt(i);
+
+            const variationSeed = pinNum * 37 + expNo * 13 + facNum * 101;
+            const random = (Math.sin(variationSeed) + 1) / 2; // 0 → 1
+
+            // variation range: -2 to +2
+            let variation = Math.floor(random * 5) - 2;
+            let mark = avgMark + variation;
+
+            if (mark > 20) mark = 20;
+            if (mark < 10) mark = 10;
+
+            return mark;
+        }
+
+        /**
+         * Split a total mark (out of 20) into 5 criteria.
+         * C1+C2+C3 ≈ 45 %, C4 ≈ 25 %, C5 = remainder.
+         */
+        function splitCriteria(total) {
+            let c1 = Math.round(total * 0.15); // max ~3
+            let c2 = Math.round(total * 0.15);
+            let c3 = Math.round(total * 0.15);
+            let c4 = Math.round(total * 0.25); // max ~5
+            let c5 = total - (c1 + c2 + c3 + c4);
+            return { c1, c2, c3, c4, c5 };
+        }
+
+        // ── Excel generation ─────────────────────────────────────────────
+
+        async function generateLabAssessmentExcel() {
+            // ── Validate inputs ──
+            const academicYear   = document.getElementById('labAcadYear').value.trim();
+            const totalExpInput  = parseInt(document.getElementById('labTotalExp').value, 10);
+
+            if (!_labSubjectCode) { alert('Please select a Lab Subject.'); return; }
+            if (!academicYear)    { alert('Please select Academic Year (A.Y).'); return; }
+            if (!totalExpInput || totalExpInput < 1 || totalExpInput > 40) {
+                alert('Number of experiments must be between 1 and 40.');
+                return;
+            }
+            if (_labStudents.length === 0) { alert('Please load students first.'); return; }
+
+            const totalExp   = totalExpInput;
+            const subCode    = _labSubjectCode;
+            const subName    = _labSubjectName;
+            const yearLabel  = _labYear === '1' ? '1st Year' : _labYear === '2' ? '2nd Year' : '3rd Year';
+            const semLabel   = _labYear === '1' ? 'Sem 1' : `Sem ${_labSem}`;
+            const classLabel = `${yearLabel} – ${semLabel}`;
+            const branch     = _labBranch;
+
+            // ── Collect avg marks from inputs ──
+            const avgMarks = {}; // pin → avgMark
+            const inputs = document.querySelectorAll('#labStudentTableBody input[type="number"]');
+            let valid = true;
+            inputs.forEach(inp => {
+                const pin = inp.dataset.pin;
+                const val = parseInt(inp.value, 10);
+                if (isNaN(val) || val < 0 || val > 20) {
+                    alert(`Invalid avg mark for PIN ${pin}. Must be 0–20.`);
+                    valid = false;
+                }
+                avgMarks[pin] = val;
+            });
+            if (!valid) return;
+
+            // ── Build data matrix ──
+            // Per student: for each experiment, compute total & criteria split
+            // studentsData[i] = { pin, name, exps: [{c1,c2,c3,c4,c5,total}, ...], grandTotal }
+            const studentsData = _labStudents.map(st => {
+                const avg  = avgMarks[st.pin] ?? 15;
+                let grandTotal = 0;
+                const exps = [];
+                for (let e = 1; e <= totalExp; e++) {
+                    const total = getSmartMark(avg, st.pin, e, currentUser);
+                    const cr    = splitCriteria(total);
+                    grandTotal += total;
+                    exps.push({ ...cr, total });
+                }
+                return { pin: st.pin, name: st.name, exps, grandTotal };
+            });
+
+            // ── Build SheetJS AOA (array-of-arrays) ──
+            // Row 0: Institution
+            // Row 1: Course
+            // Row 2: A.Y
+            // Row 3: Subject info
+            // Row 4: blank spacer
+            // Row 5: Header level 1  (S.No | PIN | Exp1 (×6) | Exp2 (×6) | ... | Grand Total)
+            // Row 6: Header level 2  (     |     | C1|C2|C3|C4|C5|Total | ... | )
+            // Row 7+: Data rows
+
+            const COLS_PER_EXP = 6; // C1 C2 C3 C4 C5 Total
+            const FIXED_COLS   = 2; // S.No, PIN
+            const totalCols    = FIXED_COLS + totalExp * COLS_PER_EXP + 1; // +1 Grand Total
+
+            // Helper: build an empty row array of correct length
+            const emptyRow = () => new Array(totalCols).fill('');
+
+            const aoa = [];
+
+            // Row 0 – Institution
+            const r0 = emptyRow(); r0[0] = 'GOVERNMENT POLYTECHNIC DHARMAVARAM (170)';
+            aoa.push(r0);
+
+            // Row 1 – Course
+            const r1 = emptyRow(); r1[0] = 'DIPLOMA IN COMPUTER ENGINEERING';
+            aoa.push(r1);
+
+            // Row 2 – AY
+            const r2 = emptyRow(); r2[0] = `A.Y: ${academicYear}`;
+            aoa.push(r2);
+
+            // Row 3 – Subject / Class / Branch
+            const r3 = emptyRow();
+            r3[0] = `Sub Code: ${subCode}`;
+            r3[2] = `Subject: ${subName}`;
+            r3[4] = `Class: ${classLabel}`;
+            r3[6] = `Branch: ${branch}`;
+            aoa.push(r3);
+
+            // Row 4 – blank spacer
+            aoa.push(emptyRow());
+
+            // Row 5 – Experiment header row (merged spans handled via merge array)
+            const r5 = emptyRow();
+            r5[0] = 'S.No';
+            r5[1] = 'PIN';
+            for (let e = 0; e < totalExp; e++) {
+                r5[FIXED_COLS + e * COLS_PER_EXP] = `Exp ${e + 1}`;
+            }
+            r5[totalCols - 1] = 'Grand Total';
+            aoa.push(r5);
+
+            // Row 6 – Criteria sub-header
+            const r6 = emptyRow();
+            r6[0] = '';
+            r6[1] = '';
+            for (let e = 0; e < totalExp; e++) {
+                const base = FIXED_COLS + e * COLS_PER_EXP;
+                r6[base + 0] = 'C1';
+                r6[base + 1] = 'C2';
+                r6[base + 2] = 'C3';
+                r6[base + 3] = 'C4';
+                r6[base + 4] = 'C5';
+                r6[base + 5] = 'Total';
+            }
+            r6[totalCols - 1] = '';
+            aoa.push(r6);
+
+            // Rows 7+ – Student data
+            studentsData.forEach((sd, idx) => {
+                const row = emptyRow();
+                row[0] = idx + 1;
+                row[1] = sd.pin;
+                sd.exps.forEach((ex, e) => {
+                    const base = FIXED_COLS + e * COLS_PER_EXP;
+                    row[base + 0] = ex.c1;
+                    row[base + 1] = ex.c2;
+                    row[base + 2] = ex.c3;
+                    row[base + 3] = ex.c4;
+                    row[base + 4] = ex.c5;
+                    row[base + 5] = ex.total;
+                });
+                row[totalCols - 1] = sd.grandTotal;
+                aoa.push(row);
+            });
+
+            // ── Create worksheet ──
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+            // ── Merges ──
+            const merges = [];
+
+            // Row 0: institution title → merge across all columns
+            merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
+            // Row 1: course title
+            merges.push({ s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } });
+            // Row 2: AY
+            merges.push({ s: { r: 2, c: 0 }, e: { r: 2, c: totalCols - 1 } });
+
+            // Row 5 (header): S.No spans rows 5–6, PIN spans rows 5–6
+            const HDR1 = 5, HDR2 = 6;
+            merges.push({ s: { r: HDR1, c: 0 }, e: { r: HDR2, c: 0 } }); // S.No
+            merges.push({ s: { r: HDR1, c: 1 }, e: { r: HDR2, c: 1 } }); // PIN
+
+            // Each Exp header spans 6 columns horizontally
+            for (let e = 0; e < totalExp; e++) {
+                const base = FIXED_COLS + e * COLS_PER_EXP;
+                merges.push({ s: { r: HDR1, c: base }, e: { r: HDR1, c: base + COLS_PER_EXP - 1 } });
+            }
+            // Grand Total header spans rows 5–6
+            merges.push({ s: { r: HDR1, c: totalCols - 1 }, e: { r: HDR2, c: totalCols - 1 } });
+
+            ws['!merges'] = merges;
+
+            // ── Column widths ──
+            const wscols = [];
+            wscols.push({ wch: 6 });  // S.No
+            wscols.push({ wch: 10 }); // PIN
+            for (let e = 0; e < totalExp; e++) {
+                for (let c = 0; c < COLS_PER_EXP; c++) wscols.push({ wch: 7 });
+            }
+            wscols.push({ wch: 12 }); // Grand Total
+            ws['!cols'] = wscols;
+
+            // ── Cell styles ──
+            // Apply bold + center + border to header rows
+            const XLSX_FULL = XLSX; // alias
+            const headerRows = [0, 1, 2, 3, HDR1, HDR2];
+            const ref = ws['!ref'] || `A1:${XLSX.utils.encode_col(totalCols - 1)}${aoa.length}`;
+            ws['!ref'] = ref;
+
+            // Apply styles via cell iteration (xlsx.full.min.js supports basic styles in xlsx format)
+            for (let R = 0; R < aoa.length; R++) {
+                for (let C = 0; C < totalCols; C++) {
+                    const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+                    const isHeader = headerRows.includes(R);
+                    ws[addr].s = {
+                        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                        font: { bold: isHeader || R < 4, sz: R < 5 ? 11 : 10 },
+                        border: {
+                            top:    { style: 'thin', color: { rgb: '000000' } },
+                            bottom: { style: 'thin', color: { rgb: '000000' } },
+                            left:   { style: 'thin', color: { rgb: '000000' } },
+                            right:  { style: 'thin', color: { rgb: '000000' } }
+                        },
+                        fill: isHeader && R >= HDR1
+                            ? { fgColor: { rgb: 'D0E4FF' }, patternType: 'solid' }
+                            : (R < 4 ? { fgColor: { rgb: 'EEF2FF' }, patternType: 'solid' } : undefined)
+                    };
+                }
+            }
+
+            // ── Workbook ──
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Lab Assessment');
+
+            const fileName = `${subCode}_${academicYear}_Lab_Assessment.xlsx`;
+            XLSX.writeFile(wb, fileName);
+
+            // ── Success message ──
+            const msgEl = document.getElementById('labAssessMsg');
+            msgEl.textContent = `✅ Downloaded: ${fileName}`;
+            msgEl.classList.remove('hidden');
+            setTimeout(() => msgEl.classList.add('hidden'), 5000);
         }
 
         // ─────────────────────────────────────────────────────────────
