@@ -7,6 +7,23 @@
         { "fieldPath": "type", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "extraClasses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "yearSem", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "extraClasses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "yearSem", "order": "ASCENDING" },
+        { "fieldPath": "isWorkingDay", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

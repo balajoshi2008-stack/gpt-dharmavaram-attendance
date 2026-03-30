@@ -56,5 +56,17 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Extra Classes - faculty extra class recordings (working day & holiday)
+    match /extraClasses/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Academic Calendar - semester start/end dates
+    match /academicCalendar/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
   }
 }

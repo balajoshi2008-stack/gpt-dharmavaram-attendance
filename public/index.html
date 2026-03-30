@@ -782,11 +782,16 @@
                         <label>Date</label>
                         <input type="date" id="date" onchange="loadPeriodsFromDate()">
                     </div>
-                    <div class="form-group">
-                        <label>Day (Auto)</label>
-                        <input type="text" id="dayDisplay" readonly style="background: #f8f9fa;">
+                </div><!-- end form-grid: Year / Sem / Date -->
+
+                <div id="attDateSection" class="hidden">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Day (Auto)</label>
+                            <input type="text" id="dayDisplay" readonly style="background: #f8f9fa;">
+                        </div>
                     </div>
-                </div>
+
 
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label>Attendance Mode</label>
@@ -853,6 +858,8 @@
                     <button class="btn btn-secondary" onclick="loadTopicEditMode()"
                         style="background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); color: white;">📋 Edit Topic</button>
                 </div>
+
+                </div><!-- end attDateSection -->
 
                 <div id="studentsSec" class="hidden" style="margin-top: 30px;">
                     <h2 style="color: #2a5298; margin-bottom: 20px;">👥 Students - <span id="currentPeriod"></span></h2>
@@ -1001,6 +1008,133 @@
                 <div id="logbookTableArea" style="display:none;">
                     <h3 style="color:#2a5298;margin-bottom:12px;">📋 Logbook Preview</h3>
                     <div id="logbookTableContainer" style="overflow-x:auto;"></div>
+                </div>
+            </div>
+
+            <!-- EXTRA CLASS TAB (Faculty only) -->
+            <div id="extraclass" class="tab-content">
+                <h2 style="color:#2a5298;margin-bottom:20px;">📚 Extra Class Recording</h2>
+                <div class="info-box" style="margin-bottom:20px;">
+                    Record classes held outside the regular timetable — before/after college on working days, or on holidays.
+                    <strong>No attendance needed</strong> — only topics are recorded.
+                </div>
+
+                <div style="background:#f8f9fa;border-radius:12px;padding:20px;border:1px solid #e0e0e0;margin-bottom:20px;">
+
+                    <!-- Row 1: Date + Day-type badge -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="ecDate" onchange="ecOnDateChange()"
+                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;">
+                        </div>
+                        <div class="form-group" style="justify-content:flex-end;">
+                            <label>&nbsp;</label>
+                            <div id="ecDayBadge" style="display:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px;text-align:center;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Year + Sem -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Year</label>
+                            <select id="ecYear" onchange="ecUpdateSem()"
+                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                                <option value="">Select Year</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Semester</label>
+                            <select id="ecSem" disabled onchange="ecPopulateSubjects()"
+                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                                <option value="">Select Year first</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Subject</label>
+                            <select id="ecSubject"
+                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                                <option value="">-- Select Subject --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Working Day section -->
+                    <div id="ecWorkingDaySection" style="display:none;margin-top:16px;padding:16px;background:#e8f5e9;border-radius:10px;border:1px solid #a5d6a7;">
+                        <h4 style="color:#1b5e20;margin-bottom:12px;">📅 Working Day Extra Class</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Session</label>
+                                <div class="radio-group">
+                                    <div class="radio-option">
+                                        <input type="radio" id="ecFN" name="ecSession" value="FN" checked onchange="ecApplySessionDefaults()">
+                                        <label for="ecFN">FN</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="ecAN" name="ecSession" value="AN" onchange="ecApplySessionDefaults()">
+                                        <label for="ecAN">AN</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>From Time (e.g. 8:30)</label>
+                                <input type="text" id="ecTimeFrom" placeholder="e.g. 8:30"
+                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                            </div>
+                            <div class="form-group">
+                                <label>To Time (e.g. 9:30)</label>
+                                <input type="text" id="ecTimeTo" placeholder="e.g. 9:30"
+                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Number of Periods</label>
+                                <select id="ecWdPeriods"
+                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                                    <option value="1">1 Period</option>
+                                    <option value="2">2 Periods</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Holiday section -->
+                    <div id="ecHolidaySection" style="display:none;margin-top:16px;padding:16px;background:#fff3e0;border-radius:10px;border:1px solid #ffcc80;">
+                        <h4 style="color:#e65100;margin-bottom:12px;">🏖️ Holiday Extra Class — Select Periods</h4>
+                        <div class="period-checkboxes" style="gap:20px;">
+                            <div class="period-checkbox"><input type="checkbox" id="echP1" value="1"><label for="echP1" style="font-weight:600;">P1</label></div>
+                            <div class="period-checkbox"><input type="checkbox" id="echP2" value="2"><label for="echP2" style="font-weight:600;">P2</label></div>
+                            <div class="period-checkbox"><input type="checkbox" id="echP3" value="3"><label for="echP3" style="font-weight:600;">P3</label></div>
+                            <div class="period-checkbox"><input type="checkbox" id="echP4" value="4"><label for="echP4" style="font-weight:600;">P4</label></div>
+                            <div class="period-checkbox"><input type="checkbox" id="echP5" value="5"><label for="echP5" style="font-weight:600;">P5</label></div>
+                            <div class="period-checkbox"><input type="checkbox" id="echP6" value="6"><label for="echP6" style="font-weight:600;">P6</label></div>
+                            <div class="period-checkbox"><input type="checkbox" id="echP7" value="7"><label for="echP7" style="font-weight:600;">P7</label></div>
+                        </div>
+                    </div>
+
+                    <!-- Topic input -->
+                    <div style="margin-top:18px;">
+                        <label style="font-weight:600;color:#333;display:block;margin-bottom:8px;">Topics Covered</label>
+                        <div style="display:flex;gap:8px;align-items:flex-start;">
+                            <textarea id="ecTopic" rows="3" maxlength="300"
+                                style="flex:1;padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;resize:vertical;"
+                                placeholder="Describe the topics covered in this extra class…"
+                                oninput="document.getElementById('ecTopicCount').textContent=this.value.length"></textarea>
+                            <button onclick="startVoiceInput('ecTopic','ecMicBtn')" id="ecMicBtn"
+                                style="padding:10px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;">🎤</button>
+                        </div>
+                        <div style="text-align:right;font-size:11px;color:#999;margin-top:2px;"><span id="ecTopicCount">0</span>/300</div>
+                    </div>
+
+                    <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <button class="btn btn-success" onclick="saveExtraClass()">💾 Save Extra Class</button>
+                        <button class="btn btn-secondary" onclick="initExtraClassTab()">↺ Reset</button>
+                    </div>
+                    <div id="ecMsg" style="display:none;margin-top:14px;padding:12px;border-radius:8px;font-weight:600;"></div>
                 </div>
             </div>
 
@@ -1889,7 +2023,7 @@
             <!-- CLASS LOGBOOK TAB (Admin only) -->
             <div id="classlogbook" class="tab-content">
                 <h2 style="color:#2a5298;margin-bottom:6px;">📖 Class Log Book</h2>
-                <p style="color:#888;font-size:13px;margin-bottom:20px;">Generate a day-wise class logbook for a year/semester and date range. Formatted for printing (landscape A4, 3 days per page).</p>
+                <p style="color:#888;font-size:13px;margin-bottom:20px;">Generate a day-wise class logbook for a year/semester and date range. Formatted for printing (portrait A4, 3 days per page).</p>
 
                 <div style="background:#f8f9fa;border-radius:12px;padding:20px;border:1px solid #e0e0e0;margin-bottom:20px;">
                     <h3 style="color:#2a5298;margin-bottom:16px;font-size:15px;">📋 Computer Engineering Department</h3>
@@ -2389,13 +2523,16 @@
 
         function resetAttendanceForm() {
             document.getElementById('year').value = '';
-            document.getElementById('sem').value = '';
+            document.getElementById('sem').innerHTML = '<option value="">Select Year first</option>';
             document.getElementById('sem').disabled = true;
             document.getElementById('date').valueAsDate = new Date();
             document.getElementById('dayDisplay').value = '';
-            document.getElementById('period').value = '';
+            document.getElementById('period').innerHTML = '<option value="">Select Period</option>';
             document.getElementById('period').disabled = true;
             document.getElementById('otherSubject').value = '';
+
+            // Hide everything below date until date is picked
+            document.getElementById('attDateSection').classList.add('hidden');
 
             document.getElementById('modeTimeTable').checked = true;
             document.getElementById('timetableMode').classList.remove('hidden');
@@ -2534,6 +2671,7 @@
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logbook\'); initLogbookTab();">📔 Logbook</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'extraclass\'); initExtraClassTab();">📚 Extra Class</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'unittests\')">📝 Unit Marks</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'profile\')">👤 Profile</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'assignments\'); loadMyAssignments();">📝 Assignments</button>';
@@ -3645,25 +3783,24 @@
             const sem = document.getElementById('sem');
             sem.innerHTML = '';
 
-            // Clear form when year changes
-            clearAttendanceForm();
-
-            // Clear other subject dropdown when year changes
+            // Year changed: clear date, hide date-dependent controls, clear period
+            document.getElementById('date').value = '';
+            document.getElementById('dayDisplay').value = '';
+            document.getElementById('period').innerHTML = '<option value="">Select Period</option>';
+            document.getElementById('period').disabled = true;
+            document.getElementById('attDateSection').classList.add('hidden');
             document.getElementById('otherSubject').innerHTML = '<option value="">-- Select Subject --</option>';
+            clearAttendanceForm();
 
             if (!y) {
                 sem.innerHTML = '<option value="">Select Year first</option>';
                 sem.disabled = true;
-                document.getElementById('period').innerHTML = '<option value="">Select</option>';
-                document.getElementById('period').disabled = true;
-                document.getElementById('dayDisplay').value = '';
                 return;
             }
             if (y == 1) {
                 sem.innerHTML = '<option value="1">Year-wise Course</option>';
                 sem.disabled = true;
-                // Auto-load periods since sem is fixed
-                loadPeriodsFromDate();
+                // For Year 1 semester is fixed — but wait for user to pick a date
             } else if (y == 2) {
                 sem.innerHTML = '<option value="">Select Semester</option>';
                 sem.innerHTML += '<option value="3">Sem 3</option>';
@@ -3681,13 +3818,15 @@
 
         // Called when semester changes in attendance tab
         function onSemChange() {
-            // Clear form when sem changes
+            // Sem changed: clear date and hide date-dependent controls
+            document.getElementById('date').value = '';
+            document.getElementById('dayDisplay').value = '';
+            document.getElementById('period').innerHTML = '<option value="">Select Period</option>';
+            document.getElementById('period').disabled = true;
+            document.getElementById('attDateSection').classList.add('hidden');
+            document.getElementById('otherSubject').innerHTML = '<option value="">-- Select Subject --</option>';
             clearAttendanceForm();
 
-            // Clear other subject dropdown when sem changes
-            document.getElementById('otherSubject').innerHTML = '<option value="">-- Select Subject --</option>';
-
-            loadPeriodsFromDate();
             // Refresh other subjects list if in other mode
             const mode = document.querySelector('input[name="attMode"]:checked');
             if (mode && mode.value === 'other') loadOtherSubjects();
@@ -3712,6 +3851,7 @@
             if (!y || !s || !dateStr) {
                 per.disabled = true;
                 document.getElementById('dayDisplay').value = '';
+                document.getElementById('attDateSection').classList.add('hidden');
                 return;
             }
 
@@ -3721,6 +3861,9 @@
                 'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday'
             };
             document.getElementById('dayDisplay').value = fullDayNames[day];
+
+            // Reveal the date-dependent section (day, mode, period, buttons)
+            document.getElementById('attDateSection').classList.remove('hidden');
 
             const key = `${y}-${s}-${day}`;
             const schedule = TIMETABLE[key] || [];
@@ -4010,9 +4153,12 @@
         }
 
         function clearAttendanceForm() {
-            // Clear period dropdown
+            // Reset period dropdown fully
             const periodSelect = document.getElementById('period');
-            if (periodSelect) periodSelect.value = '';
+            if (periodSelect) {
+                periodSelect.innerHTML = '<option value="">Select Period</option>';
+                periodSelect.disabled = true;
+            }
 
             // Clear other subject dropdown
             const otherSubject = document.getElementById('otherSubject');
@@ -7414,6 +7560,279 @@
             if (el) el.textContent = Math.min(len, 120);
         }
 
+        // ════════════════════════════════════════════════════════════════
+        //  EXTRA CLASS MODULE  (Faculty only)
+        // ════════════════════════════════════════════════════════════════
+
+        function initExtraClassTab() {
+            // Reset all controls
+            const dateEl = document.getElementById('ecDate');
+            if (dateEl) dateEl.value = '';
+            const badge = document.getElementById('ecDayBadge');
+            if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+            document.getElementById('ecWorkingDaySection').style.display = 'none';
+            document.getElementById('ecHolidaySection').style.display = 'none';
+
+            document.getElementById('ecYear').value = '';
+            const semSel = document.getElementById('ecSem');
+            semSel.innerHTML = '<option value="">Select Year first</option>';
+            semSel.disabled = true;
+            document.getElementById('ecSubject').innerHTML = '<option value="">-- Select Subject --</option>';
+
+            document.getElementById('ecTimeFrom').value = '';
+            document.getElementById('ecTimeTo').value = '';
+            document.getElementById('ecWdPeriods').value = '1';
+            document.getElementById('ecFN').checked = true;
+            for (let i = 1; i <= 7; i++) {
+                const cb = document.getElementById('echP' + i);
+                if (cb) cb.checked = false;
+            }
+            const topicEl = document.getElementById('ecTopic');
+            if (topicEl) topicEl.value = '';
+            document.getElementById('ecTopicCount').textContent = '0';
+
+            const msgEl = document.getElementById('ecMsg');
+            if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+        }
+
+        // Called when date changes — clears sections below date then detects day type
+        function ecOnDateChange() {
+            // Clear year/sem/subject so user re-selects after date changes
+            document.getElementById('ecYear').value = '';
+            const semSel = document.getElementById('ecSem');
+            semSel.innerHTML = '<option value="">Select Year first</option>';
+            semSel.disabled = true;
+            document.getElementById('ecSubject').innerHTML = '<option value="">-- Select Subject --</option>';
+            // Reset topic/msg
+            const topicEl = document.getElementById('ecTopic');
+            if (topicEl) topicEl.value = '';
+            document.getElementById('ecTopicCount').textContent = '0';
+            const msgEl = document.getElementById('ecMsg');
+            if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+            // Hide working/holiday sections until day type is re-evaluated
+            document.getElementById('ecWorkingDaySection').style.display = 'none';
+            document.getElementById('ecHolidaySection').style.display = 'none';
+            const badge = document.getElementById('ecDayBadge');
+            if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+            // Also reset time fields
+            document.getElementById('ecTimeFrom').value = '';
+            document.getElementById('ecTimeTo').value = '';
+            // Now detect day type
+            ecDetectDayType();
+        }
+
+        // Set default timings based on selected session (12-hr display, no leading zeros)
+        function ecApplySessionDefaults() {
+            const session = document.querySelector('input[name="ecSession"]:checked')?.value || 'FN';
+            if (session === 'FN') {
+                document.getElementById('ecTimeFrom').value = '8:30';
+                document.getElementById('ecTimeTo').value   = '9:30';
+            } else {
+                // AN = Afternoon (after college) — show in 12-hr style
+                document.getElementById('ecTimeFrom').value = '4:30';
+                document.getElementById('ecTimeTo').value   = '5:30';
+            }
+        }
+
+        function ecDetectDayType() {
+            const dateStr = document.getElementById('ecDate').value;
+            const badge = document.getElementById('ecDayBadge');
+            const wdSec = document.getElementById('ecWorkingDaySection');
+            const holSec = document.getElementById('ecHolidaySection');
+            if (!dateStr) {
+                badge.style.display = 'none';
+                wdSec.style.display = 'none';
+                holSec.style.display = 'none';
+                return;
+            }
+            const d = new Date(dateStr + 'T00:00:00');
+            const dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+
+            // Check if holiday (HOLIDAYS is [{date, reason}]) or Sunday
+            const isSun = dayOfWeek === 0;
+            const isHol = Array.isArray(HOLIDAYS)
+                ? HOLIDAYS.some(h => h.date === dateStr)
+                : false;
+
+            badge.style.display = 'block';
+            if (isSun || isHol) {
+                badge.style.background = '#fff3cd';
+                badge.style.color = '#856404';
+                badge.style.border = '1px solid #ffc107';
+                badge.textContent = isSun ? '☀️ Sunday' : '🏖️ Holiday';
+                wdSec.style.display = 'none';
+                holSec.style.display = 'block';
+            } else {
+                const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                badge.style.background = '#d1e7dd';
+                badge.style.color = '#0a3622';
+                badge.style.border = '1px solid #a3cfbb';
+                badge.textContent = '🏫 Working Day — ' + days[dayOfWeek];
+                wdSec.style.display = 'block';
+                holSec.style.display = 'none';
+                // Apply default timings for the selected session
+                ecApplySessionDefaults();
+            }
+        }
+
+        function ecUpdateSem() {
+            const y = document.getElementById('ecYear').value;
+            const semSel = document.getElementById('ecSem');
+            semSel.innerHTML = '';
+            // Year changed: clear Sem and Subject only (keep date as-is)
+            document.getElementById('ecSubject').innerHTML = '<option value="">-- Select Subject --</option>';
+            // Reset topic/msg
+            const topicEl = document.getElementById('ecTopic');
+            if (topicEl) topicEl.value = '';
+            document.getElementById('ecTopicCount').textContent = '0';
+            const msgEl = document.getElementById('ecMsg');
+            if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+
+            if (!y) {
+                semSel.innerHTML = '<option value="">Select Year first</option>';
+                semSel.disabled = true;
+                return;
+            }
+            semSel.disabled = false;
+            if (y == 1) {
+                semSel.innerHTML = '<option value="1">Semester 1</option>';
+                ecPopulateSubjects();
+            } else if (y == 2) {
+                semSel.innerHTML = '<option value="">Select Sem</option><option value="3">Semester 3</option><option value="4">Semester 4</option>';
+            } else {
+                semSel.innerHTML = '<option value="">Select Sem</option><option value="5">Semester 5</option>';
+            }
+        }
+
+        function ecPopulateSubjects() {
+            const y = document.getElementById('ecYear').value;
+            const s = document.getElementById('ecSem').value;
+            const subSel = document.getElementById('ecSubject');
+            subSel.innerHTML = '<option value="">-- Select Subject --</option>';
+            if (!y || !s) return;
+
+            // Filter subjects mapped to current faculty AND belonging to the selected year/sem
+            // (same logic as the attendance tab's loadOtherSubjects)
+            const mySubjects = Object.keys(FACULTY_MAP)
+                .filter(code => FACULTY_MAP[code] === currentUser && isSubjectForYearSem(code, y, s));
+
+            mySubjects.sort().forEach(code => {
+                const opt = document.createElement('option');
+                opt.value = code;
+                opt.textContent = `${code}: ${getSubjectName(code)}`;
+                subSel.appendChild(opt);
+            });
+
+            if (mySubjects.length === 0) {
+                subSel.innerHTML = '<option value="">No subjects assigned for this class</option>';
+            }
+        }
+
+        async function validateWorkingDayExtra(date, yearSem, proposed) {
+            // Rule: Maximum 2 extra class periods allowed per year/semester (across all working days).
+            // Query all working-day extra classes for this yearSem;
+            // use single-field query + client-side filter to avoid composite index requirement.
+            const snap = await db.collection('extraClasses')
+                .where('yearSem', '==', yearSem)
+                .get();
+            let semTotal = 0;
+            snap.forEach(doc => {
+                const d = doc.data();
+                if (d.isWorkingDay) semTotal += (d.numberOfPeriods || 1);
+            });
+            if (semTotal + proposed > 2) {
+                const remaining = Math.max(0, 2 - semTotal);
+                throw new Error(
+                    `Maximum 2 extra class periods allowed per semester. ` +
+                    `${semTotal} already recorded this semester. ` +
+                    (remaining > 0
+                        ? `You can add only ${remaining} more period(s).`
+                        : 'No more extra class periods allowed this semester.')
+                );
+            }
+        }
+
+        async function saveExtraClass() {
+            const msgEl = document.getElementById('ecMsg');
+            const showMsg = (text, ok) => {
+                msgEl.style.display = 'block';
+                msgEl.style.background = ok ? '#d4edda' : '#f8d7da';
+                msgEl.style.color = ok ? '#155724' : '#721c24';
+                msgEl.textContent = text;
+            };
+
+            // ── Gather values ──
+            const date    = document.getElementById('ecDate').value;
+            const year    = document.getElementById('ecYear').value;
+            const sem     = document.getElementById('ecSem').value;
+            const subCode = document.getElementById('ecSubject').value;
+            const topic   = document.getElementById('ecTopic').value.trim();
+
+            if (!date)    { showMsg('❗ Please select a date.', false); return; }
+            if (!year || !sem) { showMsg('❗ Please select Year and Semester.', false); return; }
+            if (!subCode) { showMsg('❗ Please select a subject.', false); return; }
+            if (!topic)   { showMsg('❗ Please enter the topic covered.', false); return; }
+
+            const yearSem = (year == 1) ? '1-1' : `${year}-${sem}`;
+
+            // ── Determine day type ──
+            const dayOfWeek = new Date(date + 'T00:00:00').getDay();
+            const isSun = dayOfWeek === 0;
+            const isHol = Array.isArray(HOLIDAYS)
+                ? HOLIDAYS.some(h => h.date === date)
+                : false;
+            const isWorkingDay = !isSun && !isHol;
+
+            try {
+                if (isWorkingDay) {
+                    const session  = document.querySelector('input[name="ecSession"]:checked')?.value || 'FN';
+                    const timeFrom = document.getElementById('ecTimeFrom').value;
+                    const timeTo   = document.getElementById('ecTimeTo').value;
+                    const nPeriods = parseInt(document.getElementById('ecWdPeriods').value) || 1;
+
+                    if (!timeFrom || !timeTo) { showMsg('❗ Please enter From and To times.', false); return; }
+
+                    // Validate max 2
+                    await validateWorkingDayExtra(date, yearSem, nPeriods);
+
+                    await db.collection('extraClasses').add({
+                        date, yearSem, subject: subCode,
+                        subjectName: getSubjectName(subCode),
+                        faculty: currentUser, facultyName: currentUserName || currentUser,
+                        isWorkingDay: true, session, timeFrom, timeTo,
+                        numberOfPeriods: nPeriods, periodsChecked: [],
+                        topicsCovered: topic,
+                        timestamp: new Date().toISOString()
+                    });
+                    showMsg(`✅ Extra class saved (${session}, ${timeFrom}–${timeTo}, ${nPeriods} period${nPeriods>1?'s':''}).`, true);
+
+                } else {
+                    // Holiday / Sunday
+                    const checked = [];
+                    for (let i = 1; i <= 7; i++) {
+                        if (document.getElementById('echP' + i)?.checked) checked.push(i);
+                    }
+                    if (checked.length === 0) { showMsg('❗ Please select at least one period.', false); return; }
+
+                    await db.collection('extraClasses').add({
+                        date, yearSem, subject: subCode,
+                        subjectName: getSubjectName(subCode),
+                        faculty: currentUser, facultyName: currentUserName || currentUser,
+                        isWorkingDay: false, session: '', timeFrom: '', timeTo: '',
+                        numberOfPeriods: checked.length, periodsChecked: checked,
+                        topicsCovered: topic,
+                        timestamp: new Date().toISOString()
+                    });
+                    showMsg(`✅ Holiday extra class saved (${checked.length} period${checked.length>1?'s':''}: P${checked.join(',')}).`, true);
+                }
+                // Clear topic after save
+                document.getElementById('ecTopic').value = '';
+                document.getElementById('ecTopicCount').textContent = '0';
+            } catch(e) {
+                showMsg('❌ ' + e.message, false);
+            }
+        }
+
         // ────────────────────────────────────────────────────────────────
         // LOGBOOK TAB
         // ────────────────────────────────────────────────────────────────
@@ -7467,20 +7886,191 @@
             msgEl.textContent   = '⏳ Loading logbook data…';
 
             try {
-                // Fetch all dailyTopics docs (they are keyed by date, so we filter client-side)
-                const snap = await db.collection('dailyTopics').get();
-                const rows = [];
-                snap.forEach(doc => {
-                    const dateStr = doc.id; // YYYY-MM-DD
-                    if (dateStr < from || dateStr > to) return;
-                    const data = doc.data();
-                    Object.values(data).forEach(entry => {
-                        if (entry.subject === subCode && entry.faculty === currentUser) {
-                            rows.push({ date: dateStr, ...entry });
+                // ── Step 1: Scan ATTENDANCE_CACHE (loaded from attendance collection at login) ──
+                // ATTENDANCE_CACHE key: "att_YYYY-MM-DD"
+                // ATTENDANCE_CACHE value: { pin: { "1":{status,faculty,subject}, "2":{…}, … }, … }
+                // This holds ALL historical attendance, including records from before PERIOD_FACULTY was added.
+                // Strategy: for each date doc, look at any one student's period entries to find which
+                // periods this faculty posted for this subject (all students share same faculty/subject per period).
+
+                const myFacultyName = USERS[currentUser]?.name || currentUser;
+                let detectedYearSem = null;
+                const allRows = [];   // regular attendance rows
+
+                Object.keys(ATTENDANCE_CACHE).forEach(cacheKey => {
+                    if (!cacheKey.startsWith('att_')) return;
+                    const date = cacheKey.slice(4); // strip 'att_' prefix → "YYYY-MM-DD"
+
+                    const attDoc = ATTENDANCE_CACHE[cacheKey]; // {pin: {pStr: {status,faculty,subject}}}
+                    if (!attDoc || typeof attDoc !== 'object') return;
+
+                    // Check any student's period map to find periods taught by this faculty for this subject
+                    const myPeriods = new Set();
+                    let ysKey = null;
+
+                    Object.values(attDoc).forEach(pinData => {
+                        if (!pinData || typeof pinData !== 'object') return;
+                        Object.keys(pinData).forEach(pStr => {
+                            const pEntry = pinData[pStr];
+                            if (!pEntry) return;
+                            if (pEntry.subject === subCode &&
+                                (pEntry.faculty === myFacultyName || pEntry.faculty === currentUser)) {
+                                myPeriods.add(parseInt(pStr));
+                            }
+                        });
+                    });
+
+                    if (myPeriods.size === 0) return;
+
+                    // Try to get yearSem from PERIOD_FACULTY for this date (may not exist for old records)
+                    // Fall back: derive from subject code prefix
+                    const sortedPeriods = Array.from(myPeriods).sort((a, b) => a - b);
+
+                    // Detect yearSem from subject code (e.g. CM-506 → 5xx → 3rd year sem5 → "3-5")
+                    if (!ysKey) {
+                        const match = subCode.match(/CM-(\d)/);
+                        if (match) {
+                            const prefix = match[1];
+                            if (prefix === '1') ysKey = '1-1';
+                            else if (prefix === '3') ysKey = '2-3';
+                            else if (prefix === '4') ysKey = '2-4';
+                            else if (prefix === '5') ysKey = '3-5';
+                        }
+                    }
+                    // Also try PERIOD_FACULTY for this date to get yearSem precisely
+                    Object.keys(PERIOD_FACULTY).forEach(pfKey => {
+                        if (pfKey.startsWith(date + '_')) {
+                            const pfParts = pfKey.split('_');
+                            if (pfParts.length >= 3) {
+                                const y = pfParts[1], s = pfParts[2];
+                                ysKey = (y == 1) ? '1-1' : `${y}-${s}`;
+                            }
                         }
                     });
+
+                    if (!detectedYearSem && ysKey) detectedYearSem = ysKey;
+
+                    // Build period string (e.g. "1-4" or "2,3" or "5")
+                    let periodStr;
+                    if (sortedPeriods.length === 1) {
+                        periodStr = String(sortedPeriods[0]);
+                    } else {
+                        let consecutive = true;
+                        for (let i = 1; i < sortedPeriods.length; i++) {
+                            if (sortedPeriods[i] !== sortedPeriods[i-1] + 1) { consecutive = false; break; }
+                        }
+                        periodStr = consecutive
+                            ? `${sortedPeriods[0]}-${sortedPeriods[sortedPeriods.length-1]}`
+                            : sortedPeriods.join(',');
+                    }
+
+                    allRows.push({
+                        date, yearSem: ysKey || '',
+                        subject: subCode,
+                        subjectName: getSubjectName(subCode),
+                        periods: periodStr,
+                        topic: '',          // filled in step 2
+                        faculty: currentUser,
+                        isExtraClass: false,
+                        _periodCount: sortedPeriods.length,
+                        _myPeriods: sortedPeriods
+                    });
                 });
-                rows.sort((a, b) => a.date.localeCompare(b.date));
+
+                allRows.sort((a, b) => a.date.localeCompare(b.date));
+
+                // ── Step 2: Fetch ALL dailyTopics docs and join topics ──
+                const topicsSnap = await db.collection('dailyTopics').get();
+                const topicsMap = {};   // date → doc data
+                topicsSnap.forEach(doc => { topicsMap[doc.id] = doc.data(); });
+
+                allRows.forEach(r => {
+                    const docData = topicsMap[r.date];
+                    if (!docData) return;
+                    const ysKey = r.yearSem;
+                    // Try to find a topic entry that covers ANY of this row's periods
+                    for (const k of Object.keys(docData)) {
+                        const entry = docData[k];
+                        if (!entry || !k.startsWith(ysKey + '_')) continue;
+                        const periodPart = k.replace(ysKey + '_P', '');
+                        const coveredList = getPeriodList(periodPart);
+                        const rowPeriodStrs = r._myPeriods.map(String);
+                        if (coveredList.some(cp => rowPeriodStrs.includes(cp))) {
+                            r.topic = entry.topic || '';
+                            break;
+                        }
+                    }
+                });
+
+                // ── Step 3: Fetch extraClasses for this subject/faculty ──
+                const extraSnap = await db.collection('extraClasses')
+                    .where('subject', '==', subCode)
+                    .where('faculty', '==', currentUser)
+                    .get();
+                extraSnap.forEach(doc => {
+                    const e = doc.data();
+                    if (!detectedYearSem && e.yearSem) detectedYearSem = e.yearSem;
+                    let periodLabel;
+                    if (e.isWorkingDay) {
+                        // Strip leading zeros from HH:MM times (08:30 → 8:30)
+                        const stripZero = t => t ? t.replace(/^0(\d:)/, '$1') : t;
+                        periodLabel = `${e.session}*\n${stripZero(e.timeFrom)}-${stripZero(e.timeTo)}`;
+                    } else {
+                        periodLabel = (e.periodsChecked||[]).join(',');
+                    }
+                    allRows.push({
+                        date: e.date, yearSem: e.yearSem,
+                        subject: e.subject, subjectName: e.subjectName,
+                        periods: periodLabel,
+                        topic: e.topicsCovered || '',
+                        faculty: e.faculty,
+                        isExtraClass: true,
+                        _periodCount: e.numberOfPeriods || 1,
+                        _isWorkingDay: e.isWorkingDay,
+                        _session: e.session,
+                        _timeFrom: e.timeFrom,
+                        _timeTo: e.timeTo
+                    });
+                });
+
+                allRows.sort((a, b) => {
+                    // 1. Sort by date
+                    const dateCmp = a.date.localeCompare(b.date);
+                    if (dateCmp !== 0) return dateCmp;
+                    // 2. Regular attendance rows before extra-class rows on same date
+                    const aExtra = a.isExtraClass ? 1 : 0;
+                    const bExtra = b.isExtraClass ? 1 : 0;
+                    if (aExtra !== bExtra) return aExtra - bExtra;
+                    // 3. Among extra-class rows: FN before AN
+                    const sessionOrder = s => s === 'FN' ? 0 : s === 'AN' ? 1 : 2;
+                    return sessionOrder(a._session) - sessionOrder(b._session);
+                });
+
+                // ── Step 4: Fetch semester start date from CALENDAR_DATES (settings/calendarDates) ──
+                let semStart = null;
+                if (detectedYearSem) {
+                    const calEntry = CALENDAR_DATES[detectedYearSem];
+                    if (calEntry && calEntry.start) semStart = calEntry.start;
+                }
+
+                // ── BLOCK if academic calendar not set ──
+                if (!semStart) {
+                    msgEl.style.color = '#856404';
+                    msgEl.textContent = '⚠️ Academic calendar not set for this year/semester. Please ask the admin to set the semester start date before generating the logbook.';
+                    return null;
+                }
+                // ── Step 5: Compute running cumulative from semester start ──
+                let cumulative = 0;
+                const withCumulative = [];
+                allRows.forEach(r => {
+                    if (semStart && r.date < semStart) return;
+                    cumulative += r._periodCount;
+                    withCumulative.push({ ...r, cumulativePeriod: cumulative });
+                });
+
+                // ── Step 6: Filter to user's selected date range ──
+                const rows = withCumulative.filter(r => r.date >= from && r.date <= to);
+
                 msgEl.style.display = 'none';
                 return rows;
             } catch (e) {
@@ -7499,6 +8089,7 @@
             if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; }
         }
 
+        // viewLogbook: use last row's cumulativePeriod for the header total
         async function viewLogbook() {
             const subCode = document.getElementById('logbookSubject').value;
             const rows = await _buildLogbookRows(subCode);
@@ -7516,12 +8107,11 @@
                 return;
             }
 
-            let cumulative = 0;
-            rows.forEach(r => { cumulative += _countPeriods(r.periods); });
+            const totalCumulative = rows[rows.length - 1].cumulativePeriod || 0;
 
             previewEl.style.display = 'block';
             previewText.innerHTML   = `<strong>Total Classes:</strong> ${rows.length} entries &nbsp;|&nbsp;
-                                       <strong>Cumulative Periods:</strong> ${cumulative} &nbsp;|&nbsp;
+                                       <strong>Cumulative Periods:</strong> ${totalCumulative} &nbsp;|&nbsp;
                                        <strong>Range:</strong> ${from} → ${to}`;
 
             displayLogbookTable(rows);
@@ -7533,7 +8123,7 @@
             area.style.display = 'block';
 
             const DAY3 = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-            let cumulative = 0;
+            const totalCumulative = rows.length ? (rows[rows.length - 1].cumulativePeriod || 0) : 0;
             let html = `<table style="width:100%;border-collapse:collapse;font-size:13px;background:white;">
                 <thead>
                     <tr style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;">
@@ -7547,28 +8137,40 @@
                 </thead><tbody>`;
 
             rows.forEach(r => {
-                cumulative += _countPeriods(r.periods);
+                const cumPeriod = r.cumulativePeriod || 0;
                 const d     = new Date(r.date + 'T00:00:00');
                 const dd    = String(d.getDate()).padStart(2,'0');
                 const mm    = String(d.getMonth()+1).padStart(2,'0');
                 const yy    = String(d.getFullYear()).slice(-2);
                 const day3  = DAY3[d.getDay()];
                 const sName = (r.subjectName || getSubjectName(r.subject) || '').substring(0,18);
-                html += `<tr style="border-bottom:1px solid #e0e0e0;">
+
+                // Visual style: amber for working-day extra, light-grey for holiday extra, white for normal
+                const rowBg = r.isExtraClass
+                    ? (r._isWorkingDay ? 'background:#fffbeb;' : 'background:#f5f5f5;')
+                    : '';
+
+                // Period cell: working-day extras show "FN* 8:30-9:30" cleanly
+                let periodCell;
+                if (r.isExtraClass && r._isWorkingDay) {
+                    const stripZero = t => t ? t.replace(/^0(\d:)/, '$1') : (t || '');
+                    periodCell = `<strong style="color:#b45309;">${r._session}*</strong><br><span style="font-size:11px;">${stripZero(r._timeFrom)}-${stripZero(r._timeTo)}</span>`;
+                } else {
+                    periodCell = r.periods;
+                }
+
+                html += `<tr style="border-bottom:1px solid #e0e0e0;${rowBg}">
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:600;">
                         ${dd}/${mm}/${yy}<br><span style="color:#667eea;">${day3}</span></td>
-                    <td style="padding:8px;border:1px solid #ddd;text-align:center;">${r.periods}</td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;">${periodCell}</td>
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;font-size:12px;">
                         <strong>${r.subject}</strong><br>${sName}</td>
                     <td style="padding:8px;border:1px solid #ddd;">${r.topic || '<em style="color:#999">—</em>'}</td>
-                    <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;color:#2a5298;">${cumulative}</td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;color:#2a5298;">${cumPeriod}</td>
                     <td style="padding:8px;border:1px solid #ddd;"></td>
                 </tr>`;
             });
-            html += `</tbody></table>
-                <div style="text-align:right;margin-top:8px;font-size:13px;color:#444;">
-                    <strong>Total Periods Conducted: ${cumulative}</strong>
-                </div>`;
+            html += `</tbody></table>`;
             container.innerHTML = html;
         }
 
@@ -7584,25 +8186,26 @@
             }
 
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            const pageW = 297; // A4 landscape width mm
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = 210; // A4 portrait width mm
 
             // ── Header ──────────────────────────────────────────────────
-            doc.setFontSize(14);
+            doc.setFontSize(13);
             doc.setFont(undefined, 'bold');
             doc.text('GOVT. POLYTECHNIC, DHARMAVARAM', pageW / 2, 14, { align: 'center' });
 
-            doc.setFontSize(10);
+            doc.setFontSize(9);
             doc.setFont(undefined, 'normal');
             doc.text(`Name of Staff: ${currentUserName || currentUser}`, 10, 22);
             doc.text(`AY: ${ay}`, pageW - 10, 22, { align: 'right' });
             doc.text(`Subject: ${subCode} – ${getSubjectName(subCode)}`, 10, 28);
 
             // ── Table ────────────────────────────────────────────────────
+            // Portrait A4 usable width: 190mm
+            // Date/Day(20) + Period(16) + SubCode/Name(26) + Topic(90) + Cumulative(18) + Sign(20) = 190mm
             const DAY3 = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-            let cumulative = 0;
+            const totalCumulative = rows.length ? (rows[rows.length - 1].cumulativePeriod || 0) : 0;
             const body = rows.map(r => {
-                cumulative += _countPeriods(r.periods);
                 const d    = new Date(r.date + 'T00:00:00');
                 const dd   = String(d.getDate()).padStart(2,'0');
                 const mm   = String(d.getMonth()+1).padStart(2,'0');
@@ -7613,7 +8216,7 @@
                     r.periods,
                     `${r.subject}\n${sName}`,
                     r.topic || '—',
-                    String(cumulative),
+                    String(r.cumulativePeriod || 0),
                     ''
                 ];
             });
@@ -7623,30 +8226,32 @@
                 head: [['Date/Day','Period\nNos.','Sub. Code\nSub. Name','Topic Covered','Cumulative\nPeriods','Staff\nSign']],
                 body: body,
                 columnStyles: {
-                    0: { cellWidth: 22, halign: 'center' },
+                    0: { cellWidth: 20, halign: 'center' },
                     1: { cellWidth: 18, halign: 'center' },
-                    2: { cellWidth: 28, halign: 'center' },
-                    3: { cellWidth: 130, halign: 'left' },
+                    2: { cellWidth: 26, halign: 'center' },
+                    3: { cellWidth: 84, halign: 'left' },
                     4: { cellWidth: 22, halign: 'center' },
-                    5: { cellWidth: 25, halign: 'center' }
+                    5: { cellWidth: 20, halign: 'center' }
                 },
                 headStyles: {
                     fillColor: [102, 126, 234],
                     textColor: 255,
                     fontStyle: 'bold',
-                    fontSize: 9,
-                    halign: 'center'
+                    fontSize: 8,
+                    halign: 'center',
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.3
                 },
-                bodyStyles: { fontSize: 9, cellPadding: 3 },
-                alternateRowStyles: { fillColor: [248, 249, 255] },
-                styles: { lineColor: [180,180,180], lineWidth: 0.3 }
+                bodyStyles: { fontSize: 8, cellPadding: 2.5, fillColor: [255, 255, 255], lineColor: [0, 0, 0], lineWidth: 0.3 },
+                alternateRowStyles: { fillColor: [255, 255, 255] },
+                styles: { lineColor: [0,0,0], lineWidth: 0.3 },
+                margin: { left: 10, right: 10 },
+                tableWidth: pageW - 20
             });
 
             // ── Footer ───────────────────────────────────────────────────
             const finalY = doc.lastAutoTable.finalY + 8;
             doc.setFontSize(10);
-            doc.text(`Total Periods Conducted: ${cumulative}`, 10, finalY);
-            doc.setFontSize(11);
             doc.setFont(undefined, 'bold');
             doc.text('H.O.D', 10, finalY + 20);
             doc.text('Principal', pageW - 10, finalY + 20, { align: 'right' });
@@ -7752,31 +8357,128 @@
             return dates;
         }
 
-        async function collectClbDayData(date, year, sem) {
-            // Always return all 7 periods; unposted periods will have empty fields.
-            const pfKey = `${date}_${year}_${sem}`;
-            const pfData = PERIOD_FACULTY[pfKey] || {};
+        // ── Batch-fetch all topics + extra classes for a list of dates (2 Firestore queries) ──
+        async function batchFetchClbData(dates, year, sem) {
+            const yearSemKey = (year == 1) ? '1-1' : `${year}-${sem}`;
+            const topicsMap = {};  // date → topicsData object
+            const extrasMap = {};  // date → array of extra class docs
 
-            // Get topics from Firestore dailyTopics
-            let topicsData = {};
+            // Chunk into groups of 30 (Firestore 'in' limit)
+            const chunkArr = (arr, n) => { const out = []; for (let i=0;i<arr.length;i+=n) out.push(arr.slice(i,i+n)); return out; };
+
+            // 1. dailyTopics — one doc per date
+            for (const chunk of chunkArr(dates, 30)) {
+                try {
+                    const snap = await db.collection('dailyTopics').where(firebase.firestore.FieldPath.documentId(), 'in', chunk).get();
+                    snap.forEach(doc => { topicsMap[doc.id] = doc.data(); });
+                } catch(e) {
+                    console.warn('[CLB] dailyTopics chunk fetch error:', e.message);
+                }
+            }
+
+            // 2. extraClasses — query by yearSem + date range
+            // Primary: composite index query (yearSem + date range).
+            // Fallback: query by yearSem only then filter client-side by date
+            // (handles cases where composite index not yet deployed / building).
+            const minDate = dates[0], maxDate = dates[dates.length - 1];
+            const datesSet = new Set(dates);
+            let extrasFetched = false;
             try {
-                const doc = await db.collection('dailyTopics').doc(date).get();
-                if (doc.exists) topicsData = doc.data();
-            } catch(e) { /* ignore, show empty */ }
+                const snap = await db.collection('extraClasses')
+                    .where('yearSem', '==', yearSemKey)
+                    .where('date', '>=', minDate)
+                    .where('date', '<=', maxDate)
+                    .get();
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    // Only include working-day extras that fall on dates we're showing
+                    if (!d.date) return;
+                    if (!d.isWorkingDay) return; // skip holiday extras
+                    if (!datesSet.has(d.date)) return; // must be a working day in our range
+                    if (!extrasMap[d.date]) extrasMap[d.date] = [];
+                    extrasMap[d.date].push(d);
+                });
+                extrasFetched = true;
+                console.log(`[CLB] extraClasses composite query OK — found ${snap.size} docs`);
+            } catch(e) {
+                console.warn('[CLB] extraClasses composite index query failed, trying fallback:', e.message);
+            }
 
+            // Fallback: simple single-field query (no composite index needed)
+            if (!extrasFetched) {
+                try {
+                    const snap = await db.collection('extraClasses')
+                        .where('yearSem', '==', yearSemKey)
+                        .get();
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        if (!d.date) return;
+                        if (!d.isWorkingDay) return; // skip holiday extras
+                        // Client-side date filter — only working days we're showing
+                        if (!datesSet.has(d.date)) return;
+                        if (!extrasMap[d.date]) extrasMap[d.date] = [];
+                        extrasMap[d.date].push(d);
+                    });
+                    console.log(`[CLB] extraClasses fallback query OK — found ${snap.size} docs`);
+                } catch(e2) {
+                    console.error('[CLB] extraClasses fallback query also failed:', e2.message);
+                }
+            }
+
+            return { topicsMap, extrasMap };
+        }
+
+        function collectClbDayDataSync(date, year, sem, topicsMap, extrasMap) {
+            // Returns all posted periods for this date (+ blank rows for unposted).
+            // PRIMARY SOURCE: ATTENDANCE_CACHE (loaded at login from attendance collection)
+            // — covers historical data including months before PERIOD_FACULTY was tracked.
             const yearSemKey = (year == 1) ? '1-1' : `${year}-${sem}`;
 
-            // Always include all 7 periods
+            // Build period map from ATTENDANCE_CACHE — FILTER by year/sem so we only
+            // include subjects that belong to the selected year/semester (e.g. CM-5xx for Sem 5).
+            // Without this filter, subjects from other semesters (e.g. CM-4xx for Sem 4)
+            // that were posted on the same calendar date would incorrectly appear.
+            const periodMap = {};
+            const attDoc = ATTENDANCE_CACHE['att_' + date] || {};
+            Object.values(attDoc).forEach(pinData => {
+                if (!pinData || typeof pinData !== 'object') return;
+                Object.keys(pinData).forEach(pStr => {
+                    const pe = pinData[pStr];
+                    if (!pe || !pe.subject || !pe.faculty) return;
+                    // Only include periods whose subject belongs to this year/sem
+                    if (!isSubjectForYearSem(pe.subject, year, sem)) return;
+                    // If this period slot not yet filled, fill it
+                    if (!periodMap[pStr]) {
+                        periodMap[pStr] = { faculty: pe.faculty, subject: pe.subject };
+                    }
+                });
+            });
+            // Fallback: PERIOD_FACULTY (also filtered by year/sem via the key structure)
+            const pfKey = `${date}_${year}_${sem}`;
+            const pfData = PERIOD_FACULTY[pfKey] || {};
+            Object.keys(pfData).forEach(pStr => {
+                if (!periodMap[pStr]) {
+                    const pfEntry = pfData[pStr];
+                    // Validate subject code belongs to this year/sem
+                    if (pfEntry && pfEntry.subject && isSubjectForYearSem(pfEntry.subject, year, sem)) {
+                        periodMap[pStr] = pfEntry;
+                    }
+                }
+            });
+
+            // Topics from pre-fetched map
+            const topicsData = topicsMap[date] || {};
+
+            // Build 7 period rows
             const result = [];
             for (let period = 1; period <= 7; period++) {
                 const pStr = String(period);
-                const pfEntry = pfData[pStr];
-                const posted = !!pfEntry;
-                const subCode = posted ? (pfEntry.subject || '') : '';
+                const pEntry = periodMap[pStr];
+                const posted = !!pEntry;
+                const subCode = posted ? (pEntry.subject || '') : '';
                 const subName = posted ? (getSubjectName(subCode) || subCode) : '';
-                const facultyName = posted ? (pfEntry.faculty || '') : '';
+                const facultyName = posted ? (pEntry.faculty || '') : '';
 
-                // Topic: look for any topic key that covers this period
                 let topic = '';
                 if (posted) {
                     Object.keys(topicsData).forEach(k => {
@@ -7784,15 +8486,39 @@
                         if (entry && k.startsWith(yearSemKey + '_')) {
                             const periodPart = k.replace(yearSemKey + '_P', '');
                             const coveredPeriods = getPeriodList(periodPart);
-                            if (coveredPeriods.includes(pStr)) {
-                                topic = entry.topic || '';
-                            }
+                            if (coveredPeriods.includes(pStr)) topic = entry.topic || '';
                         }
                     });
                 }
-
-                result.push({ period, subjectCode: subCode, subjectName: subName, faculty: facultyName, topic, posted });
+                result.push({ period, subjectCode: subCode, subjectName: subName, faculty: facultyName, topic, posted, isExtra: false });
             }
+
+            // Append working-day extra classes (pre-fetched, already filtered to isWorkingDay by batchFetchClbData)
+            const extras = (extrasMap[date] || []);
+            extras.sort((a, b) => {
+                // FN before AN; within same session sort by timeFrom
+                if (a.session === 'FN' && b.session !== 'FN') return -1;
+                if (a.session !== 'FN' && b.session === 'FN') return 1;
+                return (a.timeFrom || '').localeCompare(b.timeFrom || '');
+            });
+            // Strip leading zero from HH:MM time strings (08:30 → 8:30)
+            const _stripZero = t => t ? t.replace(/^0(\d:)/, '$1') : (t || '');
+            let periodNum = 8;
+            extras.forEach(e => {
+                result.push({
+                    period: periodNum++,
+                    subjectCode: e.subject || '',
+                    subjectName: e.subjectName || getSubjectName(e.subject) || '',
+                    faculty: e.facultyName || e.faculty || '',
+                    topic: e.topicsCovered || '',
+                    posted: true,
+                    isExtra: true,
+                    session: e.session || '',
+                    timeFrom: _stripZero(e.timeFrom),
+                    timeTo: _stripZero(e.timeTo)
+                });
+            });
+
             return result;
         }
 
@@ -7805,8 +8531,8 @@
             let i = 0;
             while (i < dayData.length) {
                 const cur = dayData[i];
-                // Only merge if this period was actually posted
-                if (!cur.posted) { i++; continue; }
+                // Only merge if this period was actually posted AND is not an extra class row
+                if (!cur.posted || cur.isExtra) { i++; continue; }
                 let count = 1;
                 while (i + count < dayData.length) {
                     const nxt = dayData[i + count];
@@ -7858,6 +8584,23 @@
 
             dayData.forEach((row, idx) => {
                 const merge = mergeMap[idx];
+                // Extra class rows (Period 8, 9) — plain row, no merging, timing in Remarks
+                if (row.isExtra) {
+                    // Remarks: "FN 8:30-9:30" format (leading zeros already stripped in collectClbDayDataSync)
+                    const remarks = row.session
+                        ? `<strong style="color:#b45309;">${row.session}</strong> ${row.timeFrom}-${row.timeTo}`
+                        : '';
+                    html += `<tr style="background:#fffbeb;">`;
+                    html += `<td style="border:1px solid #000;padding:5px;text-align:center;font-weight:700;color:#b45309;">${row.period}*</td>`;
+                    html += `<td style="border:1px solid #000;padding:5px;text-align:center;">${row.subjectCode || ''}</td>`;
+                    html += `<td style="border:1px solid #000;padding:5px;">${row.subjectName || ''}</td>`;
+                    html += `<td style="border:1px solid #000;padding:5px;">${row.faculty || ''}</td>`;
+                    html += `<td style="border:1px solid #000;padding:5px;">${row.topic || ''}</td>`;
+                    html += `<td style="border:1px solid #000;padding:5px;"></td>`;
+                    html += `<td style="border:1px solid #000;padding:5px;font-size:11px;text-align:center;">${remarks}</td>`;
+                    html += '</tr>';
+                    return;
+                }
                 html += '<tr>';
                 // Period, Sub Code, Subject Name, Staff Name, Remarks: always separate cells
                 html += `<td style="border:1px solid #000;padding:5px;text-align:center;">${row.period}</td>`;
@@ -7899,6 +8642,14 @@
             </div>`;
         }
 
+        // ── Helper: get semester start date for a year/sem from CALENDAR_DATES (settings/calendarDates) ──
+        // Returns 'YYYY-MM-DD' string or null if not set.
+        function _getClbSemStart(year, sem) {
+            const ysKey = (year == 1) ? '1-1' : `${year}-${sem}`;
+            const calEntry = CALENDAR_DATES[ysKey];
+            return (calEntry && calEntry.start) ? calEntry.start : null;
+        }
+
         async function viewClassLogbook() {
             const y = document.getElementById('clbYear').value;
             const s = (y == 1) ? '1' : document.getElementById('clbSem').value;
@@ -7916,21 +8667,36 @@
             msgEl.style.color = '#1565c0';
             msgEl.textContent = '⏳ Loading logbook data…';
 
-            const dates = getClbWorkingDays(from, to);
-            if (dates.length === 0) { msgEl.style.color = '#856404'; msgEl.textContent = '⚠️ No working days found in the selected range.'; return; }
+            // Get semester start — REQUIRED to generate the logbook.
+            const semStart = await _getClbSemStart(y, s);
+            if (!semStart) {
+                msgEl.style.color = '#856404';
+                msgEl.textContent = '⚠️ Academic calendar not set for this Year/Semester. Please ask the admin to configure the semester start date before generating the Class Log Book.';
+                return;
+            }
+            const effectiveFrom = semStart < from ? semStart : from;
+
+            // All working days from semStart to To date; display only user-selected range.
+            const allDates = getClbWorkingDays(effectiveFrom, to);
+            const displayDates = allDates.filter(d => d >= from && d <= to);
+
+            if (displayDates.length === 0) { msgEl.style.color = '#856404'; msgEl.textContent = '⚠️ No working days found in the selected range.'; return; }
 
             try {
+                msgEl.textContent = '⏳ Fetching attendance & topic data…';
+                const { topicsMap, extrasMap } = await batchFetchClbData(displayDates, y, s);
+
                 let fullHtml = '';
-                for (let i = 0; i < dates.length; i += 3) {
+                const totalPages = Math.ceil(displayDates.length / 3);
+                for (let i = 0; i < displayDates.length; i += 3) {
                     fullHtml += '<div style="page-break-after:always;margin-bottom:30px;">';
                     fullHtml += generateClbPageHeader(y, s, ay);
-                    const chunk = dates.slice(i, i + 3);
+                    const chunk = displayDates.slice(i, i + 3);
                     for (const date of chunk) {
-                        const dayData = await collectClbDayData(date, y, s);
+                        const dayData = collectClbDayDataSync(date, y, s, topicsMap, extrasMap);
                         fullHtml += generateClbDayTableHTML(date, dayData);
                     }
                     const pageNum = Math.floor(i / 3) + 1;
-                    const totalPages = Math.ceil(dates.length / 3);
                     fullHtml += `<div style="text-align:right;font-size:11px;color:#666;">Page ${pageNum} of ${totalPages}</div>`;
                     fullHtml += '</div>';
                 }
@@ -7966,7 +8732,16 @@
             msgEl.style.color = '#1565c0';
             msgEl.textContent = '⏳ Generating PDF…';
 
-            const dates = getClbWorkingDays(from, to);
+            // Same semStart guard as viewClassLogbook — academic calendar MUST be set.
+            const semStart = await _getClbSemStart(y, s);
+            if (!semStart) {
+                msgEl.style.color = '#856404';
+                msgEl.textContent = '⚠️ Academic calendar not set for this Year/Semester. Please ask the admin to configure the semester start date before generating the Class Log Book.';
+                return;
+            }
+            const effectiveFrom = semStart < from ? semStart : from;
+            const allDates = getClbWorkingDays(effectiveFrom, to);
+            const dates = allDates.filter(d => d >= from && d <= to);
             if (dates.length === 0) { msgEl.style.color = '#856404'; msgEl.textContent = '⚠️ No working days in selected range.'; return; }
 
             const yearLabel = y == 1 ? '1st Year' : y == 2 ? '2nd Year' : '3rd Year';
@@ -7974,15 +8749,17 @@
             const dayFullNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
             try {
-                const allDaysData = [];
-                for (const date of dates) {
-                    const dayData = await collectClbDayData(date, y, s);
-                    allDaysData.push({ date, dayData });
-                }
+                msgEl.textContent = '⏳ Fetching data…';
+                const { topicsMap, extrasMap } = await batchFetchClbData(dates, y, s);
+                const allDaysData = dates.map(date => ({
+                    date,
+                    dayData: collectClbDayDataSync(date, y, s, topicsMap, extrasMap)
+                }));
 
+                msgEl.textContent = '⏳ Building PDF…';
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const pageW = 297;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pageW = 210;
                 const totalPages = Math.ceil(allDaysData.length / 3);
 
                 for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
@@ -7998,10 +8775,10 @@
                     doc.text('Computer Engineering', 10, 20);
                     doc.text(`Year/Sem: ${yearLabel}, ${semLabel}`, pageW - 10, 20, { align: 'right' });
 
-                    doc.setFontSize(13);
+                    doc.setFontSize(12);
                     doc.setFont(undefined, 'bold');
                     doc.text('CLASS LOG BOOK', pageW / 2, 27, { align: 'center' });
-                    doc.setFontSize(10);
+                    doc.setFontSize(9);
                     doc.setFont(undefined, 'normal');
                     doc.text(`AY: ${ay}`, pageW - 10, 27, { align: 'right' });
 
@@ -8029,46 +8806,57 @@
                         });
                         yPos = doc.lastAutoTable.finalY;
 
+                        // Portrait A4 column widths: total = 190mm
+                        // Period(10) + SubCode(18) + SubName(30) + Staff(30) + Topics(62) + Sig(22) + Remarks(18) = 190
+                        const colStyles = {
+                            0: { cellWidth: 10, halign: 'center' },
+                            1: { cellWidth: 18, halign: 'center' },
+                            2: { cellWidth: 30 },
+                            3: { cellWidth: 30 },
+                            4: { cellWidth: 62 },
+                            5: { cellWidth: 22, halign: 'center' },
+                            6: { cellWidth: 18 }
+                        };
+
                         if (!dayData || dayData.length === 0) {
-                            // No attendance posted — show a single empty row
                             doc.autoTable({
                                 startY: yPos,
-                                head: [['PERIOD','SUBJECT CODE','SUBJECT NAME','NAME OF STAFF MEMBER','TOPICS COVERED','SIGNATURE OF STAFF','REMARKS']],
+                                head: [['PD','SUB CODE','SUBJECT NAME','STAFF NAME','TOPICS COVERED','SIGNATURE','REMARKS']],
                                 body: [['—', '', '', '', 'No attendance posted', '', '']],
-                                columnStyles: {
-                                    0: { cellWidth: 14, halign: 'center' },
-                                    1: { cellWidth: 22, halign: 'center' },
-                                    2: { cellWidth: 38 },
-                                    3: { cellWidth: 38 },
-                                    4: { cellWidth: 90 },
-                                    5: { cellWidth: 32, halign: 'center' },
-                                    6: { cellWidth: 23 }
-                                },
-                                headStyles: { fillColor: [232,234,246], textColor: 0, fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
-                                bodyStyles: { fontSize: 8, cellPadding: 2 },
+                                columnStyles: colStyles,
+                                headStyles: { fillColor: [232,234,246], textColor: 0, fontStyle: 'bold', fontSize: 6.5, halign: 'center' },
+                                bodyStyles: { fontSize: 7, cellPadding: 1.5, fillColor: [255,255,255] },
+                                alternateRowStyles: { fillColor: [255,255,255] },
                                 styles: { lineColor: [0,0,0], lineWidth: 0.3 },
                                 margin: { left: 10, right: 10 },
                                 tableWidth: pageW - 20
                             });
-                            yPos = doc.lastAutoTable.finalY + 3;
+                            yPos = doc.lastAutoTable.finalY + 2;
                             continue;
                         }
 
-                        // Build merge map for PDF rows (Topics Covered col=4, Signature col=5)
+                        // Build merge map for PDF rows
                         const mergeMapPdf = buildClbMergeMap(dayData);
 
-                        // Build one row per period (7 rows always)
-                        const bodyRows = dayData.map((row, idx) => [
-                            String(row.period),
-                            row.subjectCode || '',
-                            (row.subjectName || '').substring(0, 25),
-                            (row.faculty || '').substring(0, 25),
-                            row.posted ? (row.topic || '') : '',
-                            '',
-                            ''
-                        ]);
+                        // Build rows — extra class rows get FN/AN + timings in Remarks col
+                        // Format: "FN 8:30-9:30" (leading zeros stripped, hyphen separator)
+                        const bodyRows = dayData.map((row) => {
+                            const periodLabel = row.isExtra ? String(row.period) + '*' : String(row.period);
+                            const remarks = row.isExtra
+                                ? (row.session ? `${row.session} ${row.timeFrom}-${row.timeTo}` : '')
+                                : '';
+                            return [
+                                periodLabel,
+                                row.subjectCode || '',
+                                (row.subjectName || '').substring(0, 22),
+                                (row.faculty || '').substring(0, 22),
+                                row.posted ? (row.topic || '') : '',
+                                '',
+                                remarks
+                            ];
+                        });
 
-                        // Track which cells should be hidden (rowspan covered)
+                        // Track hidden cells (rowspan covered)
                         const hiddenCells = new Set();
                         mergeMapPdf.forEach((m, idx) => {
                             if (m.rowspan > 1) {
@@ -8079,40 +8867,92 @@
                             }
                         });
 
+                        // Record all body cell positions for post-processing
+                        const cellPos = {};
+
                         doc.autoTable({
                             startY: yPos,
-                            head: [['PERIOD','SUBJECT CODE','SUBJECT NAME','NAME OF STAFF MEMBER','TOPICS COVERED','SIGNATURE OF STAFF','REMARKS']],
+                            head: [['PD','SUB CODE','SUBJECT NAME','STAFF NAME','TOPICS COVERED','SIGNATURE','REMARKS']],
                             body: bodyRows,
-                            columnStyles: {
-                                0: { cellWidth: 14, halign: 'center' },
-                                1: { cellWidth: 22, halign: 'center' },
-                                2: { cellWidth: 38 },
-                                3: { cellWidth: 38 },
-                                4: { cellWidth: 90 },
-                                5: { cellWidth: 32, halign: 'center' },
-                                6: { cellWidth: 23 }
-                            },
-                            headStyles: { fillColor: [232,234,246], textColor: 0, fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
-                            bodyStyles: { fontSize: 8, cellPadding: 2 },
+                            columnStyles: colStyles,
+                            headStyles: { fillColor: [232,234,246], textColor: 0, fontStyle: 'bold', fontSize: 6.5, halign: 'center' },
+                            bodyStyles: { fontSize: 7, cellPadding: 1.5, fillColor: [255,255,255] },
+                            alternateRowStyles: { fillColor: [255,255,255] },
                             styles: { lineColor: [0,0,0], lineWidth: 0.3 },
                             margin: { left: 10, right: 10 },
                             tableWidth: pageW - 20,
                             willDrawCell: function(hookData) {
-                                // Hide cells that are covered by rowspan merge above
-                                const cellKey = `${hookData.row.index}_${hookData.column.index}`;
+                                if (hookData.section !== 'body') return;
+                                const ri = hookData.row.index, ci = hookData.column.index;
+                                const cellKey = `${ri}_${ci}`;
+                                // Hidden cells: suppress everything — drawn later via post-process
                                 if (hiddenCells.has(cellKey)) {
                                     hookData.cell.text = [];
+                                    hookData.cell.styles.fillColor = [255,255,255];
                                     hookData.cell.styles.lineWidth = 0;
                                 }
+                                // Start of multi-row merge in Topics col: suppress text (we center it manually)
+                                if (ci === 4 && mergeMapPdf[ri] && mergeMapPdf[ri].rowspan > 1) {
+                                    hookData.cell.text = [];
+                                }
+                            },
+                            didDrawCell: function(hookData) {
+                                if (hookData.section !== 'body') return;
+                                const ri = hookData.row.index, ci = hookData.column.index;
+                                cellPos[`${ri}_${ci}`] = {
+                                    x: hookData.cell.x, y: hookData.cell.y,
+                                    w: hookData.cell.width, h: hookData.cell.height
+                                };
                             }
                         });
-                        yPos = doc.lastAutoTable.finalY + 3;
+
+                        // ── Post-process: fill merged areas cleanly & add centred text ──
+                        mergeMapPdf.forEach((m, si) => {
+                            if (m.rowspan <= 1) return;
+                            const c4 = cellPos[`${si}_4`];
+                            const c5 = cellPos[`${si}_5`];
+                            if (!c4 || !c5) return;
+
+                            // Total height spanning all merged rows
+                            let totalH = 0;
+                            for (let j = 0; j < m.rowspan; j++) {
+                                const c = cellPos[`${si + j}_4`];
+                                if (c) totalH += c.h;
+                            }
+
+                            // 1. Solid white fill erases all internal horizontal lines
+                            doc.setFillColor(255, 255, 255);
+                            doc.rect(c4.x, c4.y, c4.w, totalH, 'F');
+                            doc.rect(c5.x, c5.y, c5.w, totalH, 'F');
+
+                            // 2. Redraw clean single-border rectangle for both columns
+                            doc.setDrawColor(0, 0, 0);
+                            doc.setLineWidth(0.3);
+                            doc.rect(c4.x, c4.y, c4.w, totalH, 'S');
+                            doc.rect(c5.x, c5.y, c5.w, totalH, 'S');
+
+                            // 3. Topic text vertically centred in Topics Covered column
+                            const topicText = dayData[si].posted ? (dayData[si].topic || '') : '';
+                            if (topicText) {
+                                doc.setFontSize(8);
+                                doc.setFont(undefined, 'normal');
+                                doc.setTextColor(0, 0, 0);
+                                const pad = 2;
+                                const lines = doc.splitTextToSize(topicText, c4.w - pad * 2);
+                                const lineH = 8 * 0.3528 * 1.2;
+                                const blockH = lines.length * lineH;
+                                const startY = c4.y + totalH / 2 - blockH / 2 + lineH * 0.75;
+                                lines.forEach((ln, i) => doc.text(ln, c4.x + pad, startY + i * lineH));
+                            }
+                        });
+
+                        yPos = doc.lastAutoTable.finalY + 2;
                     }
 
-                    // Page number
-                    doc.setFontSize(9);
+                    // Page number — portrait A4 height is 297mm
+                    doc.setFontSize(8);
                     doc.setFont(undefined, 'normal');
-                    doc.text(`Page ${pageIdx + 1} of ${totalPages}`, pageW - 10, 205, { align: 'right' });
+                    doc.text(`Page ${pageIdx + 1} of ${totalPages}`, pageW - 10, 291, { align: 'right' });
                 }
 
                 const filename = `ClassLogbook_Y${y}_S${s}_${from}_to_${to}.pdf`;
