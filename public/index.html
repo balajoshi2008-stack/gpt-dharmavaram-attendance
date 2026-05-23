@@ -142,6 +142,20 @@
             display: block;
         }
 
+        .cleanup-btn {
+            padding: 9px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: left;
+            transition: opacity 0.2s;
+        }
+        .cleanup-btn:hover { opacity: 0.85; }
+
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -2569,6 +2583,138 @@
                 </div>
             </div>
 
+            <!-- ══ PROMOTION TAB (Admin only) ══ -->
+            <div id="promotion" class="tab-content">
+                <h2 style="color:#2a5298;margin-bottom:6px;">🎓 Student Promotion &amp; Data Archive</h2>
+                <p style="color:#888;font-size:13px;margin:0 0 24px;">Promote students to the next semester, archive all data as JSON, and clean up Firestore for the new academic year.</p>
+
+                <!-- Section 1: Current Distribution -->
+                <div style="background:white;border-radius:14px;padding:24px;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1px solid #e0e0e0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="color:#2a5298;margin:0;">📊 Current Student Distribution</h3>
+                        <button onclick="refreshDistribution()" style="padding:7px 16px;background:#667eea;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">🔄 Refresh</button>
+                    </div>
+                    <div id="distCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;">
+                        <p style="color:#999;font-size:13px;">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Section 2: Promote Students -->
+                <div style="background:white;border-radius:14px;padding:24px;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1px solid #e0e0e0;">
+                    <h3 style="color:#2a5298;margin:0 0 6px;">🎓 Promote Students</h3>
+                    <p style="color:#888;font-size:13px;margin:0 0 18px;">Student PINs are preserved. The source slot is cleared automatically after promotion.</p>
+                    <div id="promoRows" style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;"></div>
+                    <div style="padding:16px;background:#fff8e1;border-radius:10px;border-left:4px solid #fb8c00;">
+                        <strong style="color:#e65100;">⚡ Full Year-End Promotion (All at Once)</strong>
+                        <p style="color:#777;font-size:12px;margin:4px 0 10px;">Promotes Year1→Sem3, Sem3→Sem4, Sem4→Sem5 simultaneously. Sem 5 slot is cleared (graduated).</p>
+                        <button onclick="promoteAllAtOnce()" style="padding:9px 20px;background:linear-gradient(135deg,#e65100,#ff6f00);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;">🚀 Promote All Classes</button>
+                    </div>
+                </div>
+
+                <!-- Section 3: Archive & Download -->
+                <div style="background:white;border-radius:14px;padding:24px;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1px solid #e0e0e0;">
+                    <h3 style="color:#2a5298;margin:0 0 6px;">📦 Archive &amp; Download</h3>
+                    <p style="color:#888;font-size:13px;margin:0 0 18px;">Download all current data as a JSON file before cleaning. <strong style="color:#c62828;">Always archive before any cleanup.</strong></p>
+                    <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+                        <div>
+                            <label style="font-size:13px;font-weight:600;color:#444;display:block;margin-bottom:6px;">Select Group</label>
+                            <select id="archiveGroup" onchange="loadArchiveInfo()" style="padding:10px 14px;border:1.5px solid #ccc;border-radius:8px;font-size:14px;min-width:220px;">
+                                <option value="all">📚 All Groups (Full Backup)</option>
+                                <option value="1-1">Year 1</option>
+                                <option value="2-3">Sem 3 (2nd Year)</option>
+                                <option value="2-4">Sem 4 (2nd Year)</option>
+                                <option value="3-5">Sem 5 (3rd Year / Graduates)</option>
+                            </select>
+                        </div>
+                        <button onclick="downloadArchive()" id="archiveBtn" style="padding:10px 22px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">📥 Download Archive JSON</button>
+                    </div>
+                    <div id="archiveInfo" style="font-size:13px;color:#666;margin-bottom:10px;"></div>
+                    <div id="archiveStatus" style="display:none;padding:12px 16px;background:#e8f5e9;border-radius:8px;border-left:4px solid #43a047;font-size:13px;color:#2e7d32;"></div>
+                </div>
+
+                <!-- Section 4: Data Cleanup -->
+                <div style="background:white;border-radius:14px;padding:24px;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1px solid #ffcdd2;">
+                    <h3 style="color:#c62828;margin:0 0 6px;">🗑️ Data Cleanup</h3>
+                    <p style="color:#888;font-size:13px;margin:0 0 14px;">Delete old data to reduce Firestore costs. <strong style="color:#c62828;">Download archive above first!</strong></p>
+                    <div id="cleanupLock" style="padding:14px 18px;background:#fff3e0;border-radius:10px;border-left:4px solid #fb8c00;font-size:13px;color:#e65100;font-weight:600;">
+                        🔒 Archive must be downloaded first to unlock cleanup actions.
+                    </div>
+                    <div id="cleanupActions" style="display:none;flex-direction:column;gap:14px;">
+                        <div>
+                            <label style="font-size:13px;font-weight:600;color:#444;display:block;margin-bottom:6px;">Select Group to Clean</label>
+                            <select id="cleanupGroup" style="padding:9px 14px;border:1.5px solid #ccc;border-radius:8px;font-size:13px;min-width:200px;">
+                                <option value="all">🗑️ All Groups</option>
+                                <option value="1-1">Year 1</option>
+                                <option value="2-3">Sem 3</option>
+                                <option value="2-4">Sem 4</option>
+                                <option value="3-5">Sem 5 (Graduates)</option>
+                            </select>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;">
+                            <button onclick="cleanUnitMarks()" class="cleanup-btn">📝 Clear Unit Marks</button>
+                            <button onclick="cleanExtraClasses()" class="cleanup-btn">📚 Clear Extra Classes</button>
+                            <button onclick="cleanAssignments()" class="cleanup-btn">📋 Clear Assignments</button>
+                            <button onclick="cleanNotifications()" class="cleanup-btn">📢 Clear Notifications</button>
+                            <button onclick="cleanDailyTopics()" class="cleanup-btn">📖 Clear Daily Topics / Logbook</button>
+                            <button onclick="cleanStudentSlot()" class="cleanup-btn" style="background:#b71c1c;">👥 Remove Students from Slot</button>
+                        </div>
+                        <div style="padding:16px;background:#fce4ec;border-radius:10px;border-left:4px solid #e91e63;">
+                            <strong style="color:#880e4f;">⚠️ Full Reset — Affects ALL Groups</strong>
+                            <p style="font-size:12px;color:#777;margin:4px 0 10px;">Use these when starting a completely fresh new academic year.</p>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <button onclick="cleanAllAttendance()" style="padding:9px 16px;background:#b71c1c;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">🗑️ Clear ALL Attendance</button>
+                                <button onclick="cleanTimetable()" style="padding:9px 16px;background:#4a148c;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">📅 Clear Timetable</button>
+                                <button onclick="cleanCalendarDates()" style="padding:9px 16px;background:#0d47a1;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">📆 Clear Calendar Dates</button>
+                            </div>
+                        </div>
+                        <div id="cleanupMsg" style="display:none;padding:12px 16px;border-radius:8px;font-size:13px;"></div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Promotion History -->
+                <div style="background:white;border-radius:14px;padding:24px;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,0.08);border:1px solid #e0e0e0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="color:#2a5298;margin:0;">📜 Action History</h3>
+                        <button onclick="loadPromotionHistory()" style="padding:7px 16px;background:#667eea;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">🔄 Load History</button>
+                    </div>
+                    <div id="promoHistory"><p style="color:#999;font-size:13px;">Click "Load History" to view past promotions and cleanup actions.</p></div>
+                </div>
+            </div><!-- end #promotion -->
+
+            <!-- Preview Modal -->
+            <div id="promoPreviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+                <div style="background:white;border-radius:16px;padding:28px;max-width:620px;width:92%;max-height:82vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+                    <h3 id="previewTitle" style="color:#2a5298;margin:0 0 16px;"></h3>
+                    <div id="previewBody"></div>
+                    <div style="margin-top:20px;text-align:right;">
+                        <button onclick="document.getElementById('promoPreviewModal').style.display='none'" style="padding:9px 22px;background:#e0e0e0;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirm Promote Modal -->
+            <div id="promoConfirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+                <div style="background:white;border-radius:16px;padding:28px;max-width:480px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+                    <h3 id="confirmTitle" style="color:#2a5298;margin:0 0 10px;"></h3>
+                    <p id="confirmMsg" style="color:#555;font-size:14px;margin:0 0 18px;line-height:1.6;"></p>
+                    <div style="background:#fff8e1;border-radius:8px;padding:14px;margin-bottom:18px;">
+                        <label style="font-size:13px;font-weight:700;color:#e65100;display:block;margin-bottom:8px;">Type <strong>PROMOTE</strong> to confirm:</label>
+                        <input type="text" id="promoConfirmInput" placeholder="PROMOTE" autocomplete="off"
+                            style="width:100%;padding:10px 12px;border:2px solid #fb8c00;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                    </div>
+                    <div id="confirmProgress" style="display:none;margin-bottom:14px;">
+                        <div style="background:#e0e0e0;border-radius:8px;height:10px;overflow:hidden;">
+                            <div id="confirmProgressBar" style="height:100%;background:linear-gradient(135deg,#667eea,#764ba2);width:0%;transition:width 0.4s;"></div>
+                        </div>
+                        <p id="confirmProgressText" style="font-size:12px;color:#666;margin:6px 0 0;"></p>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                        <button onclick="document.getElementById('promoConfirmModal').style.display='none'" style="padding:9px 20px;background:#e0e0e0;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Cancel</button>
+                        <button onclick="executePromotion()" id="doPromoteBtn" style="padding:9px 24px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">✅ Promote</button>
+                    </div>
+                </div>
+            </div>
+
             <div id="logout" class="tab-content">
                 <div style="text-align: center; padding: 50px;">
                     <h2 style="color: #2a5298; margin-bottom: 20px;">👋 Logout</h2>
@@ -3170,6 +3316,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'adminPqpTab\'); loadAdminPQP();">📚 PQP</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'classlogbook\'); initClassLogbookTab();">📖 Class Logbook</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'assignments\'); loadMyAssignments();">📝 Assignments</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'promotion\'); initPromotionTab();">🎓 Promotion</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'notifications\'); loadNotificationsList();">📢 Notifications</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
@@ -8119,6 +8266,588 @@
             } catch (e) { alert('Error: ' + e.message); }
         }
         // ─────────────────────────────────────────────────────────────
+
+        // ══════════════════════════════════════════════════════════════
+        //  STUDENT PROMOTION & DATA ARCHIVE MODULE
+        // ══════════════════════════════════════════════════════════════
+
+        const PROMO_GROUPS = {
+            '1-1': { year: '1', sem: '1', label: 'Year 1',          yearSem: '1-1' },
+            '2-3': { year: '2', sem: '3', label: 'Sem 3 (2nd Year)', yearSem: '2-3' },
+            '2-4': { year: '2', sem: '4', label: 'Sem 4 (2nd Year)', yearSem: '2-4' },
+            '3-5': { year: '3', sem: '5', label: 'Sem 5 (3rd Year)', yearSem: '3-5' },
+        };
+
+        const PROMO_ROUTES = [
+            { from: '1-1', to: '2-3', label: 'Year 1 → Sem 3',     type: 'year-end'   },
+            { from: '2-3', to: '2-4', label: 'Sem 3 → Sem 4',     type: 'mid-year'   },
+            { from: '2-4', to: '3-5', label: 'Sem 4 → Sem 5',     type: 'year-end'   },
+            { from: '3-5', to: null,  label: 'Sem 5 → Graduated', type: 'graduation' },
+        ];
+
+        let _archiveDownloaded = false;
+        let _pendingPromo = null;
+
+        function getStudentList(yearSem) {
+            const g = PROMO_GROUPS[yearSem];
+            if (!g) return [];
+            return STUDENTS[g.year]?.[g.sem] || [];
+        }
+
+        function initPromotionTab() {
+            renderDistribution();
+            renderPromoRows();
+            loadArchiveInfo();
+        }
+
+        function refreshDistribution() { renderDistribution(); renderPromoRows(); }
+
+        function renderDistribution() {
+            const container = document.getElementById('distCards');
+            if (!container) return;
+            const groups = [
+                { key: '1-1', label: 'Year 1',  icon: '1️⃣', color: '#667eea' },
+                { key: '2-3', label: 'Sem 3',   icon: '2️⃣', color: '#43a047' },
+                { key: '2-4', label: 'Sem 4',   icon: '3️⃣', color: '#fb8c00' },
+                { key: '3-5', label: 'Sem 5',   icon: '🎓', color: '#e91e63' },
+            ];
+            let total = 0, html = '';
+            groups.forEach(g => {
+                const count = getStudentList(g.key).length;
+                total += count;
+                html += `<div style="background:linear-gradient(135deg,${g.color}20,${g.color}10);border:2px solid ${g.color}40;border-radius:12px;padding:18px;text-align:center;">
+                    <div style="font-size:26px;">${g.icon}</div>
+                    <div style="font-size:28px;font-weight:800;color:${g.color};margin:6px 0;">${count}</div>
+                    <div style="font-size:13px;font-weight:600;color:#444;">${g.label}</div>
+                </div>`;
+            });
+            html += `<div style="background:linear-gradient(135deg,#37474f20,#37474f10);border:2px solid #37474f40;border-radius:12px;padding:18px;text-align:center;">
+                <div style="font-size:26px;">📊</div>
+                <div style="font-size:28px;font-weight:800;color:#37474f;margin:6px 0;">${total}</div>
+                <div style="font-size:13px;font-weight:600;color:#444;">Total</div>
+            </div>`;
+            container.innerHTML = html;
+        }
+
+        function renderPromoRows() {
+            const container = document.getElementById('promoRows');
+            if (!container) return;
+            const badgeColors = { 'year-end': '#667eea', 'mid-year': '#43a047', 'graduation': '#e91e63' };
+            let html = '';
+            PROMO_ROUTES.forEach(route => {
+                const fromCount = getStudentList(route.from).length;
+                const toLabel   = route.to ? PROMO_GROUPS[route.to]?.label : 'Graduated';
+                const isGrad    = !route.to;
+                const badgeColor = badgeColors[route.type] || '#667eea';
+                const disabled  = fromCount === 0 ? 'disabled style="opacity:0.45;cursor:not-allowed;"' : '';
+                html += `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+                    padding:14px 18px;background:#f8f9fa;border-radius:10px;border-left:4px solid ${badgeColor};">
+                    <div style="flex:1;min-width:180px;">
+                        <div style="font-weight:700;color:#2a5298;font-size:14px;">${route.label}</div>
+                        <div style="font-size:12px;color:#888;margin-top:4px;">
+                            <span style="background:${badgeColor};color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-right:6px;">${route.type}</span>
+                            ${fromCount} student${fromCount !== 1 ? 's' : ''} → ${toLabel}
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button onclick="previewPromotion('${route.from}')"
+                            style="padding:7px 14px;background:white;border:2px solid #667eea;color:#667eea;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">👁 Preview</button>
+                        <button onclick="startPromotion('${route.from}','${route.to}')" ${disabled}
+                            style="padding:7px 16px;background:${isGrad ? '#e91e63' : 'linear-gradient(135deg,#667eea,#764ba2)'};color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
+                            ${isGrad ? '🎓 Graduate' : '▶ Promote'}
+                        </button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function previewPromotion(fromKey) {
+            const route    = PROMO_ROUTES.find(r => r.from === fromKey);
+            const students = getStudentList(fromKey);
+            const fromLabel = PROMO_GROUPS[fromKey]?.label || fromKey;
+            const toLabel   = route?.to ? PROMO_GROUPS[route.to]?.label : 'Graduated';
+            document.getElementById('previewTitle').textContent = `👁 Preview: ${fromLabel} → ${toLabel}`;
+            if (!students.length) {
+                document.getElementById('previewBody').innerHTML = '<p style="color:#999;">No students in this group.</p>';
+            } else {
+                let html = `<p style="color:#555;font-size:13px;margin-bottom:12px;"><strong>${students.length} student(s)</strong> will move from <strong>${fromLabel}</strong> to <strong>${toLabel}</strong>.</p>
+                <div style="max-height:360px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead><tr style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;">
+                    <th style="padding:8px 12px;text-align:left;">#</th>
+                    <th style="padding:8px 12px;text-align:left;">PIN</th>
+                    <th style="padding:8px 12px;text-align:left;">Name</th>
+                </tr></thead><tbody>`;
+                students.forEach((s, i) => {
+                    html += `<tr style="border-bottom:1px solid #eee;background:${i%2 ? '#f8f9fa' : 'white'}">
+                        <td style="padding:8px 12px;">${i+1}</td>
+                        <td style="padding:8px 12px;font-family:monospace;color:#2a5298;">${s.pin}</td>
+                        <td style="padding:8px 12px;">${s.name}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                document.getElementById('previewBody').innerHTML = html;
+            }
+            document.getElementById('promoPreviewModal').style.display = 'flex';
+        }
+
+        function startPromotion(fromKey, toKey) {
+            const students = getStudentList(fromKey);
+            if (!students.length) { alert(`No students found in ${PROMO_GROUPS[fromKey]?.label || fromKey}.`); return; }
+            const fromLabel = PROMO_GROUPS[fromKey]?.label || fromKey;
+            const toLabel   = toKey ? (PROMO_GROUPS[toKey]?.label || toKey) : 'Graduated';
+            _pendingPromo   = { fromKey, toKey, fromLabel, toLabel, count: students.length };
+            document.getElementById('confirmTitle').textContent = `🎓 Confirm: ${fromLabel} → ${toLabel}`;
+            document.getElementById('confirmMsg').textContent   =
+                `This will move ${students.length} student(s) from ${fromLabel} to ${toLabel}. ` +
+                (toKey ? `The ${fromLabel} slot will be cleared.` : `These students will be marked Graduated and removed.`);
+            document.getElementById('promoConfirmInput').value  = '';
+            document.getElementById('confirmProgress').style.display = 'none';
+            document.getElementById('confirmProgressBar').style.width = '0%';
+            document.getElementById('promoConfirmModal').style.display = 'flex';
+        }
+
+        async function executePromotion() {
+            if (document.getElementById('promoConfirmInput').value.trim() !== 'PROMOTE') {
+                alert('Please type PROMOTE (all caps) to confirm.'); return;
+            }
+            if (!_pendingPromo) return;
+            const { fromKey, toKey, fromLabel, toLabel, count } = _pendingPromo;
+            const btn = document.getElementById('doPromoteBtn');
+            btn.disabled = true; btn.textContent = '⏳ Promoting...';
+            document.getElementById('confirmProgress').style.display = 'block';
+            const setProgress = (pct, txt) => {
+                document.getElementById('confirmProgressBar').style.width = pct + '%';
+                document.getElementById('confirmProgressText').textContent = txt;
+            };
+            try {
+                const fromG   = PROMO_GROUPS[fromKey];
+                const students = [...(STUDENTS[fromG.year]?.[fromG.sem] || [])];
+                if (!students.length) throw new Error('No students found to promote');
+                setProgress(40, `Moving ${students.length} students...`);
+                if (toKey) {
+                    const toG = PROMO_GROUPS[toKey];
+                    if (!STUDENTS[toG.year]) STUDENTS[toG.year] = {};
+                    STUDENTS[toG.year][toG.sem] = [...students];
+                    STUDENTS[fromG.year][fromG.sem] = [];
+                    await Promise.all([
+                        db.collection('students').doc(String(toG.year)).set(STUDENTS[toG.year] || {}),
+                        db.collection('students').doc(String(fromG.year)).set(STUDENTS[fromG.year] || {}),
+                    ]);
+                } else {
+                    STUDENTS[fromG.year][fromG.sem] = [];
+                    await db.collection('students').doc(String(fromG.year)).set(STUDENTS[fromG.year] || {});
+                }
+                setProgress(80, 'Logging action...');
+                await db.collection('adminLogs').add({
+                    action: `PROMOTION_${fromKey.replace('-','_')}_TO_${toKey ? toKey.replace('-','_') : 'GRADUATED'}`,
+                    fromGroup: fromLabel, toGroup: toLabel, studentCount: count,
+                    performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                setProgress(100, `✅ Done! ${count} students promoted.`);
+                setTimeout(() => {
+                    document.getElementById('promoConfirmModal').style.display = 'none';
+                    renderDistribution(); renderPromoRows();
+                    alert(`✅ Successfully promoted ${count} student(s)\n${fromLabel} → ${toLabel}`);
+                }, 900);
+            } catch (e) {
+                alert('❌ Promotion failed: ' + e.message);
+                console.error('[Promotion]', e);
+            } finally {
+                btn.disabled = false; btn.textContent = '✅ Promote';
+            }
+        }
+
+        async function promoteAllAtOnce() {
+            const c1 = getStudentList('1-1').length;
+            const c3 = getStudentList('2-3').length;
+            const c4 = getStudentList('2-4').length;
+            const c5 = getStudentList('3-5').length;
+            if (c1 + c3 + c4 + c5 === 0) { alert('No students found to promote.'); return; }
+            const input = prompt(
+                `⚡ FULL YEAR-END PROMOTION\n\n` +
+                `• Year 1  (${c1} students) → Sem 3\n` +
+                `• Sem 3   (${c3} students) → Sem 4\n` +
+                `• Sem 4   (${c4} students) → Sem 5\n` +
+                `• Sem 5   (${c5} students) → Graduated (slot cleared)\n\n` +
+                `Type "PROMOTE ALL" to confirm:`);
+            if (input?.trim() !== 'PROMOTE ALL') { if (input !== null) alert('Cancelled — text did not match.'); return; }
+            try {
+                const y1 = [...(STUDENTS['1']?.['1'] || [])];
+                const s3 = [...(STUDENTS['2']?.['3'] || [])];
+                const s4 = [...(STUDENTS['2']?.['4'] || [])];
+                STUDENTS['1'] = STUDENTS['1'] || {};
+                STUDENTS['2'] = STUDENTS['2'] || {};
+                STUDENTS['3'] = STUDENTS['3'] || {};
+                STUDENTS['3']['5'] = [...s4];
+                STUDENTS['2']['4'] = [...s3];
+                STUDENTS['2']['3'] = [...y1];
+                STUDENTS['1']['1'] = [];
+                await Promise.all([
+                    db.collection('students').doc('1').set(STUDENTS['1'] || {}),
+                    db.collection('students').doc('2').set(STUDENTS['2'] || {}),
+                    db.collection('students').doc('3').set(STUDENTS['3'] || {}),
+                ]);
+                await db.collection('adminLogs').add({
+                    action: 'PROMOTION_FULL_YEAR_END',
+                    details: `Year1(${c1})→Sem3, Sem3(${c3})→Sem4, Sem4(${c4})→Sem5, Sem5(${c5})→Graduated`,
+                    performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                renderDistribution(); renderPromoRows();
+                alert(`✅ Full Promotion Complete!\n• ${c1} → Sem 3\n• ${c3} → Sem 4\n• ${c4} → Sem 5\n• Sem 5 slot cleared (${c5} graduated)`);
+            } catch (e) { alert('❌ Failed: ' + e.message); console.error('[PromoteAll]', e); }
+        }
+
+        // ── Archive ──────────────────────────────────────────────────────
+        function loadArchiveInfo() {
+            const groupKey = document.getElementById('archiveGroup')?.value || 'all';
+            const groups   = groupKey === 'all' ? Object.keys(PROMO_GROUPS) : [groupKey];
+            let totalStu   = 0;
+            groups.forEach(k => totalStu += getStudentList(k).length);
+            const umCount  = Object.keys(UNIT_MARKS).filter(k => groupKey === 'all' || k.startsWith(groupKey + '_')).length;
+            const attCount = Object.keys(ATTENDANCE_CACHE).length;
+            const el = document.getElementById('archiveInfo');
+            if (el) el.innerHTML = `<div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <span style="background:#e3f2fd;padding:4px 12px;border-radius:10px;font-size:12px;">👥 ${totalStu} students</span>
+                <span style="background:#f3e5f5;padding:4px 12px;border-radius:10px;font-size:12px;">📝 ${umCount} unit mark records</span>
+                <span style="background:#e8f5e9;padding:4px 12px;border-radius:10px;font-size:12px;">📅 ${attCount} attendance date records</span>
+            </div>`;
+        }
+
+        async function downloadArchive() {
+            const groupKey = document.getElementById('archiveGroup').value;
+            const btn = document.getElementById('archiveBtn');
+            const statusEl = document.getElementById('archiveStatus');
+            btn.disabled = true; btn.textContent = '⏳ Building archive...';
+            statusEl.style.display = 'block';
+            statusEl.style.background = '#e8f5e9'; statusEl.style.color = '#2e7d32';
+            statusEl.style.borderLeft = '4px solid #43a047';
+            try {
+                const groups   = groupKey === 'all' ? Object.keys(PROMO_GROUPS) : [groupKey];
+                const allPins  = new Set();
+                const archive  = {
+                    metadata: {
+                        archiveDate: new Date().toISOString(), academicYear: '2026-27',
+                        groups: groups.map(k => PROMO_GROUPS[k]?.label),
+                        exportedBy: currentUser, app: 'GPT Dharmavaram Attendance'
+                    },
+                    students: [], unitMarks: [], attendance: [],
+                    extraClasses: [], assignments: [], notifications: [], labAssessment: []
+                };
+                // 1. Students
+                groups.forEach(k => {
+                    const g = PROMO_GROUPS[k];
+                    (STUDENTS[g.year]?.[g.sem] || []).forEach(s => {
+                        archive.students.push({ ...s, yearSem: k, year: g.year, sem: g.sem });
+                        allPins.add(s.pin);
+                    });
+                });
+                statusEl.textContent = `📝 Collecting unit marks (${Object.keys(UNIT_MARKS).length} records)...`;
+                // 2. Unit Marks
+                Object.entries(UNIT_MARKS).forEach(([key, data]) => {
+                    if (groupKey === 'all' || key.startsWith(groupKey + '_'))
+                        archive.unitMarks.push({ key, data });
+                });
+                statusEl.textContent = `📅 Collecting attendance records...`;
+                // 3. Attendance filtered by PINs
+                Object.entries(ATTENDANCE_CACHE).forEach(([cacheKey, attDoc]) => {
+                    const date = cacheKey.replace('att_', '');
+                    const filtered = {};
+                    Object.entries(attDoc).forEach(([pin, periods]) => {
+                        if (groupKey === 'all' || allPins.has(pin)) filtered[pin] = periods;
+                    });
+                    if (Object.keys(filtered).length) archive.attendance.push({ date, records: filtered });
+                });
+                statusEl.textContent = `📚 Collecting extra classes...`;
+                // 4. Extra Classes
+                const yearSemValues = groups.map(k => PROMO_GROUPS[k].yearSem);
+                for (const ys of yearSemValues) {
+                    try {
+                        const snap = await db.collection('extraClasses').where('yearSem', '==', ys).get();
+                        snap.forEach(doc => archive.extraClasses.push({ id: doc.id, ...doc.data() }));
+                    } catch (e) { console.warn('[Archive] extraClasses:', e); }
+                }
+                statusEl.textContent = `📋 Collecting assignments & notifications...`;
+                // 5. Assignments
+                try {
+                    const snap = await db.collection('assignments').get();
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        const match = groupKey === 'all' || groups.some(k => {
+                            const g = PROMO_GROUPS[k];
+                            return String(d.target?.year) === g.year && String(d.target?.semester) === g.sem;
+                        });
+                        if (match) archive.assignments.push({ id: doc.id, ...d });
+                    });
+                } catch (e) { console.warn('[Archive] assignments:', e); }
+                // 6. Notifications
+                try {
+                    const snap = await db.collection('notifications').get();
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        const match = groupKey === 'all' || groups.some(k => {
+                            const g = PROMO_GROUPS[k];
+                            const ty = d.target?.year, ts = d.target?.semester;
+                            return (ty === 'all' || String(ty) === g.year) && (ts === 'all' || String(ts) === g.sem);
+                        });
+                        if (match) archive.notifications.push({ id: doc.id, ...d });
+                    });
+                } catch (e) { console.warn('[Archive] notifications:', e); }
+                statusEl.textContent = `🧪 Collecting lab assessment data...`;
+                // 7. Lab Assessment (AY 2026-27)
+                const subCodes = Object.keys(SUBJECTS || {});
+                for (const subCode of subCodes) {
+                    try {
+                        const snap = await db.collection('Lab_Assessment').doc(subCode)
+                            .collection('AY').doc('2026-27').collection('Students').get();
+                        snap.forEach(doc => {
+                            if (groupKey === 'all' || allPins.has(doc.id))
+                                archive.labAssessment.push({ subCode, pin: doc.id, ...doc.data() });
+                        });
+                    } catch (e) { /* subject may not have lab data */ }
+                }
+                statusEl.textContent = `📥 Preparing download...`;
+                // Trigger browser download
+                const json = JSON.stringify(archive, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                const gLabel = groupKey === 'all' ? 'ALL' : (PROMO_GROUPS[groupKey]?.label || groupKey).replace(/[^a-z0-9]/gi, '_');
+                a.download = `GPT_Dharmavaram_Archive_${gLabel}_${new Date().toISOString().slice(0,10)}.json`;
+                a.href = url;
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+                // Unlock cleanup
+                _archiveDownloaded = true;
+                document.getElementById('cleanupLock').style.display = 'none';
+                document.getElementById('cleanupActions').style.display = 'flex';
+                const sizeMB = (blob.size / 1024 / 1024).toFixed(2);
+                statusEl.textContent = `✅ Downloaded! (${sizeMB} MB) — ${archive.students.length} students, ${archive.attendance.length} attendance days, ${archive.unitMarks.length} mark docs, ${archive.labAssessment.length} lab records`;
+                await db.collection('adminLogs').add({
+                    action: 'ARCHIVE_DOWNLOADED', groups: groupKey,
+                    studentCount: archive.students.length,
+                    performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+            } catch (e) {
+                statusEl.style.background = '#ffebee'; statusEl.style.color = '#c62828';
+                statusEl.style.borderLeft = '4px solid #c62828';
+                statusEl.textContent = '❌ Archive failed: ' + e.message;
+                console.error('[Archive]', e);
+            } finally { btn.disabled = false; btn.textContent = '📥 Download Archive JSON'; }
+        }
+
+        // ── Cleanup helpers ───────────────────────────────────────────────
+        function getCleanupGroup() { return document.getElementById('cleanupGroup').value; }
+
+        function showCleanupMsg(msg, isError = false) {
+            const el = document.getElementById('cleanupMsg');
+            el.style.display = 'block';
+            el.style.background  = isError ? '#ffebee' : '#e8f5e9';
+            el.style.color       = isError ? '#c62828' : '#2e7d32';
+            el.style.borderLeft  = `4px solid ${isError ? '#c62828' : '#43a047'}`;
+            el.style.padding     = '12px 16px';
+            el.style.borderRadius = '8px';
+            el.textContent = msg;
+        }
+
+        async function _batchDelete(docs) {
+            const BATCH_SIZE = 450;
+            for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+                const batch = db.batch();
+                docs.slice(i, i + BATCH_SIZE).forEach(d => batch.delete(d.ref));
+                await batch.commit();
+            }
+        }
+
+        async function cleanUnitMarks() {
+            const group = getCleanupGroup();
+            if (!confirm(`Clear unit marks for ${group === 'all' ? 'ALL groups' : group}?\nThis cannot be undone.`)) return;
+            try {
+                showCleanupMsg('⏳ Deleting unit marks...');
+                const snap     = await db.collection('unitMarks').get();
+                const toDelete = snap.docs.filter(d => group === 'all' || d.id.startsWith(group + '_'));
+                await _batchDelete(toDelete);
+                if (group === 'all') { Object.keys(UNIT_MARKS).forEach(k => delete UNIT_MARKS[k]); }
+                else { Object.keys(UNIT_MARKS).filter(k => k.startsWith(group + '_')).forEach(k => delete UNIT_MARKS[k]); }
+                showCleanupMsg(`✅ Deleted ${toDelete.length} unit mark records.`);
+                await db.collection('adminLogs').add({ action: 'CLEANUP_UNIT_MARKS', group, count: toDelete.length, performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanExtraClasses() {
+            const group = getCleanupGroup();
+            if (!confirm(`Clear extra classes for ${group === 'all' ? 'ALL groups' : group}?`)) return;
+            try {
+                showCleanupMsg('⏳ Deleting extra classes...');
+                const snap = group === 'all'
+                    ? await db.collection('extraClasses').get()
+                    : await db.collection('extraClasses').where('yearSem', '==', group).get();
+                await _batchDelete(snap.docs);
+                showCleanupMsg(`✅ Deleted ${snap.size} extra class records.`);
+                await db.collection('adminLogs').add({ action: 'CLEANUP_EXTRA_CLASSES', group, count: snap.size, performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanAssignments() {
+            const group = getCleanupGroup();
+            if (!confirm(`Clear assignments for ${group === 'all' ? 'ALL groups' : group}?`)) return;
+            try {
+                showCleanupMsg('⏳ Deleting assignments...');
+                const snap     = await db.collection('assignments').get();
+                const toDelete = snap.docs.filter(d => {
+                    if (group === 'all') return true;
+                    const g = PROMO_GROUPS[group], t = d.data().target;
+                    return String(t?.year) === g?.year && String(t?.semester) === g?.sem;
+                });
+                await _batchDelete(toDelete);
+                showCleanupMsg(`✅ Deleted ${toDelete.length} assignment records.`);
+                await db.collection('adminLogs').add({ action: 'CLEANUP_ASSIGNMENTS', group, count: toDelete.length, performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanNotifications() {
+            const group = getCleanupGroup();
+            if (!confirm(`Clear notifications for ${group === 'all' ? 'ALL groups' : group}?`)) return;
+            try {
+                showCleanupMsg('⏳ Deleting notifications...');
+                const snap     = await db.collection('notifications').get();
+                const toDelete = snap.docs.filter(d => {
+                    if (group === 'all') return true;
+                    const g = PROMO_GROUPS[group], t = d.data().target;
+                    return (t?.year === 'all' || String(t?.year) === g?.year) &&
+                           (t?.semester === 'all' || String(t?.semester) === g?.sem);
+                });
+                await _batchDelete(toDelete);
+                showCleanupMsg(`✅ Deleted ${toDelete.length} notification records.`);
+                await db.collection('adminLogs').add({ action: 'CLEANUP_NOTIFICATIONS', group, count: toDelete.length, performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanDailyTopics() {
+            const group = getCleanupGroup();
+            if (!confirm(`Clear daily topics/logbook for ${group === 'all' ? 'ALL groups' : group}?`)) return;
+            try {
+                showCleanupMsg('⏳ Cleaning daily topics...');
+                const snap = await db.collection('dailyTopics').get();
+                if (group === 'all') {
+                    await _batchDelete(snap.docs);
+                    showCleanupMsg(`✅ Deleted ${snap.size} daily topic records.`);
+                } else {
+                    let updatedCount = 0;
+                    const BATCH_SIZE = 450;
+                    const docsToUpdate = [];
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        const newData = {}; let changed = false;
+                        Object.entries(data).forEach(([k, v]) => {
+                            if (k.startsWith(group + '_')) { changed = true; }
+                            else { newData[k] = v; }
+                        });
+                        if (changed) docsToUpdate.push({ ref: doc.ref, newData });
+                    });
+                    for (let i = 0; i < docsToUpdate.length; i += BATCH_SIZE) {
+                        const batch = db.batch();
+                        docsToUpdate.slice(i, i + BATCH_SIZE).forEach(({ ref, newData }) => batch.set(ref, newData));
+                        await batch.commit();
+                        updatedCount += Math.min(BATCH_SIZE, docsToUpdate.length - i);
+                    }
+                    showCleanupMsg(`✅ Cleaned ${updatedCount} daily topic date records for ${group}.`);
+                }
+                await db.collection('adminLogs').add({ action: 'CLEANUP_DAILY_TOPICS', group, performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanStudentSlot() {
+            const group = getCleanupGroup();
+            if (group === 'all') { alert('Select a specific group (not All) to remove students.'); return; }
+            const g     = PROMO_GROUPS[group];
+            const count = getStudentList(group).length;
+            if (!confirm(`⚠️ Remove ${count} students from the ${g?.label} slot?\n\nThis only removes the student list. Use other buttons to clean attendance, marks, etc.`)) return;
+            try {
+                showCleanupMsg('⏳ Removing students...');
+                if (!STUDENTS[g.year]) STUDENTS[g.year] = {};
+                STUDENTS[g.year][g.sem] = [];
+                await db.collection('students').doc(String(g.year)).set(STUDENTS[g.year] || {});
+                renderDistribution(); renderPromoRows();
+                showCleanupMsg(`✅ Removed all students from ${g?.label} slot.`);
+                await db.collection('adminLogs').add({ action: 'CLEANUP_STUDENT_SLOT', group, count, performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanAllAttendance() {
+            if (!confirm('⚠️ Delete ALL attendance records for ALL dates and ALL students?\n\nMake sure you have downloaded the archive first!')) return;
+            const input = prompt('Type "DELETE ATTENDANCE" to confirm:');
+            if (input?.trim() !== 'DELETE ATTENDANCE') { if (input !== null) alert('Cancelled.'); return; }
+            try {
+                showCleanupMsg('⏳ Deleting all attendance...');
+                const snap = await db.collection('attendance').get();
+                await _batchDelete(snap.docs);
+                Object.keys(ATTENDANCE_CACHE).forEach(k => delete ATTENDANCE_CACHE[k]);
+                showCleanupMsg(`✅ Deleted ${snap.size} attendance date records.`);
+                await db.collection('adminLogs').add({ action: 'CLEANUP_ALL_ATTENDANCE', count: snap.size, performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanTimetable() {
+            if (!confirm('Clear the timetable?\nYou will need to set it up again for the new academic year.')) return;
+            try {
+                showCleanupMsg('⏳ Clearing timetable...');
+                TIMETABLE = {};
+                await db.collection('settings').doc('timetable').set({});
+                showCleanupMsg('✅ Timetable cleared. Set up the new timetable for 2026-27.');
+                await db.collection('adminLogs').add({ action: 'CLEANUP_TIMETABLE', performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function cleanCalendarDates() {
+            if (!confirm('Clear all academic calendar dates?\nYou will need to re-enter them for the new year.')) return;
+            try {
+                showCleanupMsg('⏳ Clearing calendar dates...');
+                CALENDAR_DATES = {};
+                await db.collection('settings').doc('calendarDates').set({});
+                showCleanupMsg('✅ Calendar dates cleared. Set up the new academic calendar for 2026-27.');
+                await db.collection('adminLogs').add({ action: 'CLEANUP_CALENDAR', performedBy: currentUser, performedAt: firebase.firestore.FieldValue.serverTimestamp() });
+            } catch (e) { showCleanupMsg('❌ ' + e.message, true); }
+        }
+
+        async function loadPromotionHistory() {
+            const container = document.getElementById('promoHistory');
+            container.innerHTML = '<p style="color:#999;font-size:13px;">Loading...</p>';
+            try {
+                let snap;
+                try { snap = await db.collection('adminLogs').orderBy('performedAt', 'desc').limit(60).get(); }
+                catch (e) { snap = await db.collection('adminLogs').get(); }
+                const actions = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if (d.action?.startsWith('PROMOTION_') || d.action?.startsWith('CLEANUP_') || d.action?.startsWith('ARCHIVE_'))
+                        actions.push(d);
+                });
+                if (!actions.length) { container.innerHTML = '<p style="color:#999;font-size:13px;">No promotion or cleanup history found.</p>'; return; }
+                const fmtDate = ts => ts?.toDate ? ts.toDate().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+                const icon    = a => a.startsWith('PROMOTION_') ? '🎓' : a.startsWith('CLEANUP_') ? '🗑️' : '📦';
+                let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead><tr style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;">
+                    <th style="padding:10px 12px;text-align:left;">Date &amp; Time</th>
+                    <th style="padding:10px 12px;text-align:left;">Action</th>
+                    <th style="padding:10px 12px;text-align:left;">Details</th>
+                    <th style="padding:10px 12px;text-align:left;">By</th>
+                </tr></thead><tbody>`;
+                actions.forEach((d, i) => {
+                    const label   = d.action.replace(/_/g, ' ');
+                    const details = d.details || (d.studentCount != null ? `${d.studentCount} students` : d.count != null ? `${d.count} records` : d.groups || '');
+                    html += `<tr style="border-bottom:1px solid #eee;background:${i%2?'#f8f9fa':'white'};">
+                        <td style="padding:9px 12px;white-space:nowrap;">${fmtDate(d.performedAt)}</td>
+                        <td style="padding:9px 12px;">${icon(d.action)} ${label}</td>
+                        <td style="padding:9px 12px;color:#555;">${details}</td>
+                        <td style="padding:9px 12px;font-family:monospace;color:#667eea;">${d.performedBy || '—'}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+            } catch (e) { container.innerHTML = `<p style="color:#c62828;font-size:13px;">❌ Error: ${e.message}</p>`; }
+        }
 
         // ── Service Worker Registration + Auto-Update ─────────────────
         if ('serviceWorker' in navigator) {
