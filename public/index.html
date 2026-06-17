@@ -3163,23 +3163,10 @@
                     'auth/invalid-login-credentials'
                 ];
                 if (authFailCodes.includes(error.code)) {
-                    // Check Firestore: show helpful hint only when relevant
+                    msg = 'Incorrect password.';
                     try {
-                        const resetDoc = await db.collection('users').doc(user).get();
-                        const data = resetDoc.exists ? resetDoc.data() : {};
-                        if (data.forcePasswordChange) {
-                            // Admin reset pending — user should use 123456
-                            msg = 'Incorrect password. Your password was reset by Admin. Use default password: 123456';
-                        } else if (!data.passwordChangedAt) {
-                            // User has never changed password — still on default
-                            msg = 'Incorrect password. If this is your first login, use the default password: 123456';
-                        } else {
-                            // User has set a personal password — keep it simple
-                            msg = 'Incorrect password.';
-                        }
-                    } catch (_) {
-                        msg = 'Incorrect password.';
-                    }
+                        await db.collection('users').doc(user).get();
+                    } catch (_) {}
 
                 } else if (error.code === 'auth/too-many-requests') {
                     msg = 'Too many failed attempts. Please try again later.';
@@ -5714,7 +5701,8 @@
                 document.getElementById('adminCurrentPass').value = '';
                 document.getElementById('adminNewPass').value = '';
                 document.getElementById('adminConfirmPass').value = '';
-                showMessage('adminPassMsg', '✓ Password updated successfully', 'success');
+                showMessage('adminPassMsg', '✅ Password updated successfully', 'success');
+                alert('✅ Admin password has been updated successfully!');
             } catch (err) {
                 console.error('❌ changeAdminPassword:', err);
                 const msg = err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
@@ -5723,6 +5711,56 @@
                 showMessage('adminPassMsg', msg, 'error');
             }
         }
+        // ── Faculty: Change own password from Profile tab ──
+        async function changeOwnPassword() {
+            const cur = document.getElementById('profileCurrentPass').value;
+            const np = document.getElementById('profileNewPass').value;
+            const cp = document.getElementById('profileConfirmPass').value;
+            const msgEl = document.getElementById('profileMsg');
+
+            if (!cur || !np || !cp) { showMessage('profileMsg', '❌ Please fill all fields', 'error'); return; }
+            if (np.length < 6) { showMessage('profileMsg', '❌ New password must be at least 6 characters', 'error'); return; }
+            if (np !== cp) { showMessage('profileMsg', '❌ New passwords do not match', 'error'); return; }
+
+            const btn = document.querySelector('#profile .btn-primary');
+            if (btn) { btn.disabled = true; btn.textContent = 'Updating...'; }
+
+            try {
+                const user = auth.currentUser;
+                if (!user) throw new Error('Session expired. Please login again.');
+
+                // Reauthenticate with current password
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, cur);
+                await user.reauthenticateWithCredential(credential);
+
+                // Update Firestore FIRST while old auth token is still valid
+                await db.collection('users').doc(currentUser).update({
+                    authPassword: np,
+                    passwordChangedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Now update Firebase Auth password
+                await user.updatePassword(np);
+
+                // Clear form
+                document.getElementById('profileCurrentPass').value = '';
+                document.getElementById('profileNewPass').value = '';
+                document.getElementById('profileConfirmPass').value = '';
+
+                showMessage('profileMsg', '✅ Password updated successfully', 'success');
+                alert('✅ Password has been updated successfully!');
+            } catch (err) {
+                console.error('❌ changeOwnPassword:', err);
+                const wrongPassCodes = ['auth/wrong-password', 'auth/invalid-credential', 'auth/invalid-login-credentials'];
+                const errMsg = wrongPassCodes.includes(err.code)
+                    ? '❌ Current password is incorrect'
+                    : '❌ ' + (err.message || err.code || 'Unknown error');
+                showMessage('profileMsg', errMsg, 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Update Password'; }
+            }
+        }
+
         // Resets a faculty user password to '123456' using a secondary Firebase app instance.
         // The admin stays signed in on the primary app throughout.
 
@@ -7844,14 +7882,33 @@
                 }
             } else if (n && (type === 'scroll' || type === 'notice')) {
                 const speed = { slow: '30s', medium: '18s', fast: '10s' }[n.speed] || '18s';
+                const driveLinkHtml = n.driveLink
+                    ? `<div style="margin-top:14px;">
+                        <a href="${n.driveLink}" target="_blank" rel="noopener"
+                           style="display:inline-flex;align-items:center;gap:8px;
+                                  background:linear-gradient(135deg,#4285F4,#0d47a1);
+                                  color:white;padding:10px 18px;border-radius:8px;
+                                  font-size:14px;font-weight:600;text-decoration:none;
+                                  box-shadow:0 2px 8px rgba(66,133,244,0.35);">
+                            📎 Open Document
+                        </a>
+                        <div style="margin-top:8px;font-size:12px;color:#666;word-break:break-all;">${n.driveLink}</div>
+                      </div>`
+                    : '';
                 if (type === 'scroll') {
-                    body = `<div style="overflow:hidden;background:#fff3cd;border-radius:8px;padding:14px;">
-                        <div style="display:inline-block;animation:marquee ${speed} linear infinite;white-space:nowrap;font-size:16px;font-weight:600;color:#856404;">
-                            ${n.message}</div></div>
-                        <style>@keyframes marquee{from{transform:translateX(100%)}to{transform:translateX(-100%)}}</style>`;
+                    const msgHtml = n.message
+                        ? `<div style="overflow:hidden;background:#fff3cd;border-radius:8px;padding:14px;">
+                            <div style="display:inline-block;animation:marquee ${speed} linear infinite;white-space:nowrap;font-size:16px;font-weight:600;color:#856404;">
+                                ${n.message}</div></div>
+                           <style>@keyframes marquee{from{transform:translateX(100%)}to{transform:translateX(-100%)}}</style>`
+                        : '';
+                    body = msgHtml + driveLinkHtml || '<p style="color:#999;font-style:italic;">No content.</p>';
                 } else {
-                    body = `<div style="background:#e7f3ff;border-left:4px solid #2196F3;padding:16px;border-radius:8px;font-size:15px;line-height:1.6;">
-                        ${(n.message || '').replace(/\n/g, '<br>')}</div>`;
+                    const msgHtml = (n.message || '').trim()
+                        ? `<div style="background:#e7f3ff;border-left:4px solid #2196F3;padding:16px;border-radius:8px;font-size:15px;line-height:1.6;">
+                            ${n.message.replace(/\n/g, '<br>')}</div>`
+                        : '';
+                    body = msgHtml + driveLinkHtml || '<p style="color:#999;font-style:italic;">No content.</p>';
                 }
             } else {
                 body = '<p style="color:#999;font-style:italic;">Fill in the form to preview content.</p>';
