@@ -4616,7 +4616,8 @@
             filtered.forEach(item => {
                 const isActivity = ACTIVITY_CODES.has(item.code);
                 const displayCode = isActivity ? 'Activity' : item.code;
-                per.innerHTML += `<option value="${item.periods}">${item.periods} — ${displayCode}: ${item.subject}</option>`;
+                const displayName = getSubjectName(item.code) || item.subject;
+                per.innerHTML += `<option value="${item.periods}">${item.periods} — ${displayCode}: ${displayName}</option>`;
             });
 
             per.disabled = filtered.length === 0;
@@ -4654,7 +4655,8 @@
 
             if (item) {
                 // Display info in info box only (removed redundant subject field)
-                document.getElementById('info').innerHTML = `<strong>Period:</strong> ${item.periods}<br><strong>Subject:</strong> ${item.subject} (${item.code})`;
+                const liveSubjectName = getSubjectName(item.code) || item.subject;
+                document.getElementById('info').innerHTML = `<strong>Period:</strong> ${item.periods}<br><strong>Subject:</strong> ${liveSubjectName} (${item.code})`;
                 document.getElementById('info').classList.remove('hidden');
             }
         }
