@@ -4746,7 +4746,7 @@
             }
         }
 
-        function loadStudents() {
+        async function loadStudents() {
             const mode = document.querySelector('input[name="attMode"]:checked').value;
             const y = document.getElementById('year').value;
             const s = (y == 1) ? '1' : document.getElementById('sem').value;
