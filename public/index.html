@@ -2723,6 +2723,90 @@
                     <button class="btn btn-secondary" onclick="showTab('attendance')">Cancel</button>
                 </div>
             </div>
+
+            <!-- ═══ ATTENDANCE RECOVERY TAB (Admin Only) ═══ -->
+            <div id="attrecovery" class="tab-content">
+                <h2 style="color:#c0392b;margin-bottom:6px;">🛠️ Attendance Recovery</h2>
+                <p style="color:#666;font-size:13px;margin-bottom:20px;">Diagnose and clear corrupted attendance records. Only admin can access this.</p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Year</label>
+                        <select id="recYear" onchange="onRecYearChange()" class="form-control">
+                            <option value="">Select Year</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Semester</label>
+                        <select id="recSem" onchange="onRecSemChange()" class="form-control" disabled>
+                            <option value="">Select Year first</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="recDate" onchange="loadRecoveryPeriods()" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group" style="max-width:500px;margin-top:10px;">
+                    <label>Period (All periods posted for this date)</label>
+                    <select id="recPeriod" onchange="checkRecoveryStatus()" class="form-control" disabled>
+                        <option value="">Select Year / Sem / Date first</option>
+                    </select>
+                </div>
+
+                <!-- Diagnostic Panel -->
+                <div id="recDiagPanel" style="display:none;margin-top:22px;background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.08);max-width:560px;">
+                    <h3 style="margin:0 0 14px;color:#2a5298;font-size:16px;">📋 Attendance Diagnostic</h3>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:14px;margin-bottom:16px;">
+                        <div><strong>Faculty:</strong></div><div id="recFacultyName" style="color:#333;">—</div>
+                        <div><strong>Subject:</strong></div><div id="recSubjectInfo" style="color:#333;">—</div>
+                        <div><strong>Period:</strong></div><div id="recPeriodInfo" style="color:#333;">—</div>
+                    </div>
+
+                    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                        <thead>
+                            <tr style="background:#f0f4ff;">
+                                <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #dde3f5;">Record</th>
+                                <th style="padding:8px 12px;text-align:center;border-bottom:2px solid #dde3f5;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom:1px solid #f0f0f0;">
+                                <td style="padding:8px 12px;">🔒 Attendance Lock (PERIOD_FACULTY)</td>
+                                <td style="padding:8px 12px;text-align:center;" id="recStatusLock">—</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid #f0f0f0;">
+                                <td style="padding:8px 12px;">📄 Attendance Document</td>
+                                <td style="padding:8px 12px;text-align:center;" id="recStatusAtt">—</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid #f0f0f0;">
+                                <td style="padding:8px 12px;">📝 Topic Entry</td>
+                                <td style="padding:8px 12px;text-align:center;" id="recStatusTopic">—</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px 12px;">👥 Student Attendance Data</td>
+                                <td style="padding:8px 12px;text-align:center;" id="recStatusStudents">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div id="recSummaryMsg" style="margin-top:16px;padding:12px 16px;border-radius:8px;font-weight:600;font-size:14px;"></div>
+
+                    <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;">
+                        <button id="recCheckBtn" onclick="checkRecoveryStatus()" class="btn btn-secondary" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;">🔍 Refresh Status</button>
+                        <button id="recClearBtn" onclick="clearRecoveryAttendance()" class="btn btn-danger" disabled style="opacity:0.5;cursor:not-allowed;">🗑️ Clear Attendance</button>
+                    </div>
+
+                    <div id="recClearMsg" style="display:none;margin-top:14px;padding:12px 16px;background:#e8f5e9;border-left:4px solid #4caf50;border-radius:8px;color:#2e7d32;font-weight:600;"></div>
+                </div>
+
+                <div id="recLoading" style="display:none;color:#667eea;font-weight:600;margin-top:16px;">⏳ Checking records...</div>
+            </div>
         </div>
     </div>
 
@@ -3305,6 +3389,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'assignments\'); loadMyAssignments();">📝 Assignments</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'promotion\'); initPromotionTab();">🎓 Promotion</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'notifications\'); loadNotificationsList();">📢 Notifications</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attrecovery\'); initAttRecoveryTab();">🛠️ Att. Recovery</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logbook\'); initLogbookTab();">📔 Logbook</button>';
@@ -4713,21 +4798,41 @@
                     }
                 }
 
-                // ---- FIX 4: Block if period already has attendance posted ----
+                // ---- Block if period already has attendance posted (with corruption detection) ----
                 const periodList = getPeriodList(periods);
                 const facultyKey = `${date}_${y}_${s}`;
                 const postedData = PERIOD_FACULTY[facultyKey] || {};
                 const alreadyPosted = periodList.filter(p => postedData[p]);
 
                 if (alreadyPosted.length > 0) {
+                    // Corruption check: lock exists — verify attendance doc actually exists
+                    let attDoc = getAttData(date);
+                    if (!attDoc || Object.keys(attDoc).length === 0) {
+                        try {
+                            const fetched = await db.collection('attendance').doc(date).get();
+                            if (fetched.exists) { attDoc = fetched.data(); ATTENDANCE_CACHE['att_' + date] = attDoc; }
+                        } catch(e) { console.warn('[loadStudents] Firestore fetch failed:', e); }
+                    }
+                    const firstStudent = (STUDENTS[y]?.[s] || [])[0];
+                    const attExists = firstStudent && alreadyPosted.some(p => attDoc?.[firstStudent.pin]?.[p]);
+
                     const postedSubjects = [...new Set(alreadyPosted.map(p => postedData[p]?.subject || ''))].join(', ');
                     const postedBy = [...new Set(alreadyPosted.map(p => postedData[p]?.faculty || ''))].join(', ');
                     const wb = document.getElementById('warningBox');
-                    wb.innerHTML = `⛔ <strong>Already Posted:</strong> Attendance for Period${alreadyPosted.length > 1 ? 's' : ''} <strong>${alreadyPosted.join(', ')}</strong> has already been posted.<br>
-                        Subject: <strong>${postedSubjects}</strong> | By: <strong>${postedBy}</strong><br>
-                        Please select a different period.`;
+
+                    if (!attExists) {
+                        // CORRUPTED STATE: lock present but attendance data missing
+                        wb.innerHTML = `⚠️ <strong>Corrupted Attendance Record Detected.</strong><br>
+                            Attendance lock exists for Period <strong>${alreadyPosted.join(', ')}</strong> (posted by <strong>${postedBy}</strong>)<br>
+                            but the actual attendance data is <strong>missing</strong>.<br>
+                            Please contact the administrator or use the <strong>🛠️ Att. Recovery</strong> tab to clear and re-post.`;
+                    } else {
+                        wb.innerHTML = `⛔ <strong>Already Posted:</strong> Attendance for Period${alreadyPosted.length > 1 ? 's' : ''} <strong>${alreadyPosted.join(', ')}</strong> has already been posted.<br>
+                            Subject: <strong>${postedSubjects}</strong> | By: <strong>${postedBy}</strong><br>
+                            Please select a different period.`;
+                    }
                     wb.classList.remove('hidden');
-                    return; // Block - do not load students
+                    return;
                 }
 
             } else {
@@ -4767,16 +4872,31 @@
                     }
                 }
 
-                // Block if any selected period already has attendance posted
+                // Block if any selected period already has attendance posted (with corruption detection)
                 const facultyKey2 = `${date}_${y}_${s}`;
                 const postedData2 = PERIOD_FACULTY[facultyKey2] || {};
                 const alreadyPosted2 = selectedPeriods.filter(p => postedData2[p]);
 
                 if (alreadyPosted2.length > 0) {
+                    let attDoc2 = getAttData(date);
+                    if (!attDoc2 || Object.keys(attDoc2).length === 0) {
+                        try {
+                            const fetched2 = await db.collection('attendance').doc(date).get();
+                            if (fetched2.exists) { attDoc2 = fetched2.data(); ATTENDANCE_CACHE['att_' + date] = attDoc2; }
+                        } catch(e) { console.warn('[loadStudents other] Firestore fetch failed:', e); }
+                    }
+                    const firstStu2 = (STUDENTS[y]?.[s] || [])[0];
+                    const attExists2 = firstStu2 && alreadyPosted2.some(p => attDoc2?.[firstStu2.pin]?.[String(p)]);
                     const postedSubjects2 = [...new Set(alreadyPosted2.map(p => postedData2[p]?.subject || ''))].join(', ');
                     const postedBy2 = [...new Set(alreadyPosted2.map(p => postedData2[p]?.faculty || ''))].join(', ');
                     const wb = document.getElementById('warningBox');
-                    wb.innerHTML = `⛔ <strong>Already Posted:</strong> Attendance for Period${alreadyPosted2.length > 1 ? 's' : ''} <strong>${alreadyPosted2.join(', ')}</strong> already posted.<br>Subject: <strong>${postedSubjects2}</strong> | By: <strong>${postedBy2}</strong>`;
+                    if (!attExists2) {
+                        wb.innerHTML = `⚠️ <strong>Corrupted Attendance Record Detected.</strong><br>
+                            Lock exists for Period <strong>${alreadyPosted2.join(', ')}</strong> (by <strong>${postedBy2}</strong>) but attendance data is <strong>missing</strong>.<br>
+                            Please use the <strong>🛠️ Att. Recovery</strong> tab to clear and re-post.`;
+                    } else {
+                        wb.innerHTML = `⛔ <strong>Already Posted:</strong> Attendance for Period${alreadyPosted2.length > 1 ? 's' : ''} <strong>${alreadyPosted2.join(', ')}</strong> already posted.<br>Subject: <strong>${postedSubjects2}</strong> | By: <strong>${postedBy2}</strong>`;
+                    }
                     wb.classList.remove('hidden');
                     return;
                 }
@@ -4844,7 +4964,7 @@
             if (date) todayAttendance = { ...getAttData(date) };
         }
 
-        function submitAttendance() {
+        async function submitAttendance() {
             const y = document.getElementById('year').value;
             const s = (y == 1) ? '1' : document.getElementById('sem').value;
             const date = document.getElementById('date').value;
@@ -4855,7 +4975,7 @@
 
             const periodList = getPeriodList(periods);
 
-            // Store faculty & subject for each period in PERIOD_FACULTY database
+            // Build updated in-memory structures
             const facultyKey = `${date}_${y}_${s}`;
             if (!PERIOD_FACULTY[facultyKey]) PERIOD_FACULTY[facultyKey] = {};
 
@@ -4863,9 +4983,8 @@
                 if (!todayAttendance[st.pin]) todayAttendance[st.pin] = {};
                 const cb = document.getElementById(`cb_${i}`);
                 const status = cb.checked ? 'P' : 'A';
-
                 periodList.forEach(period => {
-                    const pKey = String(period); // always store as string
+                    const pKey = String(period);
                     todayAttendance[st.pin][pKey] = {
                         status: status,
                         faculty: USERS[currentUser].name,
@@ -4878,8 +4997,28 @@
                 });
             });
 
-            setAttData(date, todayAttendance);
-            saveSettings('periodFaculty', PERIOD_FACULTY);
+            // ── Atomic WriteBatch: both writes succeed or neither does ──
+            try {
+                const batch = db.batch();
+                // Write 1: attendance document
+                batch.set(db.collection('attendance').doc(date), todayAttendance);
+                // Write 2: periodFaculty lock
+                batch.set(db.collection('settings').doc('periodFaculty'), PERIOD_FACULTY, { merge: true });
+                await batch.commit();
+                // Update cache only after successful commit
+                ATTENDANCE_CACHE['att_' + date] = todayAttendance;
+            } catch (err) {
+                console.error('❌ submitAttendance batch failed:', err);
+                // Rollback in-memory changes to stay consistent
+                periodList.forEach(period => {
+                    const pKey = String(period);
+                    delete PERIOD_FACULTY[facultyKey][pKey];
+                    stu.forEach(st => { if (todayAttendance[st.pin]) delete todayAttendance[st.pin][pKey]; });
+                });
+                document.getElementById('msg').textContent = '❌ Failed to submit attendance. Please check your connection and try again.';
+                document.getElementById('msg').classList.remove('hidden');
+                return;
+            }
 
             const periodCount = periodList.length;
             document.getElementById('msg').textContent = `✓ Attendance submitted for ${periodCount} period${periodCount > 1 ? 's' : ''}: ${periods}`;
@@ -7073,7 +7212,15 @@
             });
 
             if (!hasAttendance) {
-                alert('No attendance found for this date and period. Please submit attendance first.');
+                // Check if a lock exists even though attendance data is missing (corrupted state)
+                const pfKeyEdit = `${date}_${y}_${s}`;
+                const pfDataEdit = PERIOD_FACULTY[pfKeyEdit] || {};
+                const lockExists = periodList.some(p => pfDataEdit[String(p)]);
+                if (lockExists) {
+                    alert('⚠️ Corrupted Attendance Record Detected.\n\nAttendance lock exists for this period but the actual attendance data is missing.\n\nPlease contact the administrator or use the 🛠️ Att. Recovery tab to clear and re-post.');
+                } else {
+                    alert('No attendance found for this date and period. Please submit attendance first.');
+                }
                 return;
             }
 
@@ -12393,6 +12540,313 @@ function _spawnPwdParticles() {
 document.getElementById('pwdSuccessModal').addEventListener('click', function(e){
     if (e.target === this) closePwdSuccessModal();
 });
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ATTENDANCE RECOVERY TAB  (Admin Only)
+// ═══════════════════════════════════════════════════
+
+function initAttRecoveryTab() {
+    // Reset the form each time the tab is opened
+    document.getElementById('recYear').value = '';
+    const semEl = document.getElementById('recSem');
+    semEl.innerHTML = '<option value="">Select Year first</option>';
+    semEl.disabled = true;
+    document.getElementById('recDate').value = '';
+    const perEl = document.getElementById('recPeriod');
+    perEl.innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+    perEl.disabled = true;
+    document.getElementById('recDiagPanel').style.display = 'none';
+    document.getElementById('recClearMsg').style.display = 'none';
+    document.getElementById('recLoading').style.display = 'none';
+}
+
+function onRecYearChange() {
+    const y = document.getElementById('recYear').value;
+    const semEl = document.getElementById('recSem');
+    semEl.innerHTML = '';
+    if (!y) {
+        semEl.innerHTML = '<option value="">Select Year first</option>';
+        semEl.disabled = true;
+    } else if (y == 1) {
+        semEl.innerHTML = '<option value="1">Year-wise Course</option>';
+        semEl.disabled = true;
+    } else if (y == 2) {
+        semEl.innerHTML = '<option value="">Select Semester</option><option value="3">Sem 3</option><option value="4">Sem 4</option>';
+        semEl.disabled = false;
+    } else if (y == 3) {
+        semEl.innerHTML = '<option value="">Select Semester</option><option value="5">Sem 5</option>';
+        semEl.disabled = false;
+    }
+    document.getElementById('recPeriod').innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+    document.getElementById('recPeriod').disabled = true;
+    document.getElementById('recDiagPanel').style.display = 'none';
+    document.getElementById('recClearMsg').style.display = 'none';
+    // If year 1, semester is auto-set — try loading periods if date already set
+    if (y == 1) loadRecoveryPeriods();
+}
+
+function onRecSemChange() {
+    document.getElementById('recPeriod').innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+    document.getElementById('recPeriod').disabled = true;
+    document.getElementById('recDiagPanel').style.display = 'none';
+    document.getElementById('recClearMsg').style.display = 'none';
+    loadRecoveryPeriods();
+}
+
+function loadRecoveryPeriods() {
+    const y = document.getElementById('recYear').value;
+    const s = (y == 1) ? '1' : document.getElementById('recSem').value;
+    const date = document.getElementById('recDate').value;
+    const perEl = document.getElementById('recPeriod');
+
+    document.getElementById('recDiagPanel').style.display = 'none';
+    document.getElementById('recClearMsg').style.display = 'none';
+
+    if (!y || !s || !date) {
+        perEl.innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+        perEl.disabled = true;
+        return;
+    }
+
+    // Collect ALL periods posted for this date/year/sem from PERIOD_FACULTY
+    const facultyKey = `${date}_${y}_${s}`;
+    const postedData = PERIOD_FACULTY[facultyKey] || {};
+    const postedPeriods = Object.keys(postedData).sort((a, b) => parseInt(a) - parseInt(b));
+
+    perEl.innerHTML = '<option value="">-- Select Posted Period --</option>';
+
+    if (postedPeriods.length === 0) {
+        perEl.innerHTML = '<option value="">No attendance posted for this date/class</option>';
+        perEl.disabled = true;
+        return;
+    }
+
+    // Group consecutive periods into range strings (e.g. 1,2,3 → 1-3) for display
+    // but keep individual period keys for selection
+    // Build unique period-group entries from timetable to group properly
+    const day = getDayFromDate(date);
+    const ttKey = `${y}-${s}-${day}`;
+    const schedule = TIMETABLE[ttKey] || [];
+
+    const addedGroups = new Set();
+    schedule.forEach(item => {
+        const pList = getPeriodList(item.periods);
+        const hasPosted = pList.some(p => postedData[p]);
+        if (hasPosted && !addedGroups.has(item.periods)) {
+            addedGroups.add(item.periods);
+            const firstP = pList[0];
+            const faculty = postedData[firstP]?.faculty || '?';
+            const subjectCode = postedData[firstP]?.subject || '?';
+            const subjectName = getSubjectName(subjectCode) || subjectCode;
+            const opt = document.createElement('option');
+            opt.value = item.periods;
+            opt.textContent = `${item.periods} — ${subjectCode}: ${subjectName} (${faculty})`;
+            perEl.appendChild(opt);
+        }
+    });
+
+    // Also add any periods from PERIOD_FACULTY that are NOT in timetable (extra class, other mode)
+    postedPeriods.forEach(p => {
+        // Check if this period is already covered by a timetable group
+        let covered = false;
+        addedGroups.forEach(grp => { if (getPeriodList(grp).includes(p)) covered = true; });
+        if (!covered) {
+            const faculty = postedData[p]?.faculty || '?';
+            const subjectCode = postedData[p]?.subject || '?';
+            const subjectName = getSubjectName(subjectCode) || subjectCode;
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = `${p} — ${subjectCode}: ${subjectName} (${faculty})`;
+            perEl.appendChild(opt);
+        }
+    });
+
+    perEl.disabled = false;
+}
+
+// _recCtx stores context for the currently selected recovery period
+let _recCtx = null;
+
+async function checkRecoveryStatus() {
+    const y = document.getElementById('recYear').value;
+    const s = (y == 1) ? '1' : document.getElementById('recSem').value;
+    const date = document.getElementById('recDate').value;
+    const periods = document.getElementById('recPeriod').value;
+
+    if (!y || !s || !date || !periods) return;
+
+    const periodList = getPeriodList(periods);
+    const facultyKey = `${date}_${y}_${s}`;
+    const postedData = PERIOD_FACULTY[facultyKey] || {};
+    const firstP = periodList[0];
+
+    const faculty = postedData[firstP]?.faculty || '—';
+    const subjectCode = postedData[firstP]?.subject || '—';
+    const subjectName = getSubjectName(subjectCode) || subjectCode;
+
+    document.getElementById('recFacultyName').textContent = faculty;
+    document.getElementById('recSubjectInfo').textContent = `${subjectCode} — ${subjectName}`;
+    document.getElementById('recPeriodInfo').textContent = periods;
+    document.getElementById('recDiagPanel').style.display = 'block';
+    document.getElementById('recClearMsg').style.display = 'none';
+    document.getElementById('recLoading').style.display = 'block';
+
+    // Save context for clear operation
+    _recCtx = { y, s, date, periods, periodList, facultyKey, subjectCode };
+
+    const badge = (ok) => ok
+        ? '<span style="color:#2e7d32;font-weight:700;">✅ Found</span>'
+        : '<span style="color:#c62828;font-weight:700;">❌ Missing</span>';
+
+    // 1. Attendance Lock
+    const lockExists = periodList.some(p => postedData[p]);
+    document.getElementById('recStatusLock').innerHTML = badge(lockExists);
+
+    // 2. Attendance Document + student data
+    let attDoc = {};
+    try {
+        const snap = await db.collection('attendance').doc(date).get();
+        if (snap.exists) {
+            attDoc = snap.data();
+            ATTENDANCE_CACHE['att_' + date] = attDoc;
+        }
+    } catch(e) { console.warn('[Recovery] Att fetch error:', e); }
+
+    const students = STUDENTS[y]?.[s] || [];
+    const attDocExists = Object.keys(attDoc).length > 0;
+    const studentDataExists = attDocExists && students.some(st => periodList.some(p => attDoc[st.pin]?.[p]));
+    document.getElementById('recStatusAtt').innerHTML = badge(attDocExists);
+    document.getElementById('recStatusStudents').innerHTML = badge(studentDataExists);
+
+    // 3. Topic entry
+    let topicExists = false;
+    try {
+        const topicSnap = await db.collection('dailyTopics').doc(date).get();
+        if (topicSnap.exists) {
+            const data = topicSnap.data();
+            const yearSem = (y == 1) ? '1-1' : `${y}-${s}`;
+            // Check for any topic key matching this yearSem+period combo
+            topicExists = Object.keys(data).some(k => k.startsWith(yearSem) && k.includes(periods.replace('-', '_')));
+            if (!topicExists) {
+                // Looser check: any topic entry for this yearSem and subject
+                topicExists = Object.values(data).some(v => v?.yearSem === yearSem && v?.subject === subjectCode);
+            }
+        }
+    } catch(e) { console.warn('[Recovery] Topic fetch error:', e); }
+    document.getElementById('recStatusTopic').innerHTML = badge(topicExists);
+
+    document.getElementById('recLoading').style.display = 'none';
+
+    // Summary verdict
+    const summaryEl = document.getElementById('recSummaryMsg');
+    const clearBtn = document.getElementById('recClearBtn');
+
+    const isConsistent = lockExists && studentDataExists;
+    if (isConsistent) {
+        summaryEl.style.background = '#e8f5e9';
+        summaryEl.style.color = '#2e7d32';
+        summaryEl.textContent = '✅ Attendance is consistent. No action needed.';
+        clearBtn.disabled = true;
+        clearBtn.style.opacity = '0.5';
+        clearBtn.style.cursor = 'not-allowed';
+    } else {
+        summaryEl.style.background = '#fff3e0';
+        summaryEl.style.color = '#e65100';
+        summaryEl.innerHTML = '⚠️ <strong>Corrupted or incomplete attendance detected.</strong> Use "Clear Attendance" to remove all records for this period so the faculty can re-post.';
+        clearBtn.disabled = false;
+        clearBtn.style.opacity = '1';
+        clearBtn.style.cursor = 'pointer';
+    }
+}
+
+async function clearRecoveryAttendance() {
+    if (!_recCtx) { alert('Please select a period first.'); return; }
+    const { y, s, date, periods, periodList, facultyKey, subjectCode } = _recCtx;
+    const students = STUDENTS[y]?.[s] || [];
+    const faculty = PERIOD_FACULTY[facultyKey]?.[periodList[0]]?.faculty || '?';
+
+    const confirmed = confirm(
+        `⚠️ CONFIRM CLEAR\n\nThis will permanently delete all attendance records for:\n` +
+        `Date: ${date}\nYear/Sem: ${y}/${s}\nPeriod(s): ${periods}\nSubject: ${subjectCode}\nPosted by: ${faculty}\n\n` +
+        `The faculty will be able to re-post attendance after this.\n\nAre you sure?`
+    );
+    if (!confirmed) return;
+
+    document.getElementById('recLoading').style.display = 'block';
+    document.getElementById('recLoading').textContent = '⏳ Clearing records...';
+
+    try {
+        const batch = db.batch();
+
+        // 1. Remove period entries from PERIOD_FACULTY lock
+        const updatedPF = { ...PERIOD_FACULTY };
+        if (updatedPF[facultyKey]) {
+            periodList.forEach(p => delete updatedPF[facultyKey][p]);
+            if (Object.keys(updatedPF[facultyKey]).length === 0) delete updatedPF[facultyKey];
+        }
+        batch.set(db.collection('settings').doc('periodFaculty'), updatedPF);
+
+        // 2. Remove period data from attendance document (per student)
+        let attDoc = {};
+        try {
+            const snap = await db.collection('attendance').doc(date).get();
+            if (snap.exists) attDoc = { ...snap.data() };
+        } catch(e) {}
+        students.forEach(st => {
+            if (attDoc[st.pin]) {
+                periodList.forEach(p => delete attDoc[st.pin][p]);
+            }
+        });
+        batch.set(db.collection('attendance').doc(date), attDoc);
+
+        // 3. Remove topic entry for this period if exists
+        try {
+            const topicSnap = await db.collection('dailyTopics').doc(date).get();
+            if (topicSnap.exists) {
+                const topicData = { ...topicSnap.data() };
+                const yearSem = (y == 1) ? '1-1' : `${y}-${s}`;
+                Object.keys(topicData).forEach(k => {
+                    if (topicData[k]?.yearSem === yearSem && topicData[k]?.subject === subjectCode) {
+                        const pl = getPeriodList(topicData[k]?.periods || '');
+                        if (pl.some(p => periodList.includes(p))) delete topicData[k];
+                    }
+                });
+                batch.set(db.collection('dailyTopics').doc(date), topicData);
+            }
+        } catch(e) { console.warn('[Recovery] Topic clear skipped:', e); }
+
+        await batch.commit();
+
+        // Update in-memory structures
+        PERIOD_FACULTY = updatedPF;
+        ATTENDANCE_CACHE['att_' + date] = attDoc;
+
+        document.getElementById('recLoading').style.display = 'none';
+
+        const clearMsg = document.getElementById('recClearMsg');
+        clearMsg.textContent = `✅ Attendance cleared successfully for Period ${periods} on ${date}. Faculty can now reload students and post attendance again.`;
+        clearMsg.style.display = 'block';
+
+        // Disable clear button and refresh diagnostics
+        document.getElementById('recClearBtn').disabled = true;
+        document.getElementById('recClearBtn').style.opacity = '0.5';
+        document.getElementById('recClearBtn').style.cursor = 'not-allowed';
+
+        // Refresh the period dropdown and status
+        loadRecoveryPeriods();
+        // Reset selection
+        document.getElementById('recPeriod').value = '';
+        document.getElementById('recDiagPanel').style.display = 'none';
+        _recCtx = null;
+
+    } catch(err) {
+        document.getElementById('recLoading').style.display = 'none';
+        console.error('[Recovery] Clear failed:', err);
+        alert('❌ Failed to clear attendance records. Error: ' + err.message + '\n\nPlease check your connection and try again.');
+    }
+}
 </script>
 </body>
 
