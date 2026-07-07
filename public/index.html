@@ -708,6 +708,194 @@
                 margin-top: 10px;
             }
         }
+
+        /* ══════════════ ABSENT LIST TAB CSS ══════════════ */
+        .al-section-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 18px 24px;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .al-section-header h2 { font-size: 20px; margin: 0; }
+        .al-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            margin-bottom: 24px;
+            overflow: hidden;
+            border: 1px solid #e0e7ff;
+        }
+        .al-card-body { padding: 22px; }
+        .al-badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0;
+        }
+        .al-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .al-badge-blue  { background: #e3f0ff; color: #1565c0; border: 1px solid #90caf9; }
+        .al-badge-green { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .al-badge-red   { background: #ffeaea; color: #c62828; border: 1px solid #ef9a9a; }
+        .al-badge-orange{ background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+        .al-badge-purple{ background: #ede7f6; color: #4527a0; border: 1px solid #b39ddb; }
+        .al-alert-consec {
+            background: linear-gradient(135deg, #fff8e1, #fff3cd);
+            border-left: 4px solid #f9a825;
+            border-radius: 0 8px 8px 0;
+            padding: 12px 18px;
+            margin: 14px 0;
+            font-size: 13px;
+            color: #856404;
+        }
+        .al-view-toggle {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .al-view-btn {
+            padding: 9px 18px;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            background: white;
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .al-view-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        .al-view-btn:hover:not(.active) { background: #f0f4ff; }
+        .al-matrix-wrap { overflow-x: auto; margin-top: 12px; }
+        .al-matrix-table {
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 100%;
+            background: white;
+        }
+        .al-matrix-table th {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 8px 10px;
+            text-align: center;
+            white-space: nowrap;
+            border: 1px solid #3a5fad;
+            font-size: 11px;
+        }
+        .al-matrix-table td {
+            padding: 7px 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            white-space: nowrap;
+        }
+        .al-matrix-table tr:nth-child(even) td { background: #f8f9ff; }
+        .al-cell-a  { background: #ffebee !important; color: #c62828; font-weight: 800; font-size: 13px; }
+        .al-cell-p  { color: #2e7d32; font-weight: 700; }
+        .al-cell-dash { color: #bbb; }
+        .al-cell-total { background: #fff8e1 !important; color: #e65100; font-weight: 800; font-size: 13px; }
+        .al-total-row td {
+            background: linear-gradient(135deg, #e8f5e9, #f1f8e9) !important;
+            color: #2e7d32;
+            font-weight: 800;
+            font-size: 13px;
+            border-top: 2px solid #81c784;
+        }
+        .al-pin-col { text-align: left !important; font-weight: 700; color: #1e3c72; }
+        .al-name-col { text-align: left !important; color: #333; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+        .al-day-header {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-left: 4px solid #1565c0;
+            padding: 10px 16px;
+            margin: 22px 0 8px;
+            border-radius: 0 8px 8px 0;
+            font-weight: 700;
+            color: #1565c0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .al-daytable-wrap { margin-bottom: 28px; overflow-x: auto; }
+        .al-daytable {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 12.5px;
+            background: white;
+        }
+        .al-daytable th {
+            background: linear-gradient(135deg, #283593, #3949ab);
+            color: white;
+            padding: 9px 14px;
+            text-align: left;
+            border: 1px solid #3d5afe;
+            font-size: 12px;
+        }
+        .al-daytable td {
+            padding: 8px 14px;
+            border: 1px solid #e0e0e0;
+        }
+        .al-daytable tr:nth-child(even) td { background: #f9f9ff; }
+        .al-daytable tr:hover td { background: #f0f4ff; }
+        .al-abs-count-red { color: #c62828; font-weight: 800; }
+        .al-abs-count-zero { color: #2e7d32; font-style: italic; }
+        .al-absent-pins { color: #c62828; font-weight: 700; font-family: monospace; font-size: 12px; }
+        .al-reg-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 12.5px;
+            background: white;
+            margin-bottom: 30px;
+        }
+        .al-reg-table th {
+            background: linear-gradient(135deg, #004d40, #00695c);
+            color: white;
+            padding: 9px 10px;
+            text-align: center;
+            border: 1px solid #00897b;
+            white-space: nowrap;
+        }
+        .al-reg-table td {
+            padding: 7px 10px;
+            text-align: center;
+            border: 1px solid #b2dfdb;
+        }
+        .al-reg-table tr:nth-child(even) td { background: #e0f2f1; }
+        .al-loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .al-spinner {
+            display: inline-block;
+            width: 32px; height: 32px;
+            border: 4px solid #e0e7ff;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .al-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+        /* ══════════════════════════════════════════════════ */
     </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -2725,6 +2913,84 @@
             </div>
 
             <!-- ═══ ATTENDANCE RECOVERY TAB (Admin Only) ═══ -->
+            <!-- ══════════════ ABSENT LIST TAB ══════════════ -->
+            <div id="absentlist" class="tab-content">
+
+                <!-- Header -->
+                <div class="al-card">
+                    <div class="al-section-header">
+                        <span style="font-size:28px;">📋</span>
+                        <div>
+                            <h2>Absent List Generator</h2>
+                            <div style="font-size:12px;opacity:0.85;margin-top:3px;">Period-wise &amp; Day-wise absent report for any date range</div>
+                        </div>
+                    </div>
+
+                    <div class="al-card-body">
+                        <!-- Filters -->
+                        <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+                            <div class="form-group">
+                                <label>📚 Year / Semester</label>
+                                <select id="al_yearSem" onchange="absList_onYearSemChange()">
+                                    <option value="">-- Select --</option>
+                                    <option value="1-1">Year 1  (Sem 1)</option>
+                                    <option value="2-3">2nd Year – Semester 3</option>
+                                    <option value="2-4">2nd Year – Semester 4</option>
+                                    <option value="3-5">3rd Year – Semester 5</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>📅 From Date</label>
+                                <input type="date" id="al_fromDate">
+                            </div>
+                            <div class="form-group">
+                                <label>📅 To Date</label>
+                                <input type="date" id="al_toDate">
+                            </div>
+                            <div class="form-group">
+                                <label>📖 Subject <span style="color:#888;font-weight:400;">(optional)</span></label>
+                                <select id="al_subject">
+                                    <option value="">All Subjects</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="al-btn-row">
+                            <button class="btn btn-primary" onclick="absList_loadData()" id="al_viewBtn">👁 View Absent List</button>
+                            <button class="btn btn-danger" onclick="absList_downloadPDF()" id="al_pdfBtn" disabled style="opacity:0.5;">📥 Download PDF</button>
+                            <button class="btn btn-success" onclick="absList_downloadExcel()" id="al_xlsBtn" disabled style="opacity:0.5;">📊 Download Excel</button>
+                        </div>
+
+                        <div id="al_msg" style="display:none;margin-top:10px;"></div>
+                    </div>
+                </div>
+
+                <!-- Results area -->
+                <div id="al_results" style="display:none;">
+
+                    <!-- Summary badges -->
+                    <div id="al_badgeRow" class="al-badge-row"></div>
+
+                    <!-- Consecutive absence alert -->
+                    <div id="al_consecAlert" style="display:none;" class="al-alert-consec"></div>
+
+                    <!-- View toggles -->
+                    <div class="al-view-toggle">
+                        <button class="al-view-btn active" id="al_btnMatrix" onclick="absList_switchView('matrix')">📅 Period-wise Matrix</button>
+                        <button class="al-view-btn" id="al_btnDaywise" onclick="absList_switchView('daywise')">📆 Day-wise Summary</button>
+                        <button class="al-view-btn" id="al_btnRegister" onclick="absList_switchView('register')">📋 Register Format</button>
+                    </div>
+
+                    <!-- View containers -->
+                    <div id="al_viewMatrix"></div>
+                    <div id="al_viewDaywise" style="display:none;"></div>
+                    <div id="al_viewRegister" style="display:none;"></div>
+                </div>
+
+            </div>
+            <!-- ══════════════════════════════════════════════ -->
+
             <div id="attrecovery" class="tab-content">
                 <h2 style="color:#c0392b;margin-bottom:6px;">🛠️ Attendance Recovery</h2>
                 <p style="color:#666;font-size:13px;margin-bottom:20px;">Diagnose and clear corrupted attendance records. Only admin can access this.</p>
@@ -3390,6 +3656,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'promotion\'); initPromotionTab();">🎓 Promotion</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'notifications\'); loadNotificationsList();">📢 Notifications</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attrecovery\'); initAttRecoveryTab();">🛠️ Att. Recovery</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'absentlist\'); absList_onTabOpen();">📋 Absent List</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logbook\'); initLogbookTab();">📔 Logbook</button>';
@@ -12847,6 +13114,704 @@ async function clearRecoveryAttendance() {
         alert('❌ Failed to clear attendance records. Error: ' + err.message + '\n\nPlease check your connection and try again.');
     }
 }
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║             ABSENT LIST MODULE  (absList_ prefix)           ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let al_students   = [];
+let al_matrix     = {};   // pin → { 'YYYY-MM-DD__Pp': 'A'|'P' }
+let al_dates      = [];   // sorted unique dates in range
+let al_periods    = {};   // date → Set of period numbers that have data
+let al_subjectLabel = 'All Subjects';
+let al_ysLabel    = '';
+let al_dataLoaded = false;
+
+const AL_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const AL_DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function al_fmt(dateStr) {
+    const [y,m,d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+}
+function al_fmtShort(dateStr) {
+    const [,m,d] = dateStr.split('-');
+    return `${d}/${m}`;
+}
+function al_dayName(dateStr) {
+    const [y,m,d] = dateStr.split('-').map(Number);
+    return AL_DAYS[new Date(y,m-1,d).getDay()];
+}
+function al_dayNameFull(dateStr) {
+    const [y,m,d] = dateStr.split('-').map(Number);
+    return AL_DAYS_FULL[new Date(y,m-1,d).getDay()];
+}
+function al_msg(txt, color) {
+    const el = document.getElementById('al_msg');
+    el.style.display = 'block';
+    el.style.background = color === 'red' ? '#ffeaea' : color === 'green' ? '#e8f5e9' : '#e3f0ff';
+    el.style.color = color === 'red' ? '#c62828' : color === 'green' ? '#2e7d32' : '#1565c0';
+    el.style.padding = '12px 16px';
+    el.style.borderRadius = '8px';
+    el.style.fontWeight = '600';
+    el.style.fontSize = '14px';
+    el.textContent = txt;
+}
+function al_clearMsg() {
+    const el = document.getElementById('al_msg');
+    if (el) el.style.display = 'none';
+}
+
+function absList_onTabOpen() {
+    // nothing to auto-load; just focus
+}
+
+async function absList_onYearSemChange() {
+    const ys = document.getElementById('al_yearSem').value;
+    const subjSel = document.getElementById('al_subject');
+    subjSel.innerHTML = '<option value="">All Subjects</option>';
+    if (!ys) return;
+
+    // Parse year and sem from the value (e.g. '1-1', '2-3', '2-4', '3-5')
+    const [y, s] = ys.split('-');
+
+    // Use existing SUBJECTS global + isSubjectForYearSem (same as timetable tab)
+    if (typeof SUBJECTS === 'object' && Object.keys(SUBJECTS).length > 0) {
+        const matched = [];
+        Object.keys(SUBJECTS).sort().forEach(code => {
+            if (typeof isSubjectForYearSem === 'function' && !isSubjectForYearSem(code, y, s)) return;
+            const name = (typeof getSubjectName === 'function') ? getSubjectName(code) : (SUBJECTS[code]?.name || code);
+            matched.push({ code, name });
+        });
+        matched.forEach(sub => {
+            const opt = document.createElement('option');
+            opt.value = sub.code;
+            opt.textContent = `${sub.code} – ${sub.name}`;
+            subjSel.appendChild(opt);
+        });
+    }
+}
+
+async function absList_loadData() {
+    const ys       = document.getElementById('al_yearSem').value;
+    const subj     = document.getElementById('al_subject').value;
+    const fromDate = document.getElementById('al_fromDate').value;
+    const toDate   = document.getElementById('al_toDate').value;
+
+    al_clearMsg();
+    if (!ys)       { al_msg('⚠️ Please select Year / Semester', 'red'); return; }
+    if (!fromDate) { al_msg('⚠️ Please enter From Date', 'red'); return; }
+    if (!toDate)   { al_msg('⚠️ Please enter To Date', 'red'); return; }
+    if (fromDate > toDate) { al_msg('⚠️ From Date must be ≤ To Date', 'red'); return; }
+
+    const ysLabels = { '1-1':'Year 1', '2-3':'Semester 3', '2-4':'Semester 4', '3-5':'Semester 5' };
+    al_ysLabel = ysLabels[ys] || ys;
+    const [al_y, al_s] = ys.split('-');
+    const subjOpt = document.getElementById('al_subject').options[document.getElementById('al_subject').selectedIndex];
+    al_subjectLabel = subj ? subjOpt.textContent : 'All Subjects';
+
+    // Show loading
+    document.getElementById('al_results').style.display = 'none';
+    al_msg('⏳ Loading attendance data…', 'blue');
+    document.getElementById('al_viewBtn').disabled = true;
+
+    try {
+        // ── STEP 1: load students ──
+        al_students = [];
+        if (typeof STUDENTS === 'object' && STUDENTS[al_y]) {
+            const semStudents = STUDENTS[al_y]?.[al_s] || STUDENTS[al_y]?.['1'] || [];
+            al_students = [...semStudents].sort((a,b) => a.name.localeCompare(b.name));
+        }
+        // fallback: direct Firestore
+        if (!al_students.length) {
+            const stSnap = await db.collection('students').where('yearSem','==',ys).get();
+            stSnap.forEach(d => al_students.push(d.data()));
+            al_students.sort((a,b) => a.name.localeCompare(b.name));
+        }
+        if (!al_students.length) { al_msg('⚠️ No students found for this class', 'red'); document.getElementById('al_viewBtn').disabled = false; return; }
+
+        // ── STEP 2: build date range (skip sundays & holidays) ──
+        al_dates = [];
+        let cur = new Date(fromDate);
+        const endD = new Date(toDate);
+        while (cur <= endD) {
+            const ds = localYMD(cur);
+            if (!isSunday(ds) && !isHoliday(ds)) al_dates.push(ds);
+            cur.setDate(cur.getDate() + 1);
+        }
+        if (!al_dates.length) { al_msg('⚠️ No working days in selected range', 'red'); document.getElementById('al_viewBtn').disabled = false; return; }
+
+        // ── STEP 3: build matrix from ATTENDANCE_CACHE ──
+        al_matrix  = {};
+        al_periods = {};
+        al_students.forEach(st => { al_matrix[st.pin] = {}; });
+
+        // Helper: parse period string like '1','2-4','1,3,5' into array of ints
+        function al_parsePeriods(pStr) {
+            const s = String(pStr).trim();
+            if (s.includes('-')) {
+                const [a,b] = s.split('-').map(Number);
+                const arr = [];
+                for (let i=a; i<=b; i++) arr.push(i);
+                return arr;
+            }
+            return s.split(',').map(Number).filter(n => !isNaN(n));
+        }
+
+        // Helper: get timetable periods for a date (from TIMETABLE global)
+        function al_getTTPeriods(dateStr) {
+            const [yr, mo, dy] = dateStr.split('-').map(Number);
+            const dayOfWeek = new Date(yr, mo-1, dy).getDay();
+            const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            const dayName = dayNames[dayOfWeek];
+            const key = `${al_y}-${al_s}-${dayName}`;
+            const entries = (typeof TIMETABLE !== 'undefined' && TIMETABLE[key]) ? TIMETABLE[key] : [];
+            const periods = new Set();
+            entries.forEach(e => { al_parsePeriods(e.periods).forEach(p => periods.add(p)); });
+            return periods; // Set of period numbers from timetable
+        }
+
+        al_dates.forEach(date => {
+            const att = getAttData(date);   // { pin: { 1:{status,subjectCode}, ... }, ... }
+            const ttPeriods = al_getTTPeriods(date); // periods defined in timetable for this day
+            al_periods[date] = new Set();
+
+            Object.entries(att).forEach(([pin, periodMap]) => {
+                if (!al_matrix[pin]) return; // skip non-class students
+                Object.entries(periodMap).forEach(([pNum, pData]) => {
+                    if (!pData || typeof pData !== 'object') return;
+                    const pCode = pData.subjectCode || pData.subject || '';
+                    if (subj && pCode && pCode !== subj) return; // filter by subject
+                    const status = pData.status || 'P';
+                    const key = `${date}__P${pNum}`;
+                    al_matrix[pin][key] = status;
+                    al_periods[date].add(parseInt(pNum));
+                });
+            });
+
+            // If timetable has periods for this day but no attendance data, still mark those periods
+            // so they show in the matrix (will appear as '–')
+            ttPeriods.forEach(p => al_periods[date].add(p));
+        });
+
+        // ── STEP 4: filter to only dates that have any data ──
+        al_dates = al_dates.filter(d => al_periods[d].size > 0);
+        if (!al_dates.length) {
+            al_msg('ℹ️ No attendance data found for this class/range. (Attendance may not have been submitted yet.)', 'blue');
+            document.getElementById('al_viewBtn').disabled = false;
+            return;
+        }
+
+        al_dataLoaded = true;
+
+        // ── STEP 5: render badges ──
+        absList_renderBadges(fromDate, toDate);
+
+        // ── STEP 6: consecutive alert ──
+        absList_checkConsecutive();
+
+        // ── STEP 7: render default view ──
+        absList_switchView('matrix');
+
+        document.getElementById('al_results').style.display = 'block';
+        document.getElementById('al_pdfBtn').disabled = false;
+        document.getElementById('al_pdfBtn').style.opacity = '1';
+        document.getElementById('al_xlsBtn').disabled = false;
+        document.getElementById('al_xlsBtn').style.opacity = '1';
+        al_msg('✅ Data loaded successfully — ' + al_dates.length + ' working day(s)', 'green');
+
+    } catch(err) {
+        console.error('[AbsList]', err);
+        al_msg('❌ Error loading data: ' + err.message, 'red');
+    }
+    document.getElementById('al_viewBtn').disabled = false;
+}
+
+function absList_renderBadges(fromDate, toDate) {
+    const totalAbsent = al_students.filter(st => {
+        const pMap = al_matrix[st.pin] || {};
+        return Object.values(pMap).some(v => v === 'A');
+    }).length;
+
+    let html = `
+        <span class="al-badge al-badge-blue">📅 ${al_fmt(fromDate)} → ${al_fmt(toDate)}</span>
+        <span class="al-badge al-badge-purple">🏫 ${al_ysLabel} | ${al_subjectLabel}</span>
+        <span class="al-badge al-badge-green">👥 ${al_students.length} Students</span>
+        <span class="al-badge al-badge-blue">📅 ${al_dates.length} Days</span>
+        <span class="al-badge al-badge-red">👤 ${totalAbsent} Students with Absence</span>
+    `;
+    document.getElementById('al_badgeRow').innerHTML = html;
+}
+
+function absList_checkConsecutive() {
+    const alerts = [];
+    al_students.forEach(st => {
+        let maxRun = 0, run = 0;
+        let runStart = '', maxStart = '', maxEnd = '';
+        al_dates.forEach(date => {
+            const dayAtt = al_matrix[st.pin] || {};
+            const periods = [...(al_periods[date] || [])].sort();
+            const allAbsent = periods.length > 0 && periods.every(p => (dayAtt[`${date}__P${p}`] || '') === 'A');
+            if (allAbsent) {
+                run++;
+                if (run === 1) runStart = date;
+                if (run > maxRun) { maxRun = run; maxStart = runStart; maxEnd = date; }
+            } else { run = 0; }
+        });
+        if (maxRun >= 3) alerts.push({ pin: st.pin, name: st.name, days: maxRun, from: maxStart, to: maxEnd });
+    });
+    const el = document.getElementById('al_consecAlert');
+    if (alerts.length) {
+        const list = alerts.map(a => `📛 <strong>${a.pin}</strong> ${a.name} – <strong>${a.days}</strong> days (${al_fmt(a.from)} – ${al_fmt(a.to)})`).join('  &nbsp;|&nbsp;  ');
+        el.innerHTML = `<strong>⚠️ Consecutive Absence Alert (3+ days):</strong><br>${list}`;
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+function absList_switchView(view) {
+    ['matrix','daywise','register'].forEach(v => {
+        document.getElementById('al_view' + (v === 'matrix' ? 'Matrix' : v === 'daywise' ? 'Daywise' : 'Register')).style.display = (v === view) ? '' : 'none';
+        const btn = document.getElementById('al_btn' + (v === 'matrix' ? 'Matrix' : v === 'daywise' ? 'Daywise' : 'Register'));
+        if (btn) { btn.classList.toggle('active', v === view); }
+    });
+    if (view === 'matrix')   absList_renderMatrix(document.getElementById('al_viewMatrix'));
+    if (view === 'daywise')  absList_renderDaywise(document.getElementById('al_viewDaywise'));
+    if (view === 'register') absList_renderRegister(document.getElementById('al_viewRegister'));
+}
+
+// ─── VIEW 1: PERIOD-WISE MATRIX (separate table per day) ──────────────────
+function absList_renderMatrix(container) {
+    if (!al_dataLoaded) return;
+    // Students with at least 1 absent
+    const absentStudents = al_students.filter(st =>
+        Object.values(al_matrix[st.pin] || {}).some(v => v === 'A'));
+    if (!absentStudents.length) {
+        container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found in this range.</div>';
+        return;
+    }
+
+    let html = '';
+    al_dates.forEach(date => {
+        const periods = [...(al_periods[date] || [])].sort((a,b) => a - b);
+        if (!periods.length) return;
+
+        // filter to students with absence on this day
+        const dayAbsent = absentStudents.filter(st =>
+            periods.some(p => (al_matrix[st.pin] || {})[`${date}__P${p}`] === 'A'));
+
+        html += `<div class="al-day-header">📅 ${al_fmt(date)} &nbsp;|&nbsp; ${al_dayNameFull(date)}</div>`;
+        html += '<div class="al-daytable-wrap"><table class="al-matrix-table">';
+
+        // Header row
+        html += '<thead><tr>';
+        html += '<th style="min-width:90px;">PIN</th>';
+        html += '<th style="min-width:150px;">Name</th>';
+        periods.forEach(p => { html += `<th>P${p}</th>`; });
+        html += '<th style="background:#e65100;">Total Absent</th>';
+        html += '</tr></thead><tbody>';
+
+        dayAbsent.forEach(st => {
+            const pMap = al_matrix[st.pin] || {};
+            let rowAbsent = 0;
+            html += '<tr>';
+            html += `<td class="al-pin-col">${st.pin}</td>`;
+            html += `<td class="al-name-col" title="${st.name}">${st.name}</td>`;
+            periods.forEach(p => {
+                const key = `${date}__P${p}`;
+                const val = pMap[key];
+                if (val === 'A') {
+                    html += '<td class="al-cell-a">A</td>';
+                    rowAbsent++;
+                } else if (val === 'P') {
+                    html += '<td class="al-cell-p">P</td>';
+                } else {
+                    html += '<td class="al-cell-dash">–</td>';
+                }
+            });
+            html += `<td class="al-cell-total">${rowAbsent}</td>`;
+            html += '</tr>';
+        });
+
+        // Total row: merge PIN+Name+all period cols into label, last cell = student count
+        const totalCols = 2 + periods.length; // PIN + Name + periods
+        html += '<tr class="al-total-row">';
+        html += `<td colspan="${totalCols}" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
+        html += `<td style="font-weight:800;color:#c62828;">${dayAbsent.length}</td>`;
+        html += '</tr>';
+
+        html += '</tbody></table></div>';
+    });
+    container.innerHTML = html;
+}
+
+// ─── VIEW 2: DAY-WISE SUMMARY (separate table per day) ────────────────────
+function absList_renderDaywise(container) {
+    if (!al_dataLoaded) return;
+    let html = '';
+    al_dates.forEach(date => {
+        const periods = [...(al_periods[date] || [])].sort((a,b) => a - b);
+        if (!periods.length) return;
+        html += `<div class="al-day-header">📆 ${al_fmt(date)} &nbsp;|&nbsp; ${al_dayNameFull(date)}</div>`;
+        html += '<div class="al-daytable-wrap"><table class="al-daytable">';
+        html += '<thead><tr><th>Period</th><th>Total No. of Students Absent</th><th>Absent PINs &amp; Names</th></tr></thead><tbody>';
+
+        let dayAbsentSet = new Set();
+        periods.forEach(p => {
+            const absentList = al_students.filter(st => (al_matrix[st.pin] || {})[`${date}__P${p}`] === 'A');
+            absentList.forEach(st => dayAbsentSet.add(st.pin));
+            if (!absentList.length) {
+                html += `<tr><td><strong>P${p}</strong></td><td class="al-abs-count-zero">—</td><td style="color:#2e7d32;font-style:italic;">All Present ✅</td></tr>`;
+            } else {
+                const pins = absentList.map(st => `<span class="al-absent-pins">${st.pin} (${st.name})</span>`).join(', ');
+                html += `<tr><td><strong>P${p}</strong></td><td class="al-abs-count-red">${absentList.length}</td><td>${pins}</td></tr>`;
+            }
+        });
+
+        // Bottom summary row — merged label + count
+        html += `<tr class="al-total-row"><td colspan="2" style="text-align:right;font-weight:800;">Total No. of Students Absent (this day)</td><td style="color:#c62828;font-weight:800;">${dayAbsentSet.size}</td></tr>`;
+        html += '</tbody></table></div>';
+    });
+    container.innerHTML = html || '<div class="info-box" style="margin:20px 0;">✅ No absences found.</div>';
+}
+
+// ─── VIEW 3: REGISTER FORMAT ─────────────────────────────────────────────
+// P/A per day is determined by MIN_PERIODS_FOR_PRESENT threshold (same as student Monthly tab)
+function al_isDayPresent(pin, date) {
+    const pMap = al_matrix[pin] || {};
+    const periods = [...(al_periods[date] || [])];
+    let periodsPresent = 0;
+    periods.forEach(p => {
+        if ((pMap[`${date}__P${p}`] || '') === 'P') periodsPresent++;
+    });
+    const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    // A day counts only if attendance was taken (at least one period has data)
+    const hasData = periods.some(p => pMap[`${date}__P${p}`]);
+    if (!hasData) return null; // no data = don't count
+    return periodsPresent >= threshold ? 'P' : 'A';
+}
+
+function absList_renderRegister(container) {
+    if (!al_dataLoaded) return;
+    const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    const absentStudents = al_students.filter(st =>
+        al_dates.some(date => al_isDayPresent(st.pin, date) === 'A')
+    );
+    if (!absentStudents.length) {
+        container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found.</div>';
+        return;
+    }
+    let html = `<div style="background:#e3f2fd;border-left:4px solid #1565c0;padding:10px 16px;margin-bottom:14px;border-radius:0 8px 8px 0;font-size:13px;color:#1565c0;">
+        <strong>ℹ️ Present threshold:</strong> ≥ <strong>${threshold}</strong> periods present in a day = <strong style="color:#2e7d32;">P</strong> (Present). Below ${threshold} = <strong style="color:#c62828;">A</strong> (Absent).
+    </div>`;
+    html += '<div class="al-daytable-wrap"><table class="al-reg-table">';
+    html += '<thead><tr><th>Sl.No</th><th>PIN</th><th>Name</th>';
+    al_dates.forEach(d => { html += `<th>${al_fmtShort(d)}<br>${al_dayName(d)}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    let colAbsCount = {};
+    al_dates.forEach(d => { colAbsCount[d] = 0; });
+    let totalAbsentStudents = 0;
+
+    absentStudents.forEach((st, idx) => {
+        let hasAbsDay = false;
+        html += `<tr><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${st.name}</td>`;
+        al_dates.forEach(date => {
+            const status = al_isDayPresent(st.pin, date);
+            if (status === 'A') { colAbsCount[date]++; hasAbsDay = true; html += '<td class="al-cell-a">A</td>'; }
+            else if (status === 'P') { html += '<td class="al-cell-p">P</td>'; }
+            else { html += '<td class="al-cell-dash">–</td>'; }
+        });
+        if (hasAbsDay) totalAbsentStudents++;
+        html += '</tr>';
+    });
+
+    // Total row
+    html += '<tr class="al-total-row">';
+    html += `<td colspan="3" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
+    al_dates.forEach(d => { html += `<td style="color:#c62828;font-weight:800;">${colAbsCount[d] || ''}</td>`; });
+    html += '</tr>';
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+// ─── PDF DOWNLOAD ──────────────────────────────────────────────────────────
+function absList_downloadPDF() {
+    if (!al_dataLoaded) { alert('Please load data first.'); return; }
+    if (!window.jspdf) { alert('PDF library not loaded.'); return; }
+    const { jsPDF } = window.jspdf;
+    const today = al_fmt(localYMD(new Date()));
+    const fromLabel = al_fmt(al_dates[0]);
+    const toLabel   = al_fmt(al_dates[al_dates.length - 1]);
+    const subHeading = `${al_ysLabel}  |  ${al_subjectLabel}  |  ${fromLabel} to ${toLabel}`;
+    const fileName = `AbsentList_${al_ysLabel.replace(/ /g,'_')}_${al_dates[0]}_to_${al_dates[al_dates.length-1]}.pdf`;
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = 297;
+    let pageNo = 1;
+
+    function addHeader(doc, title) {
+        doc.setFillColor(30, 60, 114);
+        doc.rect(0, 0, pageW, 22, 'F');
+        doc.setFontSize(13); doc.setTextColor(255,255,255); doc.setFont(undefined,'bold');
+        doc.text('Government Polytechnic, Dharmavaram – Computer Engineering', pageW/2, 9, {align:'center'});
+        doc.setFontSize(9); doc.setFont(undefined,'normal');
+        doc.text(subHeading, pageW/2, 16, {align:'center'});
+        doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.setTextColor(30,60,114);
+        doc.text(title, pageW/2, 28, {align:'center'});
+        doc.setTextColor(0,0,0); doc.setFont(undefined,'normal');
+    }
+    function addFooter(doc, pageNo, totalPages) {
+        doc.setFontSize(8); doc.setTextColor(120,120,120);
+        doc.text(`Page ${pageNo} of ${totalPages}  |  Generated: ${today}  |  GPT Dharmavaram`, pageW/2, 205, {align:'center'});
+        doc.setTextColor(0,0,0);
+    }
+
+    const totalPages = 3;
+
+    // PAGE 1: Day-wise Summary (per day, each period)
+    addHeader(doc, 'PAGE 1 – Day-wise Summary');
+    let startY = 33;
+    al_dates.forEach(date => {
+        const periods = [...(al_periods[date] || [])].sort((a,b)=>a-b);
+        if (!periods.length) return;
+        const body = [];
+        let dayAbsentSet = new Set();
+        periods.forEach(p => {
+            const absList = al_students.filter(st => (al_matrix[st.pin]||{})[`${date}__P${p}`]==='A');
+            absList.forEach(st => dayAbsentSet.add(st.pin));
+            body.push([
+                `P${p}`,
+                absList.length,
+                absList.map(s=>s.pin).join(', ') || 'All Present'
+            ]);
+        });
+        body.push([{content:'Total No. of Students Absent (this day)', colSpan:2, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[46,125,50]}}, {content:dayAbsentSet.size, styles:{fontStyle:'bold',fillColor:[232,245,233],textColor:[198,40,40]}}]);
+        doc.autoTable({
+            startY,
+            head: [[`${al_fmt(date)} – ${al_dayNameFull(date)}`, 'Total No. of Students Absent', 'Absent PINs']],
+            body,
+            headStyles: {fillColor:[40,83,150], textColor:255, fontSize:8, fontStyle:'bold'},
+            styles: {fontSize:7.5, cellPadding:2},
+            columnStyles: {0:{cellWidth:20},1:{cellWidth:28,halign:'center'},2:{cellWidth:'auto'}},
+            bodyStyles: {textColor:[30,30,30]},
+            didParseCell(data) {
+                if (data.section==='body' && typeof data.cell.raw === 'number' && data.cell.raw > 0 && data.column.index === 1)
+                    data.cell.styles.textColor = [198,40,40];
+            },
+            margin: {left:10, right:10}
+        });
+        startY = doc.lastAutoTable.finalY + 5;
+        if (startY > 190) { doc.addPage(); addHeader(doc,'PAGE 1 – Day-wise Summary (contd.)'); startY = 33; }
+    });
+    addFooter(doc, pageNo++, totalPages);
+
+    // PAGE 2: Register Format (uses MIN_PERIODS_FOR_PRESENT threshold)
+    doc.addPage();
+    addHeader(doc, 'PAGE 2 – Register Format');
+    const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    const absStuReg = al_students.filter(st =>
+        al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'));
+    const regHead = ['Sl.No','PIN','Name',...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`)];
+    const colAbsCount = {};
+    al_dates.forEach(d=>{ colAbsCount[d]=0; });
+    let totalAbsStu = 0;
+    const regBody = absStuReg.map((st, idx) => {
+        const row = [idx+1, st.pin, st.name];
+        al_dates.forEach(date=>{
+            const status = al_isDayPresent(st.pin, date);
+            if (status === 'A') colAbsCount[date]++;
+            row.push(status || '–');
+        });
+        if (al_dates.some(date => al_isDayPresent(st.pin, date) === 'A')) totalAbsStu++;
+        return row;
+    });
+    // Threshold info header row
+    regBody.unshift([{content: `≥ ${threshold} periods present = P (Present day) | < ${threshold} periods = A (Absent day)`, colSpan: regHead.length, styles:{fontStyle:'italic',fillColor:[227,242,253],textColor:[21,101,192],fontSize:7,halign:'center'}}]);
+    // Total row
+    const totalRegRow = [{content:'Total No. of Students Absent', colSpan:3, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[46,125,50]}}, ...al_dates.map(d=>({content:colAbsCount[d]||'', styles:{fontStyle:'bold',fillColor:[232,245,233],textColor:[198,40,40]}})) ];
+    regBody.push(totalRegRow);
+    doc.autoTable({
+        startY: 33,
+        head: [regHead],
+        body: regBody,
+        headStyles: {fillColor:[0,77,64], textColor:255, fontSize:7, fontStyle:'bold'},
+        styles: {fontSize:7, cellPadding:2, halign:'center'},
+        columnStyles: {1:{cellWidth:22},2:{cellWidth:35,halign:'left'}},
+        didParseCell(data) {
+            if (data.section==='body') {
+                if (data.cell.raw==='A') { data.cell.styles.fillColor=[255,235,238]; data.cell.styles.textColor=[198,40,40]; data.cell.styles.fontStyle='bold'; }
+                if (data.cell.raw==='P') { data.cell.styles.textColor=[46,125,50]; data.cell.styles.fontStyle='bold'; }
+                if (data.row.index===regBody.length-1) data.cell.styles.fontStyle='bold';
+            }
+        },
+        margin:{left:10,right:10}
+    });
+    addFooter(doc, pageNo++, totalPages);
+
+    // PAGE 3: Period-wise Matrix
+    doc.addPage();
+    addHeader(doc, 'PAGE 3 – Period-wise Matrix');
+    let mStartY = 33;
+    const absStuMat = al_students.filter(st=>Object.values(al_matrix[st.pin]||{}).some(v=>v==='A'));
+    al_dates.forEach(date=>{
+        const periods = [...(al_periods[date]||[])].sort((a,b)=>a-b);
+        if (!periods.length) return;
+        const dayAbsent = absStuMat.filter(st=>periods.some(p=>(al_matrix[st.pin]||{})[`${date}__P${p}`]==='A'));
+        if (!dayAbsent.length) return;
+        const head = ['PIN','Name',...periods.map(p=>`P${p}`),'Total Absent'];
+        const body = dayAbsent.map(st=>{
+            const pMap=al_matrix[st.pin]||{};
+            let rowAbs=0;
+            const row=[st.pin, st.name];
+            periods.forEach(p=>{
+                const v=pMap[`${date}__P${p}`];
+                if(v==='A') rowAbs++;
+                row.push(v==='A'?'A':v==='P'?'P':'–');
+            });
+            row.push(rowAbs);
+            return row;
+        });
+        // Bottom row: merge PIN+Name+all period cols into label, last cell = student count
+        const totalColSpan = 2 + periods.length;
+        const totalRow = [{content:'Total No. of Students Absent', colSpan:totalColSpan, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[46,125,50]}}, {content:dayAbsent.length, styles:{fontStyle:'bold',fillColor:[232,245,233],textColor:[198,40,40]}}];
+        body.push(totalRow);
+        doc.autoTable({
+            startY: mStartY,
+            head: [[{content:`${al_fmt(date)} – ${al_dayNameFull(date)}`, colSpan:head.length, styles:{fillColor:[40,83,150],textColor:255,fontStyle:'bold',halign:'center'}}], head],
+            body,
+            headStyles: {fillColor:[30,60,114], textColor:255, fontSize:7.5, fontStyle:'bold'},
+            styles: {fontSize:7.5, cellPadding:2, halign:'center'},
+            columnStyles: {1:{halign:'left',cellWidth:35}},
+            didParseCell(data){
+                if(data.section==='body'){
+                    if(data.cell.raw==='A'){data.cell.styles.fillColor=[255,235,238];data.cell.styles.textColor=[198,40,40];data.cell.styles.fontStyle='bold';}
+                }
+            },
+            margin:{left:10,right:10}
+        });
+        mStartY = doc.lastAutoTable.finalY + 6;
+        if (mStartY > 190) { doc.addPage(); addHeader(doc,'PAGE 3 – Period-wise Matrix (contd.)'); mStartY = 33; }
+    });
+    addFooter(doc, pageNo, totalPages);
+
+    doc.save(fileName);
+}
+
+// ─── EXCEL DOWNLOAD ────────────────────────────────────────────────────────
+function absList_downloadExcel() {
+    if (!al_dataLoaded) { alert('Please load data first.'); return; }
+    if (typeof XLSX === 'undefined') { alert('Excel library not loaded.'); return; }
+    const fromLabel = al_dates[0];
+    const toLabel   = al_dates[al_dates.length - 1];
+    const fileName  = `AbsentList_${al_ysLabel.replace(/ /g,'_')}_${fromLabel}_to_${toLabel}.xlsx`;
+    const wb = XLSX.utils.book_new();
+    const heading = 'Government Polytechnic, Dharmavaram – Computer Engineering';
+    const subHead = `${al_ysLabel} | ${al_subjectLabel} | ${al_fmt(fromLabel)} to ${al_fmt(toLabel)}`;
+
+    // ── SHEET 1: Day-wise Summary ──
+    const s1 = [[heading],[subHead],['Date','Day','Period','Total No. of Students Absent','Absent PINs & Names']];
+    let s1RowIdx = 3; // data rows start at index 3 (0-based)
+    const s1Merges = [{s:{r:0,c:0},e:{r:0,c:4}},{s:{r:1,c:0},e:{r:1,c:4}}];
+    al_dates.forEach(date=>{
+        const periods=[...(al_periods[date]||[])].sort((a,b)=>a-b);
+        let dayAbsentSet=new Set();
+        periods.forEach(p=>{
+            const absList=al_students.filter(st=>(al_matrix[st.pin]||{})[`${date}__P${p}`]==='A');
+            absList.forEach(st=>dayAbsentSet.add(st.pin));
+            s1.push([al_fmt(date),al_dayNameFull(date),`P${p}`,absList.length,absList.map(s=>s.pin+' ('+s.name+')').join(', ')||'All Present']);
+            s1RowIdx++;
+        });
+        // Total row: merge cols 0-3 for label, col 4 = count
+        s1.push(['Total No. of Students Absent (this day)','','','',dayAbsentSet.size]);
+        s1Merges.push({s:{r:s1RowIdx,c:0},e:{r:s1RowIdx,c:3}});
+        s1RowIdx++;
+    });
+    const ws1=XLSX.utils.aoa_to_sheet(s1);
+    ws1['!merges']=s1Merges;
+    ws1['!cols']=[{wch:14},{wch:12},{wch:10},{wch:28},{wch:70}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Day-wise Summary');
+
+    // ── SHEET 2: Register Format (uses MIN_PERIODS_FOR_PRESENT threshold) ──
+    const thresholdXL = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    const absStuReg=al_students.filter(st=>al_dates.some(date=>al_isDayPresent(st.pin,date)==='A'));
+    const s2=[[heading],[subHead],[`Present rule: >= ${thresholdXL} periods present = P (Present day) | < ${thresholdXL} periods = A (Absent day)`],['Sl.No','PIN','Name',...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`)]]; // no Total Absent Days col
+    const colAbs={}; al_dates.forEach(d=>{colAbs[d]=0;});
+    let totalAbsStu=0;
+    absStuReg.forEach((st,idx)=>{
+        const row=[idx+1,st.pin,st.name];
+        al_dates.forEach(date=>{
+            const status=al_isDayPresent(st.pin,date);
+            if(status==='A') colAbs[date]++;
+            row.push(status||'–');
+        });
+        if(al_dates.some(date=>al_isDayPresent(st.pin,date)==='A'))totalAbsStu++;
+        s2.push(row);
+    });
+    // Total row: merge first 3 cols as label, then per-date counts
+    const s2TotalRow=['Total No. of Students Absent','','',...al_dates.map(d=>colAbs[d]||'')];
+    s2.push(s2TotalRow);
+    const s2TotalRowIdx = s2.length - 1;
+    const ws2=XLSX.utils.aoa_to_sheet(s2);
+    const s2Cols = 3 + al_dates.length;
+    ws2['!merges']=[
+        {s:{r:0,c:0},e:{r:0,c:s2Cols-1}},
+        {s:{r:1,c:0},e:{r:1,c:s2Cols-1}},
+        {s:{r:2,c:0},e:{r:2,c:s2Cols-1}},
+        {s:{r:s2TotalRowIdx,c:0},e:{r:s2TotalRowIdx,c:2}}
+    ];
+    ws2['!cols']=[{wch:6},{wch:14},{wch:25},...al_dates.map(()=>({wch:10}))];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Register Format');
+
+    // ── SHEET 3: Period-wise Matrix ──
+    const allPeriods=[]; const periodSet=new Set();
+    al_dates.forEach(date=>{[...(al_periods[date]||[])].forEach(p=>periodSet.add(p));});
+    [...periodSet].sort((a,b)=>a-b).forEach(p=>allPeriods.push(p));
+    const matCols=['PIN','Name'];
+    al_dates.forEach(date=>{
+        const periods=[...(al_periods[date]||[])].sort((a,b)=>a-b);
+        periods.forEach(p=>matCols.push(`${al_fmtShort(date)} P${p}`));
+    });
+    matCols.push('Total Absent');
+    const s3=[[heading],[subHead],matCols];
+    const absStuMat=al_students.filter(st=>Object.values(al_matrix[st.pin]||{}).some(v=>v==='A'));
+    const matColTotals={};
+    al_dates.forEach(date=>{[...(al_periods[date]||[])].forEach(p=>{matColTotals[`${date}__P${p}`]=0;});});
+    absStuMat.forEach(st=>{
+        const pMap=al_matrix[st.pin]||{};
+        let rowAbs=0;
+        const row=[st.pin,st.name];
+        al_dates.forEach(date=>{
+            const periods=[...(al_periods[date]||[])].sort((a,b)=>a-b);
+            periods.forEach(p=>{
+                const v=pMap[`${date}__P${p}`];
+                if(v==='A'){rowAbs++;matColTotals[`${date}__P${p}`]++;}
+                row.push(v==='A'?'A':v==='P'?'P':'–');
+            });
+        });
+        row.push(rowAbs);
+        s3.push(row);
+    });
+    // Total row: merge all cols except last into label, last = student count
+    const totalMatRow=['Total No. of Students Absent'];
+    for (let i = 1; i < matCols.length - 1; i++) totalMatRow.push('');
+    totalMatRow.push(absStuMat.length);
+    s3.push(totalMatRow);
+    const s3TotalRowIdx = s3.length - 1;
+    const ws3=XLSX.utils.aoa_to_sheet(s3);
+    ws3['!merges']=[
+        {s:{r:0,c:0},e:{r:0,c:matCols.length-1}},
+        {s:{r:1,c:0},e:{r:1,c:matCols.length-1}},
+        {s:{r:s3TotalRowIdx,c:0},e:{r:s3TotalRowIdx,c:matCols.length-2}}
+    ];
+    ws3['!cols']=[{wch:14},{wch:25},...matCols.slice(2).map(()=>({wch:10}))];
+    XLSX.utils.book_append_sheet(wb, ws3, 'Period-wise Matrix');
+
+    XLSX.writeFile(wb, fileName);
+}
+// ╚══════════════ END ABSENT LIST MODULE ═══════════════════════╝
 </script>
 </body>
 
