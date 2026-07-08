@@ -8575,77 +8575,64 @@
         }
 
         // ── 🎤 Speech-to-Text for Assignment Questions ──────────────────────────
+        // Same proven pattern as startVoiceInput() used in Edit Topic:
+        //   continuous=false, interimResults=false → one clean utterance, no duplicates.
+        // Press Start Mic → speak → text appends → auto-returns to "Start Mic" (ready for next question).
+        // Press Stop Mic any time to abort the current utterance.
         let _assignRecognition = null;
-        let _assignMicActive   = false;
 
         function assignMicStart() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                document.getElementById('assignMicError').textContent =
-                    '⚠️ Speech recognition is not supported in this browser. Please use Chrome or Edge.';
-                document.getElementById('assignMicError').style.display = 'block';
+                const errEl = document.getElementById('assignMicError');
+                errEl.textContent = '⚠️ Voice input not supported. Please use Chrome or Edge.';
+                errEl.style.display = 'block';
                 return;
             }
             document.getElementById('assignMicError').style.display = 'none';
 
-            if (_assignRecognition) { _assignRecognition.abort(); _assignRecognition = null; }
+            // Abort any existing session
+            if (_assignRecognition) { try { _assignRecognition.abort(); } catch(e){} _assignRecognition = null; }
 
             _assignRecognition = new SpeechRecognition();
-            _assignRecognition.lang          = 'en-IN';   // English (India)
-            _assignRecognition.continuous    = true;
-            _assignRecognition.interimResults = true;
+            _assignRecognition.lang           = 'en-IN';
+            _assignRecognition.continuous     = false;   // ← key: one utterance, no repeats
+            _assignRecognition.interimResults  = false;  // ← key: only final result, no duplicates
 
-            // State: set "Listening" UI
-            _assignMicActive = true;
-            _assignMicSetUI(true);
-
-            let lastFinalIdx = document.getElementById('assignQuestions').value.length;
+            _assignRecognition.onstart = function() {
+                _assignMicSetUI(true);  // show Listening...
+            };
 
             _assignRecognition.onresult = function(e) {
-                let interim = '';
-                let finalText = '';
-                for (let i = e.resultIndex; i < e.results.length; i++) {
-                    if (e.results[i].isFinal) {
-                        finalText += e.results[i][0].transcript;
-                    } else {
-                        interim += e.results[i][0].transcript;
-                    }
+                const transcript = e.results[0][0].transcript.trim();
+                if (transcript) {
+                    const ta = document.getElementById('assignQuestions');
+                    const existing = ta.value;
+                    // Append on a new line if there's already content
+                    ta.value = existing
+                        ? existing.replace(/\s+$/, '') + '\n' + transcript
+                        : transcript;
                 }
-                const ta = document.getElementById('assignQuestions');
-                // Append final transcript to textarea
-                if (finalText) {
-                    const base = ta.value.slice(0, lastFinalIdx);
-                    ta.value = base + (base && !base.endsWith('\n') ? '\n' : '') + finalText.trim() + ' ';
-                    lastFinalIdx = ta.value.length;
-                }
-                // Show interim in status indicator
-                if (interim) {
-                    const st = document.getElementById('assignMicStatus');
-                    if (st) st.title = interim;
-                }
+            };
+
+            _assignRecognition.onend = function() {
+                // Naturally ended after one utterance — reset to ready state
+                _assignRecognition = null;
+                _assignMicSetUI(false);
             };
 
             _assignRecognition.onerror = function(e) {
                 const errEl = document.getElementById('assignMicError');
                 if (e.error === 'no-speech') {
-                    errEl.textContent = 'ℹ️ No speech detected. Tap Start Mic again to retry.';
+                    errEl.textContent = 'ℹ️ No speech detected. Press Start Mic and speak.';
                 } else if (e.error === 'not-allowed') {
-                    errEl.textContent = '🚫 Microphone access denied. Please allow mic permission in browser settings.';
+                    errEl.textContent = '🚫 Mic access denied. Allow microphone in browser settings.';
                 } else {
                     errEl.textContent = '⚠️ Mic error: ' + e.error;
                 }
                 errEl.style.display = 'block';
-                _assignMicActive = false;
+                _assignRecognition = null;
                 _assignMicSetUI(false);
-            };
-
-            _assignRecognition.onend = function() {
-                if (_assignMicActive) {
-                    // Auto-restart if still active (continuous mode can stop on silence)
-                    try { _assignRecognition.start(); } catch(err) {}
-                } else {
-                    _assignMicSetUI(false);
-                }
             };
 
             try {
@@ -8653,15 +8640,13 @@
             } catch(err) {
                 document.getElementById('assignMicError').textContent = '⚠️ Could not start mic: ' + err.message;
                 document.getElementById('assignMicError').style.display = 'block';
-                _assignMicActive = false;
                 _assignMicSetUI(false);
             }
         }
 
         function assignMicStop() {
-            _assignMicActive = false;
             if (_assignRecognition) {
-                try { _assignRecognition.stop(); } catch(e) {}
+                try { _assignRecognition.abort(); } catch(e) {}
                 _assignRecognition = null;
             }
             _assignMicSetUI(false);
@@ -8677,9 +8662,9 @@
                 startBtn.style.opacity = '0.5';
                 startBtn.style.cursor  = 'not-allowed';
                 stopBtn.disabled = false;
-                stopBtn.style.background = 'linear-gradient(135deg,#e53935,#b71c1c)';
-                stopBtn.style.cursor = 'pointer';
-                stopBtn.style.boxShadow = '0 3px 10px rgba(229,57,53,0.4)';
+                stopBtn.style.background  = 'linear-gradient(135deg,#e53935,#b71c1c)';
+                stopBtn.style.cursor      = 'pointer';
+                stopBtn.style.boxShadow   = '0 3px 10px rgba(229,57,53,0.4)';
                 if (statusDiv) statusDiv.style.display = 'flex';
             } else {
                 startBtn.disabled = false;
@@ -8687,8 +8672,8 @@
                 startBtn.style.cursor  = 'pointer';
                 stopBtn.disabled = true;
                 stopBtn.style.background = '#bdbdbd';
-                stopBtn.style.cursor = 'not-allowed';
-                stopBtn.style.boxShadow = 'none';
+                stopBtn.style.cursor     = 'not-allowed';
+                stopBtn.style.boxShadow  = 'none';
                 if (statusDiv) statusDiv.style.display = 'none';
             }
         }
