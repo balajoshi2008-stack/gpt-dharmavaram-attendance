@@ -585,15 +585,17 @@
         }
 
         @keyframes slideDown {
-            from {
-                transform: translateY(-110%);
-                opacity: 0;
-            }
+            from { transform: translateY(-110%); opacity: 0; }
+            to   { transform: translateY(0);     opacity: 1; }
+        }
 
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+        @keyframes micPulse {
+            0%,100% { box-shadow: 0 2px 12px rgba(255,23,68,0.5); transform: scale(1); }
+            50%      { box-shadow: 0 4px 20px rgba(255,23,68,0.9); transform: scale(1.04); }
+        }
+        @keyframes micDot {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:0.3; transform:scale(0.6); }
         }
 
         #updateBanner .ub-inner {
@@ -2444,6 +2446,39 @@
                         <textarea id="assignQuestions" rows="6"
                             style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;line-height:1.6;"
                             placeholder="1. Question one&#10;   - Sub-part a&#10;   - Sub-part b&#10;&#10;2. Question two"></textarea>
+                    </div>
+
+                    <!-- 🎤 Mic Controls (shown below textarea when Questions/Both mode) -->
+                    <div id="assignMicRow" style="display:none;margin-top:10px;">
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <button id="assignMicStartBtn" onclick="assignMicStart()"
+                                style="display:flex;align-items:center;gap:8px;padding:9px 20px;
+                                       background:linear-gradient(135deg,#e53935,#b71c1c);
+                                       color:#fff;border:none;border-radius:25px;cursor:pointer;
+                                       font-size:14px;font-weight:600;box-shadow:0 3px 10px rgba(229,57,53,0.4);
+                                       transition:all 0.2s;">
+                                <span style="font-size:18px;">🎤</span> Start Mic
+                            </button>
+                            <button id="assignMicStopBtn" onclick="assignMicStop()" disabled
+                                style="display:flex;align-items:center;gap:8px;padding:9px 20px;
+                                       background:#bdbdbd;color:#fff;border:none;border-radius:25px;
+                                       cursor:not-allowed;font-size:14px;font-weight:600;
+                                       transition:all 0.2s;">
+                                <span style="font-size:18px;">⏹</span> Stop Mic
+                            </button>
+                            <!-- Listening indicator -->
+                            <div id="assignMicStatus" style="display:none;align-items:center;gap:8px;
+                                 background:linear-gradient(135deg,#ff1744,#d50000);
+                                 color:#fff;padding:7px 16px;border-radius:20px;
+                                 font-size:13px;font-weight:600;animation:micPulse 1.2s ease-in-out infinite;
+                                 box-shadow:0 2px 12px rgba(255,23,68,0.5);">
+                                <span style="display:inline-block;width:10px;height:10px;background:#fff;
+                                      border-radius:50%;animation:micDot 1s ease-in-out infinite;"></span>
+                                🎤 Listening...
+                            </div>
+                            <span id="assignMicLang" style="font-size:12px;color:#888;">English (India)</span>
+                        </div>
+                        <div id="assignMicError" style="margin-top:8px;color:#c62828;font-size:12px;display:none;"></div>
                     </div>
 
                     <!-- Drive link -->
@@ -8504,10 +8539,13 @@
 
         function onAssignContentTypeChange() {
             const type = document.getElementById('assignContentType').value;
-            document.getElementById('assignQuestionsGroup').style.display =
-                (type === 'link') ? 'none' : '';
-            document.getElementById('assignLinkGroup').style.display =
-                (type === 'questions') ? 'none' : '';
+            const showQ = (type !== 'link');
+            document.getElementById('assignQuestionsGroup').style.display = showQ ? '' : 'none';
+            document.getElementById('assignLinkGroup').style.display = (type === 'questions') ? 'none' : '';
+            // Show mic row only when textarea is visible
+            const micRow = document.getElementById('assignMicRow');
+            if (micRow) micRow.style.display = showQ ? 'block' : 'none';
+            if (!showQ) assignMicStop(); // stop mic if textarea hidden
         }
 
         // ── Open create form ───────────────────────────────────────────────
@@ -8533,6 +8571,126 @@
         function cancelAssignmentForm() {
             currentEditingAssignId = null;
             document.getElementById('assignForm').classList.add('hidden');
+            assignMicStop(); // stop mic if running
+        }
+
+        // ── 🎤 Speech-to-Text for Assignment Questions ──────────────────────────
+        let _assignRecognition = null;
+        let _assignMicActive   = false;
+
+        function assignMicStart() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                document.getElementById('assignMicError').textContent =
+                    '⚠️ Speech recognition is not supported in this browser. Please use Chrome or Edge.';
+                document.getElementById('assignMicError').style.display = 'block';
+                return;
+            }
+            document.getElementById('assignMicError').style.display = 'none';
+
+            if (_assignRecognition) { _assignRecognition.abort(); _assignRecognition = null; }
+
+            _assignRecognition = new SpeechRecognition();
+            _assignRecognition.lang          = 'en-IN';   // English (India)
+            _assignRecognition.continuous    = true;
+            _assignRecognition.interimResults = true;
+
+            // State: set "Listening" UI
+            _assignMicActive = true;
+            _assignMicSetUI(true);
+
+            let lastFinalIdx = document.getElementById('assignQuestions').value.length;
+
+            _assignRecognition.onresult = function(e) {
+                let interim = '';
+                let finalText = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    if (e.results[i].isFinal) {
+                        finalText += e.results[i][0].transcript;
+                    } else {
+                        interim += e.results[i][0].transcript;
+                    }
+                }
+                const ta = document.getElementById('assignQuestions');
+                // Append final transcript to textarea
+                if (finalText) {
+                    const base = ta.value.slice(0, lastFinalIdx);
+                    ta.value = base + (base && !base.endsWith('\n') ? '\n' : '') + finalText.trim() + ' ';
+                    lastFinalIdx = ta.value.length;
+                }
+                // Show interim in status indicator
+                if (interim) {
+                    const st = document.getElementById('assignMicStatus');
+                    if (st) st.title = interim;
+                }
+            };
+
+            _assignRecognition.onerror = function(e) {
+                const errEl = document.getElementById('assignMicError');
+                if (e.error === 'no-speech') {
+                    errEl.textContent = 'ℹ️ No speech detected. Tap Start Mic again to retry.';
+                } else if (e.error === 'not-allowed') {
+                    errEl.textContent = '🚫 Microphone access denied. Please allow mic permission in browser settings.';
+                } else {
+                    errEl.textContent = '⚠️ Mic error: ' + e.error;
+                }
+                errEl.style.display = 'block';
+                _assignMicActive = false;
+                _assignMicSetUI(false);
+            };
+
+            _assignRecognition.onend = function() {
+                if (_assignMicActive) {
+                    // Auto-restart if still active (continuous mode can stop on silence)
+                    try { _assignRecognition.start(); } catch(err) {}
+                } else {
+                    _assignMicSetUI(false);
+                }
+            };
+
+            try {
+                _assignRecognition.start();
+            } catch(err) {
+                document.getElementById('assignMicError').textContent = '⚠️ Could not start mic: ' + err.message;
+                document.getElementById('assignMicError').style.display = 'block';
+                _assignMicActive = false;
+                _assignMicSetUI(false);
+            }
+        }
+
+        function assignMicStop() {
+            _assignMicActive = false;
+            if (_assignRecognition) {
+                try { _assignRecognition.stop(); } catch(e) {}
+                _assignRecognition = null;
+            }
+            _assignMicSetUI(false);
+        }
+
+        function _assignMicSetUI(active) {
+            const startBtn  = document.getElementById('assignMicStartBtn');
+            const stopBtn   = document.getElementById('assignMicStopBtn');
+            const statusDiv = document.getElementById('assignMicStatus');
+            if (!startBtn) return;
+            if (active) {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+                startBtn.style.cursor  = 'not-allowed';
+                stopBtn.disabled = false;
+                stopBtn.style.background = 'linear-gradient(135deg,#e53935,#b71c1c)';
+                stopBtn.style.cursor = 'pointer';
+                stopBtn.style.boxShadow = '0 3px 10px rgba(229,57,53,0.4)';
+                if (statusDiv) statusDiv.style.display = 'flex';
+            } else {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+                startBtn.style.cursor  = 'pointer';
+                stopBtn.disabled = true;
+                stopBtn.style.background = '#bdbdbd';
+                stopBtn.style.cursor = 'not-allowed';
+                stopBtn.style.boxShadow = 'none';
+                if (statusDiv) statusDiv.style.display = 'none';
+            }
         }
 
         function showAssignMsg(msg, isError = true) {
