@@ -4798,6 +4798,7 @@
                 <th style="width:50px;">Sl.No</th>
                 <th>PIN</th>
                 <th>Name</th>
+                <th>📱 Parent Mobile</th>
                 <th style="text-align:center;">🎓 Scholarship</th>
                 <th>Actions</th>
             </tr></thead><tbody></tbody>`;
@@ -4805,11 +4806,13 @@
             stu.forEach((st, i) => {
                 // Default scholarship = true if not explicitly set to false
                 const isScholar = st.scholarship !== false;
+                const mobile = st.parentMobile || '';
                 const row = table.querySelector('tbody').insertRow();
                 row.innerHTML = `
                     <td style="text-align:center;">${i + 1}</td>
                     <td><span class="editable" onclick="editPIN('${y}','${s}',${i},'${st.pin}')">${st.pin}</span></td>
                     <td><span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span></td>
+                    <td><span class="editable" onclick="editParentMobile('${y}','${s}',${i},'${mobile}')" style="color:${mobile ? '#1565c0' : '#aaa'};">${mobile || '+ Add mobile'}</span></td>
                     <td style="text-align:center;">
                         <input type="checkbox" ${isScholar ? 'checked' : ''} 
                                onchange="toggleScholarship('${y}','${s}',${i},this.checked)"
@@ -4845,6 +4848,15 @@
             const newName = prompt('Edit Name:', oldName);
             if (newName && newName !== oldName) {
                 STUDENTS[y][s][idx].name = newName;
+                saveStudents(y);
+                viewStudents();
+            }
+        }
+
+        function editParentMobile(y, s, idx, oldMobile) {
+            const newMobile = prompt('Edit Parent Mobile Number:', oldMobile);
+            if (newMobile !== null && newMobile !== oldMobile) {
+                STUDENTS[y][s][idx].parentMobile = newMobile.trim();
                 saveStudents(y);
                 viewStudents();
             }
@@ -13455,7 +13467,7 @@ function absList_renderRegister(container) {
         <strong>ℹ️ Present threshold:</strong> ≥ <strong>${threshold}</strong> periods = <strong style="color:#2e7d32;">P</strong>. Below ${threshold} = <strong style="color:#c62828;">A</strong>.
     </div>`;
     html += '<div class="al-daytable-wrap"><table class="al-reg-table">';
-    html += '<thead><tr><th>Sl.No</th><th>PIN</th><th>Name</th>';
+    html += '<thead><tr><th>Sl.No</th><th>PIN</th><th>Name</th><th style="background:#0d47a1;color:#fff;min-width:120px;">📱 Parent Mobile</th>';
     al_dates.forEach(d => { html += `<th>${al_fmtShort(d)}<br>${al_dayName(d)}</th>`; });
     html += '<th style="background:#b71c1c;color:#fff;">Total Days Absent</th>';
     html += '</tr></thead><tbody>';
@@ -13465,7 +13477,14 @@ function absList_renderRegister(container) {
 
     absentStudents.forEach((st, idx) => {
         let absDays = 0;
-        html += `<tr><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${st.name}</td>`;
+        const mobile = st.parentMobile || '';
+        const mobileCell = mobile
+            ? `<a href="tel:${mobile}" style="display:flex;align-items:center;gap:6px;color:#1565c0;font-weight:700;text-decoration:none;font-size:13px;" title="Call ${mobile}">
+                <span style="background:#1565c0;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">📞</span>
+                ${mobile}
+               </a>`
+            : `<span style="color:#bbb;font-size:12px;">—</span>`;
+        html += `<tr><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${st.name}</td><td style="background:#e8f4fd;padding:6px 8px;">${mobileCell}</td>`;
         al_dates.forEach(date => {
             const status = al_isDayPresent(st.pin, date);
             if (status === 'A') { colAbsCount[date]++; absDays++; html += '<td class="al-cell-a">A</td>'; }
@@ -13478,7 +13497,7 @@ function absList_renderRegister(container) {
 
     // Total row
     html += '<tr class="al-total-row">';
-    html += `<td colspan="3" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
+    html += `<td colspan="4" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
     al_dates.forEach(d => { html += `<td style="color:#c62828;font-weight:800;">${colAbsCount[d] || ''}</td>`; });
     html += '<td></td></tr>';
 
@@ -13514,7 +13533,7 @@ function absList_downloadPDF() {
         doc.setFillColor(30, 60, 114);
         doc.rect(0, 0, pageW, 22, 'F');
         doc.setFontSize(13); doc.setTextColor(255,255,255); doc.setFont(undefined,'bold');
-        doc.text('Government Polytechnic, Dharmavaram – Computer Engineering', pageW/2, 9, {align:'center'});
+        doc.text('Government Polytechnic, Dharmavaram - Computer Engineering', pageW/2, 9, {align:'center'});
         doc.setFontSize(9); doc.setFont(undefined,'normal');
         doc.text(subHeading, pageW/2, 16, {align:'center'});
         doc.setFontSize(12); doc.setFont(undefined,'bold'); doc.setTextColor(20,60,140);
@@ -13528,7 +13547,7 @@ function absList_downloadPDF() {
     }
 
     // ── PAGE 1: Period-wise Matrix ──
-    addHeader(doc, 'PAGE 1 – Period-wise Matrix (Absent Students)');
+    addHeader(doc, 'PAGE 1 - Period-wise Matrix (Absent Students)');
     let mStartY = 33;
     const absStuMat = al_students.filter(st => Object.values(al_matrix[st.pin]||{}).some(v => v==='A'));
 
@@ -13538,7 +13557,7 @@ function absList_downloadPDF() {
         const dayAbsent = absStuMat.filter(st => periods.some(p => (al_matrix[st.pin]||{})[`${date}__P${p}`]==='A'));
         if (!dayAbsent.length) return;
 
-        const head = ['PIN', 'Name', ...periods.map(p=>`P${p}`), 'Total\nAbsent'];
+        const head = ['PIN', 'Name', ...periods.map(p=>`P${p}`), 'Total Absent'];
         const body = dayAbsent.map(st => {
             const pMap = al_matrix[st.pin]||{};
             let rowAbs = 0;
@@ -13546,7 +13565,7 @@ function absList_downloadPDF() {
             periods.forEach(p => {
                 const v = pMap[`${date}__P${p}`];
                 if (v==='A') rowAbs++;
-                row.push(v==='A' ? 'A' : v==='P' ? 'P' : '–');
+                row.push(v==='A' ? 'A' : v==='P' ? 'P' : '-');
             });
             row.push(rowAbs);
             return row;
@@ -13563,7 +13582,7 @@ function absList_downloadPDF() {
         doc.autoTable({
             startY: mStartY,
             head: [
-                [{content:`📅 ${al_fmt(date)} – ${al_dayNameFull(date)}`, colSpan:head.length, styles:{fillColor:[40,83,150],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:9,cellPadding:3}}],
+                [{content:`${al_fmt(date)} - ${al_dayNameFull(date)}`, colSpan:head.length, styles:{fillColor:[40,83,150],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:9,cellPadding:3}}],
                 head
             ],
             body,
@@ -13592,16 +13611,16 @@ function absList_downloadPDF() {
             }
         });
         mStartY = doc.lastAutoTable.finalY + 7;
-        if (mStartY > 185) { doc.addPage(); addHeader(doc,'PAGE 1 – Period-wise Matrix (contd.)'); mStartY = 33; }
+        if (mStartY > 185) { doc.addPage(); addHeader(doc,'PAGE 1 - Period-wise Matrix (contd.)'); mStartY = 33; }
     });
     addFooter(doc, pageNo++, totalPages);
 
-    // ── PAGE 2: Register Format ──
+    // -- PAGE 2: Register Format --
     doc.addPage();
-    addHeader(doc, 'PAGE 2 – Register Format (Day-wise Absent/Present)');
+    addHeader(doc, 'PAGE 2 - Register Format (Day-wise Absent/Present)');
     const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
     const absStuReg = al_students.filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'));
-    const regHead = ['Sl.No', 'PIN', 'Name', ...al_dates.map(d=>`${al_fmtShort(d)}\n${al_dayName(d)}`), 'Total Days\nAbsent'];
+    const regHead = ['Sl.No', 'PIN', 'Name', ...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`), 'Total Days Absent'];
     const colAbsCount = {};
     al_dates.forEach(d=>{ colAbsCount[d]=0; });
     const regBody = absStuReg.map((st, idx) => {
@@ -13610,13 +13629,13 @@ function absList_downloadPDF() {
         al_dates.forEach(date => {
             const status = al_isDayPresent(st.pin, date);
             if (status==='A') { colAbsCount[date]++; absDays++; }
-            row.push(status || '–');
+            row.push(status || '-');
         });
         row.push(absDays);
         return row;
     });
-    // Threshold note row
-    regBody.unshift([{content:`Present rule: ≥${threshold} periods attended = P | <${threshold} periods = A`, colSpan:regHead.length, styles:{fontStyle:'italic',fillColor:[227,242,253],textColor:[21,101,192],fontSize:7.5,halign:'center',cellPadding:2.5}}]);
+    // Threshold note row (plain ASCII only - no special chars for PDF compatibility)
+    regBody.unshift([{content:`Present rule: >= ${threshold} periods attended = P (Present) | < ${threshold} periods = A (Absent)`, colSpan:regHead.length, styles:{fontStyle:'italic',fillColor:[227,242,253],textColor:[21,101,192],fontSize:7.5,halign:'center',cellPadding:2.5}}]);
     // Total row
     const totalRegRow = [
         {content:'Total No. of Students Absent', colSpan:3, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[30,100,30],fontSize:8}},
