@@ -2449,36 +2449,44 @@
                     </div>
 
                     <!-- 🎤 Mic Controls (shown below textarea when Questions/Both mode) -->
-                    <div id="assignMicRow" style="display:none;margin-top:10px;">
-                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                            <button id="assignMicStartBtn" onclick="assignMicStart()"
-                                style="display:flex;align-items:center;gap:8px;padding:9px 20px;
-                                       background:linear-gradient(135deg,#e53935,#b71c1c);
-                                       color:#fff;border:none;border-radius:25px;cursor:pointer;
-                                       font-size:14px;font-weight:600;box-shadow:0 3px 10px rgba(229,57,53,0.4);
-                                       transition:all 0.2s;">
-                                <span style="font-size:18px;">🎤</span> Start Mic
-                            </button>
-                            <button id="assignMicStopBtn" onclick="assignMicStop()" disabled
-                                style="display:flex;align-items:center;gap:8px;padding:9px 20px;
-                                       background:#bdbdbd;color:#fff;border:none;border-radius:25px;
-                                       cursor:not-allowed;font-size:14px;font-weight:600;
-                                       transition:all 0.2s;">
-                                <span style="font-size:18px;">⏹</span> Stop Mic
-                            </button>
-                            <!-- Listening indicator -->
-                            <div id="assignMicStatus" style="display:none;align-items:center;gap:8px;
-                                 background:linear-gradient(135deg,#ff1744,#d50000);
-                                 color:#fff;padding:7px 16px;border-radius:20px;
-                                 font-size:13px;font-weight:600;animation:micPulse 1.2s ease-in-out infinite;
-                                 box-shadow:0 2px 12px rgba(255,23,68,0.5);">
-                                <span style="display:inline-block;width:10px;height:10px;background:#fff;
+                    <div id="assignMicRow" style="display:none;margin-top:12px;">
+                        <!-- Icon+text inline controls -->
+                        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:10px 14px;
+                                    background:#fafafa;border:1.5px solid #e0e0e0;border-radius:10px;">
+                            <!-- Start Recording -->
+                            <span id="assignMicStartBtn" onclick="assignMicStart()"
+                                style="display:flex;align-items:center;gap:7px;cursor:pointer;
+                                       color:#c62828;font-weight:700;font-size:14px;user-select:none;
+                                       transition:opacity 0.2s;" title="Start voice recording">
+                                <span style="font-size:20px;line-height:1;">🎤</span>
+                                <span>Start Recording</span>
+                            </span>
+
+                            <span style="color:#ddd;font-size:18px;">|</span>
+
+                            <!-- Stop Recording -->
+                            <span id="assignMicStopBtn" onclick="assignMicStop()"
+                                style="display:flex;align-items:center;gap:7px;cursor:pointer;
+                                       color:#bdbdbd;font-weight:700;font-size:14px;user-select:none;
+                                       pointer-events:none;transition:all 0.2s;" title="Stop recording">
+                                <span style="font-size:20px;line-height:1;">🛑</span>
+                                <span>Stop Recording</span>
+                            </span>
+
+                            <!-- Listening indicator (hidden when idle) -->
+                            <div id="assignMicStatus"
+                                style="display:none;align-items:center;gap:8px;
+                                       background:linear-gradient(135deg,#ff1744,#d50000);
+                                       color:#fff;padding:5px 14px;border-radius:20px;
+                                       font-size:13px;font-weight:600;
+                                       animation:micPulse 1.2s ease-in-out infinite;
+                                       box-shadow:0 2px 10px rgba(255,23,68,0.45);">
+                                <span style="display:inline-block;width:9px;height:9px;background:#fff;
                                       border-radius:50%;animation:micDot 1s ease-in-out infinite;"></span>
                                 🎤 Listening...
                             </div>
-                            <span id="assignMicLang" style="font-size:12px;color:#888;">English (India)</span>
                         </div>
-                        <div id="assignMicError" style="margin-top:8px;color:#c62828;font-size:12px;display:none;"></div>
+                        <div id="assignMicError" style="margin-top:7px;color:#c62828;font-size:12px;display:none;"></div>
                     </div>
 
                     <!-- Drive link -->
@@ -8574,77 +8582,86 @@
             assignMicStop(); // stop mic if running
         }
 
-        // ── 🎤 Speech-to-Text for Assignment Questions ──────────────────────────
-        // Same proven pattern as startVoiceInput() used in Edit Topic:
-        //   continuous=false, interimResults=false → one clean utterance, no duplicates.
-        // Press Start Mic → speak → text appends → auto-returns to "Start Mic" (ready for next question).
-        // Press Stop Mic any time to abort the current utterance.
+        // ── 🎤 WhatsApp-style Continuous Speech-to-Text for Assignment Questions ─
+        //  Key design:
+        //    continuous=true  → session runs through pauses (like WhatsApp)
+        //    interimResults=false → only FINAL results, zero duplicates
+        //    e.results[e.resultIndex] → ONLY the newest result each event, no re-loop
+        //    _assignMicActive flag → controls auto-restart vs user-stopped
+        //    Separate _assignStartSession() → clean restart after browser ends session
         let _assignRecognition = null;
+        let _assignMicActive   = false;
 
         function assignMicStart() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                const errEl = document.getElementById('assignMicError');
-                errEl.textContent = '⚠️ Voice input not supported. Please use Chrome or Edge.';
-                errEl.style.display = 'block';
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                const e = document.getElementById('assignMicError');
+                e.textContent = '⚠️ Voice input not supported. Please use Chrome or Edge on Android.';
+                e.style.display = 'block';
                 return;
             }
             document.getElementById('assignMicError').style.display = 'none';
+            _assignMicActive = true;
+            _assignMicSetUI(true);
+            _assignStartSession();
+        }
 
-            // Abort any existing session
-            if (_assignRecognition) { try { _assignRecognition.abort(); } catch(e){} _assignRecognition = null; }
+        function _assignStartSession() {
+            if (!_assignMicActive) return;   // user already pressed Stop
+            // Clean up any previous session
+            if (_assignRecognition) { try { _assignRecognition.abort(); } catch(e){} }
 
-            _assignRecognition = new SpeechRecognition();
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            _assignRecognition = new SR();
             _assignRecognition.lang           = 'en-IN';
-            _assignRecognition.continuous     = false;   // ← key: one utterance, no repeats
-            _assignRecognition.interimResults  = false;  // ← key: only final result, no duplicates
-
-            _assignRecognition.onstart = function() {
-                _assignMicSetUI(true);  // show Listening...
-            };
+            _assignRecognition.continuous     = true;   // keep alive through pauses
+            _assignRecognition.interimResults = false;  // final only → NO duplicates
 
             _assignRecognition.onresult = function(e) {
-                const transcript = e.results[0][0].transcript.trim();
-                if (transcript) {
-                    const ta = document.getElementById('assignQuestions');
-                    const existing = ta.value;
-                    // Append on a new line if there's already content
-                    ta.value = existing
-                        ? existing.replace(/\s+$/, '') + '\n' + transcript
-                        : transcript;
+                // e.resultIndex = index of the NEWEST result — read only that one
+                const transcript = e.results[e.resultIndex][0].transcript.trim();
+                if (!transcript) return;
+                const ta = document.getElementById('assignQuestions');
+                ta.value = ta.value
+                    ? ta.value.replace(/\s+$/, '') + '\n' + transcript
+                    : transcript;
+                // Scroll textarea to bottom
+                ta.scrollTop = ta.scrollHeight;
+            };
+
+            _assignRecognition.onerror = function(ev) {
+                // 'no-speech' is normal while thinking — ignore, onend will restart
+                if (ev.error === 'no-speech') return;
+                if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+                    const e = document.getElementById('assignMicError');
+                    e.textContent = '🚫 Mic access denied. Allow microphone permission in browser settings.';
+                    e.style.display = 'block';
+                    _assignMicActive = false;
+                    _assignMicSetUI(false);
+                    return;
                 }
+                // Other errors: will auto-restart via onend
             };
 
             _assignRecognition.onend = function() {
-                // Naturally ended after one utterance — reset to ready state
-                _assignRecognition = null;
-                _assignMicSetUI(false);
-            };
-
-            _assignRecognition.onerror = function(e) {
-                const errEl = document.getElementById('assignMicError');
-                if (e.error === 'no-speech') {
-                    errEl.textContent = 'ℹ️ No speech detected. Press Start Mic and speak.';
-                } else if (e.error === 'not-allowed') {
-                    errEl.textContent = '🚫 Mic access denied. Allow microphone in browser settings.';
+                if (_assignMicActive) {
+                    // Browser ended the session (silence timeout, network, etc.)
+                    // Wait 150ms then restart — gives time for abort to fully complete
+                    setTimeout(_assignStartSession, 150);
                 } else {
-                    errEl.textContent = '⚠️ Mic error: ' + e.error;
+                    _assignMicSetUI(false);
                 }
-                errEl.style.display = 'block';
-                _assignRecognition = null;
-                _assignMicSetUI(false);
             };
 
             try {
                 _assignRecognition.start();
             } catch(err) {
-                document.getElementById('assignMicError').textContent = '⚠️ Could not start mic: ' + err.message;
-                document.getElementById('assignMicError').style.display = 'block';
-                _assignMicSetUI(false);
+                // start() can throw if recognition is already running; retry after short delay
+                setTimeout(_assignStartSession, 300);
             }
         }
 
         function assignMicStop() {
+            _assignMicActive = false;              // prevents auto-restart in onend
             if (_assignRecognition) {
                 try { _assignRecognition.abort(); } catch(e) {}
                 _assignRecognition = null;
@@ -8653,28 +8670,24 @@
         }
 
         function _assignMicSetUI(active) {
-            const startBtn  = document.getElementById('assignMicStartBtn');
-            const stopBtn   = document.getElementById('assignMicStopBtn');
-            const statusDiv = document.getElementById('assignMicStatus');
-            if (!startBtn) return;
+            const startEl  = document.getElementById('assignMicStartBtn');
+            const stopEl   = document.getElementById('assignMicStopBtn');
+            const statusEl = document.getElementById('assignMicStatus');
+            if (!startEl) return;
             if (active) {
-                startBtn.disabled = true;
-                startBtn.style.opacity = '0.5';
-                startBtn.style.cursor  = 'not-allowed';
-                stopBtn.disabled = false;
-                stopBtn.style.background  = 'linear-gradient(135deg,#e53935,#b71c1c)';
-                stopBtn.style.cursor      = 'pointer';
-                stopBtn.style.boxShadow   = '0 3px 10px rgba(229,57,53,0.4)';
-                if (statusDiv) statusDiv.style.display = 'flex';
+                // Dim Start, activate Stop, show Listening badge
+                startEl.style.opacity      = '0.35';
+                startEl.style.pointerEvents = 'none';
+                stopEl.style.color         = '#b71c1c';
+                stopEl.style.pointerEvents = 'auto';
+                if (statusEl) statusEl.style.display = 'flex';
             } else {
-                startBtn.disabled = false;
-                startBtn.style.opacity = '1';
-                startBtn.style.cursor  = 'pointer';
-                stopBtn.disabled = true;
-                stopBtn.style.background = '#bdbdbd';
-                stopBtn.style.cursor     = 'not-allowed';
-                stopBtn.style.boxShadow  = 'none';
-                if (statusDiv) statusDiv.style.display = 'none';
+                // Restore Start, grey Stop, hide badge
+                startEl.style.opacity      = '1';
+                startEl.style.pointerEvents = 'auto';
+                stopEl.style.color         = '#bdbdbd';
+                stopEl.style.pointerEvents = 'none';
+                if (statusEl) statusEl.style.display = 'none';
             }
         }
 
