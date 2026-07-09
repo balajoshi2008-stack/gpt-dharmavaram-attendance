@@ -14470,7 +14470,8 @@ async function formGen_download() {
             aoa.push(row);
         });
 
-        const ws = XLSXStyle.utils.aoa_to_sheet(aoa);
+        // xlsx-js-style CDN overwrites the XLSX global with a style-capable version
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
 
         // Merges for header rows
         const merges = [
@@ -14490,32 +14491,32 @@ async function formGen_download() {
             return { wch: Math.max((col.label.length || 0) + 6, 14) };
         });
 
-        // Apply styles using XLSXStyle (xlsx-js-style) which fully supports .s cell styles
-        const range = XLSXStyle.utils.decode_range(ws['!ref']);
+        // Apply styles — XLSX is now xlsx-js-style which fully supports .s cell styles
+        const range = XLSX.utils.decode_range(ws['!ref']);
         const medBorder = { style: 'medium', color: { rgb: '000000' } };
         const allBorders = { top: medBorder, bottom: medBorder, left: medBorder, right: medBorder };
 
         for (let R = range.s.r; R <= range.e.r; R++) {
             for (let C = range.s.c; C <= range.e.c; C++) {
-                const addr = XLSXStyle.utils.encode_cell({ r: R, c: C });
+                const addr = XLSX.utils.encode_cell({ r: R, c: C });
                 if (!ws[addr]) ws[addr] = { v: '', t: 's' };
 
                 let fill, font, alignment;
 
                 if (R === 0) {
-                    // Row 1: GOVERNMENT POLYTECHNIC — white bg, black text, size 16, bold, center
+                    // Row 1: GOVERNMENT POLYTECHNIC — white bg, black, sz16, bold, center
                     fill = { fgColor: { rgb: 'FFFFFF' } };
                     font = { bold: true, color: { rgb: '000000' }, sz: 16, name: 'Calibri' };
                     alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
 
                 } else if (R === 1) {
-                    // Row 2: Subtitle — white bg, black text, size 14, bold, center
+                    // Row 2: Subtitle — white bg, black, sz14, bold, center
                     fill = { fgColor: { rgb: 'FFFFFF' } };
                     font = { bold: true, color: { rgb: '000000' }, sz: 14, name: 'Calibri' };
                     alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
 
                 } else if (ai && R === 2) {
-                    // Row 3: Additional Info — white bg, black text, size 14, bold, center
+                    // Row 3: Additional Info — white bg, black, sz14, bold, center
                     fill = { fgColor: { rgb: 'FFFFFF' } };
                     font = { bold: true, color: { rgb: '000000' }, sz: 14, name: 'Calibri' };
                     alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
@@ -14544,16 +14545,15 @@ async function formGen_download() {
             }
         }
 
-        const wb = XLSXStyle.utils.book_new();
-        XLSXStyle.utils.book_append_sheet(wb, ws, 'Form');
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Form');
 
         const safeYs = ysLabel.replace(/ /g, '_');
         const safeFt = ft.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/ /g, '_');
         const dateStr = localYMD ? localYMD(new Date()) : new Date().toISOString().slice(0,10);
         const fileName = `${safeYs}_${safeFt}_${dateStr}.xlsx`;
 
-        // XLSXStyle (xlsx-js-style) fully supports cell styles — no extra options needed
-        XLSXStyle.writeFile(wb, fileName);
+        XLSX.writeFile(wb, fileName);
         formGen_toast('✅ Excel downloaded!', 'success');
 
     } catch(err) {
