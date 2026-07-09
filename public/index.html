@@ -14328,40 +14328,43 @@ function formGen_buildPreviewTable(students, cols, isPreview) {
     const ft = document.getElementById('fg_formType').value.trim();
     const ai = document.getElementById('fg_addInfo').value.trim();
     const ysLabel = FG_YEAR_SEM_MAP[ys] || ys;
-    const title2 = `${ysLabel} – ${ft}`;
+    const title2 = `${ysLabel} – ${ft}`;
+    const border = 'border:1px solid #999;';
+    const n = cols.length;
 
     let html = `<div style="font-size:12px;color:#888;margin-bottom:8px;font-style:italic;">${isPreview ? '👁️ Preview (first 5 students shown)' : ''}</div>`;
-    html += `<table style="border-collapse:collapse;width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:13px;">`;
+    html += `<table style="border-collapse:collapse;width:100%;font-family:'Calibri',Arial,sans-serif;font-size:13px;">`;
 
     // Row 1: Title
-    html += `<tr><td colspan="${cols.length}" style="background:#1e3c72;color:#fff;font-weight:700;font-size:14px;text-align:center;padding:10px 14px;border:1.5px solid #1e3c72;">GOVERNMENT POLYTECHNIC, DHARMAVARAM</td></tr>`;
-    // Row 2: YearSem – FormType
-    html += `<tr><td colspan="${cols.length}" style="background:#2a5298;color:#fff;font-weight:600;font-size:13px;text-align:center;padding:8px 14px;border:1.5px solid #2a5298;">${title2}</td></tr>`;
+    html += `<tr><td colspan="${n}" style="background:#fff;color:#000;font-weight:700;font-size:16px;text-align:center;padding:8px 14px;${border}">GOVERNMENT POLYTECHNIC, DHARMAVARAM</td></tr>`;
+    // Row 2: Subtitle
+    html += `<tr><td colspan="${n}" style="background:#fff;color:#000;font-weight:700;font-size:14px;text-align:center;padding:6px 14px;${border}">${title2}</td></tr>`;
     // Row 3: Additional Info (if provided)
     if (ai) {
-        html += `<tr><td colspan="${cols.length}" style="background:#e8eef8;color:#2a5298;font-size:12px;text-align:center;padding:6px 14px;border:1.5px solid #c5d3f0;font-style:italic;">${ai}</td></tr>`;
+        html += `<tr><td colspan="${n}" style="background:#fff;color:#000;font-weight:700;font-size:14px;text-align:center;padding:5px 14px;${border}">${ai}</td></tr>`;
     }
-    // Header row
+    // Header row — all columns centered, blue fill
     html += '<tr>';
     cols.forEach(col => {
-        const isName = col.type === 'name';
-        html += `<td style="background:#1e3c72;color:#fff;font-weight:700;font-size:12px;text-align:${isName?'left':'center'};padding:8px 12px;border:1.5px solid #fff;">${col.label}</td>`;
+        html += `<td style="background:#2a5298;color:#fff;font-weight:700;font-size:12px;text-align:center;padding:8px 10px;${border}">${col.label}</td>`;
     });
     html += '</tr>';
 
     // Data rows
     const showStudents = isPreview ? students.slice(0, 5) : students;
+    if (showStudents.length === 0) {
+        html += `<tr><td colspan="${n}" style="text-align:center;padding:12px;color:#888;${border}">No students found for selected year/sem</td></tr>`;
+    }
     showStudents.forEach((st, rowIdx) => {
-        html += `<tr style="background:${rowIdx%2===0?'#fff':'#f5f8ff'};">`;
+        html += '<tr style="background:#fff;">';
         cols.forEach(col => {
             let val = '';
-            if (col.type === 'auto')        val = rowIdx + 1;
-            else if (col.type === 'pin')    val = st.pin || '';
-            else if (col.type === 'name')   val = st.name || '';
-            else if (col.type === 'formula') val = '∑ (auto)';
+            if (col.type === 'auto')       val = rowIdx + 1;
+            else if (col.type === 'pin')   val = st.pin || '';
+            else if (col.type === 'name')  val = st.name || '';
+            else if (col.type === 'formula') val = '∑';
             const isName = col.type === 'name';
-            const isFormula = col.type === 'formula';
-            html += `<td style="padding:7px 10px;border:1px solid #dde4f0;text-align:${isName?'left':'center'};${isFormula?'color:#c62828;font-weight:600;':''}">${val}</td>`;
+            html += `<td style="padding:6px 10px;${border}text-align:${isName ? 'left' : 'center'};">${val}</td>`;
         });
         html += '</tr>';
     });
@@ -14485,45 +14488,57 @@ async function formGen_download() {
             return { wch: Math.max((col.label.length || 0) + 6, 14) };
         });
 
-        // Apply styles to every cell
+        // Apply styles to every cell — matching screenshot exactly
         const range = XLSX.utils.decode_range(ws['!ref']);
+        const thinBlack = { style: 'thin', color: { rgb: '000000' } };
+        const allBorders = { top: thinBlack, bottom: thinBlack, left: thinBlack, right: thinBlack };
+
         for (let R = range.s.r; R <= range.e.r; R++) {
             for (let C = range.s.c; C <= range.e.c; C++) {
                 const addr = XLSX.utils.encode_cell({ r: R, c: C });
                 if (!ws[addr]) ws[addr] = { v: '', t: 's' };
 
-                let fill, font, alignment, border;
-                const thinBorder = { style: 'thin', color: { rgb: '999999' } };
-                border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+                let fill, font, alignment;
 
-                if (R === 0) { // Title row
-                    fill = { fgColor: { rgb: '1E3C72' } };
-                    font = { bold: true, color: { rgb: 'FFFFFF' }, sz: 14, name: 'Calibri' };
-                    alignment = { horizontal: 'center', vertical: 'center' };
-                } else if (R === 1) { // Subtitle row
+                if (R === 0) {
+                    // Row 1: GOVERNMENT POLYTECHNIC — white bg, black text, size 16, bold, center
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { bold: true, color: { rgb: '000000' }, sz: 16, name: 'Calibri' };
+                    alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
+
+                } else if (R === 1) {
+                    // Row 2: Subtitle (Sem X – Form Type) — white bg, black text, size 14, bold, center
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { bold: true, color: { rgb: '000000' }, sz: 14, name: 'Calibri' };
+                    alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
+
+                } else if (ai && R === 2) {
+                    // Row 3: Additional Info — white bg, black text, size 14, bold, center
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { bold: true, color: { rgb: '000000' }, sz: 14, name: 'Calibri' };
+                    alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
+
+                } else if (R === headerRowIdx) {
+                    // Header row — BLUE fill, white bold text, ALL columns center-aligned
                     fill = { fgColor: { rgb: '2A5298' } };
-                    font = { bold: true, color: { rgb: 'FFFFFF' }, sz: 12, name: 'Calibri' };
-                    alignment = { horizontal: 'center', vertical: 'center' };
-                } else if (ai && R === 2) { // Additional info
-                    fill = { fgColor: { rgb: 'E8EEF8' } };
-                    font = { italic: true, color: { rgb: '2A5298' }, sz: 10, name: 'Calibri' };
-                    alignment = { horizontal: 'center', vertical: 'center' };
-                } else if (R === headerRowIdx) { // Column headers
-                    fill = { fgColor: { rgb: '1E3C72' } };
                     font = { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' };
-                    const isNameCol = cols[C] && cols[C].type === 'name';
-                    alignment = { horizontal: isNameCol ? 'left' : 'center', vertical: 'center' };
-                } else { // Data rows
-                    fill = { fgColor: { rgb: (R - headerRowIdx) % 2 === 0 ? 'FFFFFF' : 'F5F8FF' } };
-                    font = { sz: 11, name: 'Calibri' };
+                    alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
+
+                } else {
+                    // Data rows — white bg, size 11, center except Student Name = left
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { sz: 11, name: 'Calibri', color: { rgb: '000000' } };
                     const col = cols[C];
                     const isNameCol = col && col.type === 'name';
-                    const isFormula = col && col.type === 'formula';
                     alignment = { horizontal: isNameCol ? 'left' : 'center', vertical: 'center' };
-                    if (isFormula) { font.bold = true; font.color = { rgb: 'C62828' }; }
                 }
 
-                ws[addr].s = { fill: { patternType: 'solid', ...fill }, font, alignment, border };
+                ws[addr].s = {
+                    fill: { patternType: 'solid', ...fill },
+                    font,
+                    alignment,
+                    border: allBorders
+                };
             }
         }
 
