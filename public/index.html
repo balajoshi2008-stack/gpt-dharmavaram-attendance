@@ -3108,7 +3108,94 @@
                 <div id="recLoading" style="display:none;color:#667eea;font-weight:600;margin-top:16px;">⏳ Checking records...</div>
             </div>
         </div>
+
+            <!-- ══════════════ FORM GENERATOR TAB (Faculty) ══════════════ -->
+            <div id="formgen" class="tab-content">
+                <div style="max-width:920px;margin:0 auto;padding:10px 0 40px;">
+                    <div style="background:linear-gradient(135deg,#1e3c72 0%,#2a5298 60%,#667eea 100%);border-radius:16px;padding:22px 28px 18px;margin-bottom:22px;box-shadow:0 8px 32px rgba(30,60,114,0.18);">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:34px;">📋</span>
+                            <div>
+                                <h2 style="color:#fff;margin:0;font-size:21px;font-weight:700;">Form Generator</h2>
+                                <p style="color:rgba(255,255,255,0.75);margin:4px 0 0;font-size:13px;">Create custom Excel forms with student data auto-filled from Firestore</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="fg_toast" style="display:none;position:fixed;top:24px;right:24px;z-index:9999;padding:12px 22px;border-radius:10px;font-weight:600;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.18);min-width:220px;"></div>
+                    <!-- STEP 1 -->
+                    <div style="background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+                            <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">1</div>
+                            <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Form Identity</h3>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                            <div>
+                                <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Year / Semester</label>
+                                <select id="fg_yearSem" onchange="formGen_buildTitle()" style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                                    <option value="">-- Select --</option>
+                                    <option value="1">Year 1</option>
+                                    <option value="2-3">Semester 3</option>
+                                    <option value="2-4">Semester 4</option>
+                                    <option value="3-5">Semester 5</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Form Type / Purpose</label>
+                                <input type="text" id="fg_formType" oninput="formGen_buildTitle()" placeholder="e.g. Key List, Viva Marks, Lab Record..." style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                            </div>
+                        </div>
+                        <div style="margin-top:14px;">
+                            <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Additional Info <span style="color:#aaa;font-weight:400;text-transform:none;">(optional)</span></label>
+                            <input type="text" id="fg_addInfo" oninput="formGen_buildTitle()" placeholder="e.g. Subject: IoT  |  Date: 15-06-2026" style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                        </div>
+                        <div id="fg_titlePreview" style="margin-top:18px;background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1.5px solid #c5d3f0;border-radius:10px;padding:14px 18px;text-align:center;display:none;">
+                            <div style="font-size:11px;color:#667eea;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;">Live Title Preview</div>
+                            <div style="font-weight:700;color:#1e3c72;font-size:14px;">GOVERNMENT POLYTECHNIC, DHARMAVARAM</div>
+                            <div id="fg_previewLine2" style="color:#2a5298;font-size:13px;font-weight:600;margin-top:3px;"></div>
+                            <div id="fg_previewLine3" style="color:#666;font-size:12px;font-style:italic;margin-top:2px;"></div>
+                        </div>
+                    </div>
+                    <!-- STEP 2 -->
+                    <div style="background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+                            <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">2</div>
+                            <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Column Builder</h3>
+                        </div>
+                        <div style="margin-bottom:16px;">
+                            <div style="font-size:11px;font-weight:700;color:#667eea;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">⚡ Quick Add Columns</div>
+                            <div id="fg_chips" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding:12px 16px;background:#f7f9ff;border-radius:10px;border:1px solid #e0e7f3;">
+                            <span style="font-size:13px;font-weight:600;color:#2a5298;white-space:nowrap;">No. of columns:</span>
+                            <input type="number" id="fg_colCount" min="1" max="20" value="1" style="width:65px;padding:8px 10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;font-weight:600;text-align:center;">
+                            <button onclick="formGen_addColumns()" style="padding:8px 18px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">➕ Add Columns</button>
+                            <button onclick="formGen_clearAll()" style="padding:8px 18px;background:#fff0f0;color:#c62828;border:1.5px solid #f48fb1;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🗑 Clear All</button>
+                            <span id="fg_colCountLabel" style="font-size:12px;color:#888;margin-left:auto;">0 columns added</span>
+                        </div>
+                        <div id="fg_columns" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;"></div>
+                        <div id="fg_noColsMsg" style="text-align:center;color:#bbb;padding:30px;font-size:14px;border:2px dashed #e0e7f3;border-radius:10px;margin-top:4px;">
+                            📭 No columns added yet — use Quick Add chips or enter count above
+                        </div>
+                    </div>
+                    <!-- STEP 3 -->
+                    <div style="background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+                            <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">3</div>
+                            <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Preview &amp; Download</h3>
+                        </div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+                            <button onclick="formGen_preview()" id="fg_previewBtn" style="padding:11px 26px;background:linear-gradient(135deg,#2a5298,#1e3c72);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(42,82,152,0.25);">👁️ Preview Form</button>
+                            <button onclick="formGen_download()" id="fg_downloadBtn" disabled style="padding:11px 26px;background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:not-allowed;box-shadow:0 4px 12px rgba(46,125,50,0.25);opacity:0.45;">⬇️ Download Excel</button>
+                        </div>
+                        <div id="fg_loadingMsg" style="display:none;color:#667eea;font-weight:600;margin-bottom:12px;">⏳ Loading student data...</div>
+                        <div id="fg_previewArea" style="overflow-x:auto;"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- ══════════════ END FORM GENERATOR TAB ══════════════ -->
+
     </div>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -3701,6 +3788,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'assignments\'); loadMyAssignments();">📝 Assignments</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'pqpView\'); loadFacultyPQP();"> PQP</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'notifications\'); loadNotificationsList();">📢 Notifications</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'formgen\'); formGen_onTabOpen();">📋 Form Generator</button>';
             }
             navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logout\')">🚪 Logout</button>';
         }
@@ -4140,12 +4228,15 @@
             const list = document.getElementById('mappingsList');
             list.innerHTML = '';
 
-            if (Object.keys(FACULTY_MAP).length === 0) {
+            // Only show mappings for subjects that still exist in SUBJECTS
+            const validMappings = Object.keys(FACULTY_MAP).filter(code => SUBJECTS[code]);
+
+            if (validMappings.length === 0) {
                 list.innerHTML = '<p style="color: #999;">No mappings yet</p>';
                 return;
             }
 
-            Object.keys(FACULTY_MAP).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).forEach(subCode => {
+            validMappings.sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).forEach(subCode => {
                 const div = document.createElement('div');
                 div.className = 'subject-item';
                 div.innerHTML = `
@@ -4490,9 +4581,17 @@
                 // Must use set() WITHOUT merge:true — merge keeps deleted keys in Firestore
                 db.collection('settings').doc('subjects').set(SUBJECTS)
                     .catch(e => alert('❌ Failed to delete: ' + e.message));
+
+                // Also clean up faculty mapping for this subject
+                if (FACULTY_MAP[code]) {
+                    delete FACULTY_MAP[code];
+                    saveSettings('facultyMap', FACULTY_MAP);
+                }
+
                 displaySubjects();
                 updateTTSubjectList();
                 updateMapDropdowns();
+                displayMappings();
             }
         }
 
@@ -13955,7 +14054,507 @@ function absList_downloadExcel() {
     XLSX.writeFile(wb, fileName);
 }
 // ╚══════════════ END ABSENT LIST MODULE ═══════════════════════╝
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║           FORM GENERATOR MODULE  (formGen_ prefix)          ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let fg_columns_data = []; // Array of {id, label, type, sumCols:[]}
+let fg_drag_idx = null;
+let fg_previewed = false;
+
+const FG_YEAR_SEM_MAP = {
+    '1':   '1st Year',
+    '2-3': 'Semester 3',
+    '2-4': 'Semester 4',
+    '3-5': 'Semester 5'
+};
+
+const FG_CHIPS = [
+    { label: 'Sl.No',        type: 'auto',        color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
+    { label: 'PIN',          type: 'pin',         color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
+    { label: 'Student Name', type: 'name',        color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
+    { label: 'Scholarship',  type: 'scholarship', color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
+    { label: 'Viva',         type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Lab Record',   type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Observation',  type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Assignment',   type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Unit 1',       type: 'manual',      color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+    { label: 'Unit 2',       type: 'manual',      color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+    { label: 'Unit 3',       type: 'manual',      color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+    { label: 'Total',        type: 'formula',     color: '#c62828', bg: '#fce4ec', border: '#f48fb1' },
+    { label: 'Remarks',      type: 'manual',      color: '#6a1b9a', bg: '#f3e5f5', border: '#ce93d8' },
+    { label: 'Signature',    type: 'manual',      color: '#6a1b9a', bg: '#f3e5f5', border: '#ce93d8' },
+];
+
+function formGen_onTabOpen() {
+    formGen_renderChips();
+    formGen_renderCards();
+}
+
+function formGen_renderChips() {
+    const container = document.getElementById('fg_chips');
+    if (!container) return;
+    container.innerHTML = '';
+    FG_CHIPS.forEach(chip => {
+        const btn = document.createElement('button');
+        btn.textContent = chip.label;
+        btn.style.cssText = `padding:6px 14px;background:${chip.bg};border:1.5px solid ${chip.border};border-radius:20px;font-size:13px;font-weight:600;color:${chip.color};cursor:pointer;transition:all 0.18s;`;
+        btn.onmouseover = () => { btn.style.background = chip.color; btn.style.color = '#fff'; };
+        btn.onmouseout  = () => { btn.style.background = chip.bg;    btn.style.color = chip.color; };
+        btn.onclick = () => formGen_addChip(chip.label, chip.type);
+        container.appendChild(btn);
+    });
+}
+
+function formGen_buildTitle() {
+    const ys = document.getElementById('fg_yearSem').value;
+    const ft = document.getElementById('fg_formType').value.trim();
+    const ai = document.getElementById('fg_addInfo').value.trim();
+    const preview = document.getElementById('fg_titlePreview');
+    if (ys || ft) {
+        preview.style.display = 'block';
+        const label = FG_YEAR_SEM_MAP[ys] || '';
+        document.getElementById('fg_previewLine2').textContent = (label && ft) ? `${label} – ${ft}` : (label || ft);
+        document.getElementById('fg_previewLine3').textContent = ai || '';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function formGen_detectType(label) {
+    const l = label.toLowerCase().trim();
+    if (/\bsl\.?no\b|\bserial\b/.test(l)) return 'auto';
+    if (l === 'pin' || l === 'roll' || l === 'roll no') return 'pin';
+    if (/name/.test(l)) return 'name';
+    if (/scholar/.test(l)) return 'scholarship';
+    if (/total|sum|\bmarks\b/.test(l)) return 'formula';
+    return 'manual';
+}
+
+function formGen_addChip(label, type) {
+    const dupe = fg_columns_data.some(c => c.label.toLowerCase() === label.toLowerCase());
+    if (dupe) { formGen_toast(`"${label}" already added`, 'error'); return; }
+    fg_columns_data.push({ id: Date.now() + Math.random(), label, type, sumCols: [] });
+    fg_previewed = false;
+    formGen_renderCards();
+}
+
+function formGen_addColumns() {
+    const n = parseInt(document.getElementById('fg_colCount').value) || 1;
+    for (let i = 0; i < n; i++) {
+        fg_columns_data.push({ id: Date.now() + Math.random() + i, label: '', type: 'manual', sumCols: [] });
+    }
+    fg_previewed = false;
+    formGen_renderCards();
+}
+
+function formGen_clearAll() {
+    if (fg_columns_data.length === 0) return;
+    if (!confirm('Clear all columns?')) return;
+    fg_columns_data = [];
+    fg_previewed = false;
+    document.getElementById('fg_previewArea').innerHTML = '';
+    document.getElementById('fg_downloadBtn').disabled = true;
+    document.getElementById('fg_downloadBtn').style.opacity = '0.45';
+    document.getElementById('fg_downloadBtn').style.cursor = 'not-allowed';
+    formGen_renderCards();
+}
+
+function formGen_renderCards() {
+    const container = document.getElementById('fg_columns');
+    const noMsg = document.getElementById('fg_noColsMsg');
+    const label = document.getElementById('fg_colCountLabel');
+    if (!container) return;
+    container.innerHTML = '';
+    noMsg.style.display = fg_columns_data.length === 0 ? 'block' : 'none';
+    label.textContent = fg_columns_data.length + ' column' + (fg_columns_data.length !== 1 ? 's' : '') + ' added';
+
+    fg_columns_data.forEach((col, idx) => {
+        const card = document.createElement('div');
+        card.draggable = true;
+        card.dataset.idx = idx;
+        card.style.cssText = 'background:#fff;border:1.5px solid #e0e7f3;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(42,82,152,0.06);cursor:grab;position:relative;transition:box-shadow 0.2s;';
+
+        // Type hint
+        const hints = {
+            auto:        '⚡ Auto-generated (1, 2, 3…)',
+            pin:         '📂 Auto-filled from Firestore',
+            name:        '📂 Auto-filled from Firestore',
+            scholarship: '📂 Auto-filled from Firestore',
+            formula:     '∑ SUM of selected columns',
+            manual:      '✏️ Blank — enter manually'
+        };
+
+        // For formula type, build checkbox list of manual cols
+        let sumCheckboxes = '';
+        if (col.type === 'formula') {
+            const manualCols = fg_columns_data.filter((c, i) => i !== idx && c.type === 'manual' && c.label);
+            if (manualCols.length > 0) {
+                sumCheckboxes = `<div style="margin-top:10px;padding:8px 10px;background:#fff8f8;border:1px solid #f8bbd0;border-radius:8px;">
+                    <div style="font-size:11px;font-weight:700;color:#c62828;margin-bottom:6px;">∑ Select columns to sum:</div>
+                    ${manualCols.map(mc => `
+                        <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px;cursor:pointer;">
+                            <input type="checkbox" onchange="formGen_updateSumCols(${idx})"
+                                data-colid="${mc.id}"
+                                ${col.sumCols.includes(String(mc.id)) ? 'checked' : ''}
+                                style="width:14px;height:14px;cursor:pointer;">
+                            <span style="color:#333;">${mc.label}</span>
+                        </label>`).join('')}
+                </div>`;
+            } else {
+                sumCheckboxes = `<div style="margin-top:8px;font-size:11px;color:#e57373;font-style:italic;">Add manual columns first to include in sum</div>`;
+            }
+        }
+
+        card.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <span style="color:#bbb;font-size:18px;cursor:grab;" title="Drag to reorder">⠿</span>
+                <span style="font-size:11px;font-weight:700;color:#667eea;text-transform:uppercase;letter-spacing:0.5px;">Column ${idx + 1}</span>
+                <button onclick="formGen_removeCol(${idx})" style="margin-left:auto;background:#fff0f0;border:1px solid #f48fb1;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#c62828;padding:0;" title="Remove">✕</button>
+            </div>
+            <input type="text" value="${col.label}" placeholder="Column heading..."
+                oninput="formGen_updateLabel(${idx},this.value)"
+                style="width:100%;padding:8px 10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:13px;font-weight:600;color:#1e3c72;margin-bottom:8px;outline:none;">
+            <select onchange="formGen_updateType(${idx},this.value)"
+                style="width:100%;padding:7px 10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:12px;color:#2a5298;background:#f7f9ff;margin-bottom:6px;">
+                <option value="manual"   ${col.type==='manual'   ?'selected':''}>✏️ Manual entry (blank)</option>
+                <option value="auto"     ${col.type==='auto'     ?'selected':''}>🔢 Auto Sl.No (1,2,3…)</option>
+                <option value="pin"      ${col.type==='pin'      ?'selected':''}>🔑 PIN (from Firestore)</option>
+                <option value="name"     ${col.type==='name'     ?'selected':''}>👤 Student Name (from Firestore)</option>
+                <option value="scholarship" ${col.type==='scholarship'?'selected':''}>🎓 Scholarship (from Firestore)</option>
+                <option value="formula"  ${col.type==='formula'  ?'selected':''}>∑ Total / Formula</option>
+            </select>
+            <div style="font-size:11px;color:#888;font-style:italic;">${hints[col.type]}</div>
+            ${sumCheckboxes}
+        `;
+
+        // Drag events
+        card.addEventListener('dragstart', e => { fg_drag_idx = idx; card.style.opacity='0.5'; });
+        card.addEventListener('dragend',   e => { fg_drag_idx = null; card.style.opacity='1'; });
+        card.addEventListener('dragover',  e => { e.preventDefault(); card.style.boxShadow='0 0 0 2px #667eea'; });
+        card.addEventListener('dragleave', e => { card.style.boxShadow=''; });
+        card.addEventListener('drop', e => {
+            e.preventDefault();
+            card.style.boxShadow = '';
+            if (fg_drag_idx === null || fg_drag_idx === idx) return;
+            const moved = fg_columns_data.splice(fg_drag_idx, 1)[0];
+            fg_columns_data.splice(idx, 0, moved);
+            fg_previewed = false;
+            formGen_renderCards();
+        });
+
+        container.appendChild(card);
+    });
+}
+
+function formGen_updateLabel(idx, val) {
+    if (!fg_columns_data[idx]) return;
+    fg_columns_data[idx].label = val;
+    // Smart type detection only if user hasn't manually changed type
+    const detected = formGen_detectType(val);
+    if (detected !== 'manual') {
+        fg_columns_data[idx].type = detected;
+        fg_previewed = false;
+        formGen_renderCards();
+    }
+}
+
+function formGen_updateType(idx, val) {
+    if (!fg_columns_data[idx]) return;
+    fg_columns_data[idx].type = val;
+    if (val !== 'formula') fg_columns_data[idx].sumCols = [];
+    fg_previewed = false;
+    formGen_renderCards();
+}
+
+function formGen_updateSumCols(idx) {
+    const card = document.getElementById('fg_columns').children[idx];
+    if (!card) return;
+    const checked = [...card.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.dataset.colid);
+    fg_columns_data[idx].sumCols = checked;
+}
+
+function formGen_removeCol(idx) {
+    fg_columns_data.splice(idx, 1);
+    fg_previewed = false;
+    formGen_renderCards();
+}
+
+function formGen_validate() {
+    const ys = document.getElementById('fg_yearSem').value;
+    const ft = document.getElementById('fg_formType').value.trim();
+    if (!ys)  { formGen_toast('Please select a Year / Semester', 'error'); return false; }
+    if (!ft)  { formGen_toast('Please enter a Form Type / Purpose', 'error'); return false; }
+    if (fg_columns_data.length === 0) { formGen_toast('Please add at least one column', 'error'); return false; }
+    for (let i = 0; i < fg_columns_data.length; i++) {
+        if (!fg_columns_data[i].label.trim()) {
+            formGen_toast(`Column ${i + 1} has no heading`, 'error'); return false;
+        }
+    }
+    return true;
+}
+
+function formGen_toast(msg, type = 'info') {
+    const el = document.getElementById('fg_toast');
+    if (!el) return;
+    const colors = {
+        info:    { bg: '#e3f0ff', color: '#1565c0', border: '#90caf9' },
+        success: { bg: '#e8f5e9', color: '#2e7d32', border: '#a5d6a7' },
+        error:   { bg: '#ffeaea', color: '#c62828', border: '#ef9a9a' }
+    };
+    const c = colors[type] || colors.info;
+    el.style.cssText = `display:block;position:fixed;top:24px;right:24px;z-index:9999;padding:12px 22px;border-radius:10px;font-weight:600;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:220px;background:${c.bg};color:${c.color};border:1.5px solid ${c.border};`;
+    el.textContent = msg;
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+async function formGen_loadStudents(ys) {
+    const [y, s] = ys.split('-');
+    let students = [];
+    // Try in-memory STUDENTS first
+    if (typeof STUDENTS === 'object' && STUDENTS[y]) {
+        const sem = (y === '1') ? '1' : s;
+        students = [...(STUDENTS[y]?.[sem] || STUDENTS[y]?.['1'] || [])];
+    }
+    if (!students.length) {
+        const snap = await db.collection('students').where('yearSem', '==', ys).orderBy('name').get();
+        snap.forEach(d => students.push(d.data()));
+    } else {
+        students.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return students;
+}
+
+function formGen_buildPreviewTable(students, cols, isPreview) {
+    const ys = document.getElementById('fg_yearSem').value;
+    const ft = document.getElementById('fg_formType').value.trim();
+    const ai = document.getElementById('fg_addInfo').value.trim();
+    const ysLabel = FG_YEAR_SEM_MAP[ys] || ys;
+    const title2 = `${ysLabel} – ${ft}`;
+
+    let html = `<div style="font-size:12px;color:#888;margin-bottom:8px;font-style:italic;">${isPreview ? '👁️ Preview (first 5 students shown)' : ''}</div>`;
+    html += `<table style="border-collapse:collapse;width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:13px;">`;
+
+    // Row 1: Title
+    html += `<tr><td colspan="${cols.length}" style="background:#1e3c72;color:#fff;font-weight:700;font-size:14px;text-align:center;padding:10px 14px;border:1.5px solid #1e3c72;">GOVERNMENT POLYTECHNIC, DHARMAVARAM</td></tr>`;
+    // Row 2: YearSem – FormType
+    html += `<tr><td colspan="${cols.length}" style="background:#2a5298;color:#fff;font-weight:600;font-size:13px;text-align:center;padding:8px 14px;border:1.5px solid #2a5298;">${title2}</td></tr>`;
+    // Row 3: Additional Info (if provided)
+    if (ai) {
+        html += `<tr><td colspan="${cols.length}" style="background:#e8eef8;color:#2a5298;font-size:12px;text-align:center;padding:6px 14px;border:1.5px solid #c5d3f0;font-style:italic;">${ai}</td></tr>`;
+    }
+    // Header row
+    html += '<tr>';
+    cols.forEach(col => {
+        const isName = col.type === 'name';
+        html += `<td style="background:#1e3c72;color:#fff;font-weight:700;font-size:12px;text-align:${isName?'left':'center'};padding:8px 12px;border:1.5px solid #fff;">${col.label}</td>`;
+    });
+    html += '</tr>';
+
+    // Data rows
+    const showStudents = isPreview ? students.slice(0, 5) : students;
+    showStudents.forEach((st, rowIdx) => {
+        html += `<tr style="background:${rowIdx%2===0?'#fff':'#f5f8ff'};">`;
+        cols.forEach(col => {
+            let val = '';
+            if (col.type === 'auto')        val = rowIdx + 1;
+            else if (col.type === 'pin')    val = st.pin || '';
+            else if (col.type === 'name')   val = st.name || '';
+            else if (col.type === 'scholarship') val = st.scholarship || '';
+            else if (col.type === 'formula') val = '∑ (auto)';
+            const isName = col.type === 'name';
+            const isFormula = col.type === 'formula';
+            html += `<td style="padding:7px 10px;border:1px solid #dde4f0;text-align:${isName?'left':'center'};${isFormula?'color:#c62828;font-weight:600;':''}">${val}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</table>';
+    return html;
+}
+
+async function formGen_preview() {
+    if (!formGen_validate()) return;
+    const ys = document.getElementById('fg_yearSem').value;
+    const loadMsg = document.getElementById('fg_loadingMsg');
+    const previewArea = document.getElementById('fg_previewArea');
+    const btn = document.getElementById('fg_previewBtn');
+    btn.disabled = true; btn.textContent = '⏳ Loading...';
+    loadMsg.style.display = 'block';
+    previewArea.innerHTML = '';
+    try {
+        // Read current sumCols from DOM before rendering
+        formGen_syncSumCols();
+        const students = await formGen_loadStudents(ys);
+        if (!students.length) { formGen_toast('No students found for selected semester', 'error'); return; }
+        previewArea.innerHTML = formGen_buildPreviewTable(students, fg_columns_data, true);
+        fg_previewed = true;
+        const dlBtn = document.getElementById('fg_downloadBtn');
+        dlBtn.disabled = false; dlBtn.style.opacity = '1'; dlBtn.style.cursor = 'pointer';
+        formGen_toast('Preview ready! (' + students.length + ' students)', 'success');
+    } catch(err) {
+        formGen_toast('Error loading students: ' + err.message, 'error');
+    } finally {
+        loadMsg.style.display = 'none';
+        btn.disabled = false; btn.textContent = '👁️ Preview Form';
+    }
+}
+
+function formGen_syncSumCols() {
+    const container = document.getElementById('fg_columns');
+    if (!container) return;
+    fg_columns_data.forEach((col, idx) => {
+        if (col.type === 'formula') {
+            const card = container.children[idx];
+            if (card) {
+                const checked = [...card.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.dataset.colid);
+                fg_columns_data[idx].sumCols = checked;
+            }
+        }
+    });
+}
+
+async function formGen_download() {
+    if (!formGen_validate()) return;
+    formGen_syncSumCols();
+    const ys = document.getElementById('fg_yearSem').value;
+    const ft = document.getElementById('fg_formType').value.trim();
+    const ai = document.getElementById('fg_addInfo').value.trim();
+    const ysLabel = FG_YEAR_SEM_MAP[ys] || ys;
+    const btn = document.getElementById('fg_downloadBtn');
+    const loadMsg = document.getElementById('fg_loadingMsg');
+    btn.disabled = true; btn.textContent = '⏳ Generating...';
+    loadMsg.style.display = 'block';
+
+    try {
+        const students = await formGen_loadStudents(ys);
+        if (!students.length) { formGen_toast('No students found', 'error'); return; }
+
+        const cols = fg_columns_data;
+        const colCount = cols.length;
+        // Build a map of col id → excel column letter (0-indexed from A)
+        const colLetter = idx => String.fromCharCode(65 + idx);
+
+        // Build AOA rows
+        const aoa = [];
+        // Row 0: Title (merged)
+        aoa.push(['GOVERNMENT POLYTECHNIC, DHARMAVARAM', ...Array(colCount - 1).fill(null)]);
+        // Row 1: Subtitle
+        aoa.push([`${ysLabel} – ${ft}`, ...Array(colCount - 1).fill(null)]);
+        // Row 2: Additional info (if any)
+        let headerRowIdx = 2;
+        if (ai) {
+            aoa.push([ai, ...Array(colCount - 1).fill(null)]);
+            headerRowIdx = 3;
+        }
+        // Header row
+        aoa.push(cols.map(c => c.label));
+
+        // Data rows
+        students.forEach((st, rowIdx) => {
+            const excelRowNum = headerRowIdx + 2 + rowIdx; // 1-indexed excel row
+            const row = cols.map((col, ci) => {
+                if (col.type === 'auto')        return rowIdx + 1;
+                if (col.type === 'pin')         return st.pin || '';
+                if (col.type === 'name')        return st.name || '';
+                if (col.type === 'scholarship') return st.scholarship || '';
+                if (col.type === 'formula') {
+                    // Find manual cols that are selected for sum
+                    const sumIdxs = col.sumCols.map(id => cols.findIndex(c => String(c.id) === id)).filter(i => i >= 0);
+                    if (sumIdxs.length === 0) return '';
+                    const formula = sumIdxs.map(i => `${colLetter(i)}${excelRowNum}`).join('+');
+                    return { f: formula };
+                }
+                return '';
+            });
+            aoa.push(row);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        // Merges for header rows
+        const merges = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } },
+        ];
+        if (ai) {
+            merges.push({ s: { r: 2, c: 0 }, e: { r: 2, c: colCount - 1 } });
+        }
+        ws['!merges'] = merges;
+
+        // Column widths
+        ws['!cols'] = cols.map(col => {
+            if (col.type === 'auto')   return { wch: 7 };
+            if (col.type === 'pin')    return { wch: 16 };
+            if (col.type === 'name')   return { wch: 28 };
+            return { wch: Math.max((col.label.length || 0) + 6, 14) };
+        });
+
+        // Apply styles to every cell
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; R++) {
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+
+                let fill, font, alignment, border;
+                const thinBorder = { style: 'thin', color: { rgb: '999999' } };
+                border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+
+                if (R === 0) { // Title row
+                    fill = { fgColor: { rgb: '1E3C72' } };
+                    font = { bold: true, color: { rgb: 'FFFFFF' }, sz: 14, name: 'Calibri' };
+                    alignment = { horizontal: 'center', vertical: 'center' };
+                } else if (R === 1) { // Subtitle row
+                    fill = { fgColor: { rgb: '2A5298' } };
+                    font = { bold: true, color: { rgb: 'FFFFFF' }, sz: 12, name: 'Calibri' };
+                    alignment = { horizontal: 'center', vertical: 'center' };
+                } else if (ai && R === 2) { // Additional info
+                    fill = { fgColor: { rgb: 'E8EEF8' } };
+                    font = { italic: true, color: { rgb: '2A5298' }, sz: 10, name: 'Calibri' };
+                    alignment = { horizontal: 'center', vertical: 'center' };
+                } else if (R === headerRowIdx) { // Column headers
+                    fill = { fgColor: { rgb: '1E3C72' } };
+                    font = { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' };
+                    const isNameCol = cols[C] && cols[C].type === 'name';
+                    alignment = { horizontal: isNameCol ? 'left' : 'center', vertical: 'center' };
+                } else { // Data rows
+                    fill = { fgColor: { rgb: (R - headerRowIdx) % 2 === 0 ? 'FFFFFF' : 'F5F8FF' } };
+                    font = { sz: 11, name: 'Calibri' };
+                    const col = cols[C];
+                    const isNameCol = col && col.type === 'name';
+                    const isFormula = col && col.type === 'formula';
+                    alignment = { horizontal: isNameCol ? 'left' : 'center', vertical: 'center' };
+                    if (isFormula) { font.bold = true; font.color = { rgb: 'C62828' }; }
+                }
+
+                ws[addr].s = { fill: { patternType: 'solid', ...fill }, font, alignment, border };
+            }
+        }
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Form');
+
+        const safeYs = ysLabel.replace(/ /g, '_');
+        const safeFt = ft.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/ /g, '_');
+        const dateStr = localYMD ? localYMD(new Date()) : new Date().toISOString().slice(0,10);
+        const fileName = `${safeYs}_${safeFt}_${dateStr}.xlsx`;
+
+        XLSX.writeFile(wb, fileName);
+        formGen_toast('✅ Excel downloaded!', 'success');
+
+    } catch(err) {
+        formGen_toast('Error generating Excel: ' + err.message, 'error');
+        console.error('[FormGen] download error:', err);
+    } finally {
+        loadMsg.style.display = 'none';
+        btn.disabled = false; btn.textContent = '⬇️ Download Excel';
+    }
+}
+// ╚══════════════ END FORM GENERATOR MODULE ═══════════════════╝
 </script>
+
 </body>
 
 </html>
