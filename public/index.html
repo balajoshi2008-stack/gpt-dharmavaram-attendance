@@ -3172,7 +3172,7 @@
                             <button onclick="formGen_clearAll()" style="padding:8px 18px;background:#fff0f0;color:#c62828;border:1.5px solid #f48fb1;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🗑 Clear All</button>
                             <span id="fg_colCountLabel" style="font-size:12px;color:#888;margin-left:auto;">0 columns added</span>
                         </div>
-                        <div id="fg_columns" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;"></div>
+                        <div id="fg_columns" style="display:flex;flex-direction:row;flex-wrap:nowrap;gap:12px;overflow-x:auto;padding-bottom:6px;"></div>
                         <div id="fg_noColsMsg" style="text-align:center;color:#bbb;padding:30px;font-size:14px;border:2px dashed #e0e7f3;border-radius:10px;margin-top:4px;">
                             📭 No columns added yet — use Quick Add chips or enter count above
                         </div>
@@ -14071,20 +14071,19 @@ const FG_YEAR_SEM_MAP = {
 };
 
 const FG_CHIPS = [
-    { label: 'Sl.No',        type: 'auto',        color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
-    { label: 'PIN',          type: 'pin',         color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
-    { label: 'Student Name', type: 'name',        color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
-    { label: 'Scholarship',  type: 'scholarship', color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
-    { label: 'Viva',         type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
-    { label: 'Lab Record',   type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
-    { label: 'Observation',  type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
-    { label: 'Assignment',   type: 'manual',      color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
-    { label: 'Unit 1',       type: 'manual',      color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
-    { label: 'Unit 2',       type: 'manual',      color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
-    { label: 'Unit 3',       type: 'manual',      color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
-    { label: 'Total',        type: 'formula',     color: '#c62828', bg: '#fce4ec', border: '#f48fb1' },
-    { label: 'Remarks',      type: 'manual',      color: '#6a1b9a', bg: '#f3e5f5', border: '#ce93d8' },
-    { label: 'Signature',    type: 'manual',      color: '#6a1b9a', bg: '#f3e5f5', border: '#ce93d8' },
+    { label: 'Sl.No',        type: 'auto',    color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
+    { label: 'PIN',          type: 'pin',     color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
+    { label: 'Student Name', type: 'name',    color: '#2a5298', bg: '#f0f4ff', border: '#c5d3f0' },
+    { label: 'Viva',         type: 'manual',  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Lab Record',   type: 'manual',  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Observation',  type: 'manual',  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Assignment',   type: 'manual',  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+    { label: 'Unit 1',       type: 'manual',  color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+    { label: 'Unit 2',       type: 'manual',  color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+    { label: 'Unit 3',       type: 'manual',  color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+    { label: 'Total',        type: 'formula', color: '#c62828', bg: '#fce4ec', border: '#f48fb1' },
+    { label: 'Remarks',      type: 'manual',  color: '#6a1b9a', bg: '#f3e5f5', border: '#ce93d8' },
+    { label: 'Signature',    type: 'manual',  color: '#6a1b9a', bg: '#f3e5f5', border: '#ce93d8' },
 ];
 
 function formGen_onTabOpen() {
@@ -14127,8 +14126,7 @@ function formGen_detectType(label) {
     if (/\bsl\.?no\b|\bserial\b/.test(l)) return 'auto';
     if (l === 'pin' || l === 'roll' || l === 'roll no') return 'pin';
     if (/name/.test(l)) return 'name';
-    if (/scholar/.test(l)) return 'scholarship';
-    if (/total|sum|\bmarks\b/.test(l)) return 'formula';
+    if (/total|sum/.test(l)) return 'formula';
     return 'manual';
 }
 
@@ -14174,16 +14172,15 @@ function formGen_renderCards() {
         const card = document.createElement('div');
         card.draggable = true;
         card.dataset.idx = idx;
-        card.style.cssText = 'background:#fff;border:1.5px solid #e0e7f3;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(42,82,152,0.06);cursor:grab;position:relative;transition:box-shadow 0.2s;';
+        card.style.cssText = 'background:#fff;border:1.5px solid #e0e7f3;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(42,82,152,0.06);cursor:grab;position:relative;transition:box-shadow 0.2s;min-width:210px;max-width:240px;flex-shrink:0;';
 
         // Type hint
         const hints = {
-            auto:        '⚡ Auto-generated (1, 2, 3…)',
-            pin:         '📂 Auto-filled from Firestore',
-            name:        '📂 Auto-filled from Firestore',
-            scholarship: '📂 Auto-filled from Firestore',
-            formula:     '∑ SUM of selected columns',
-            manual:      '✏️ Blank — enter manually'
+            auto:    '⚡ Auto-generated (1, 2, 3…)',
+            pin:     '📂 Auto-filled from Firestore',
+            name:    '📂 Auto-filled from Firestore',
+            formula: '∑ SUM of selected mark columns',
+            manual:  '✏️ Blank — faculty enters manually'
         };
 
         // For formula type, build checkbox list of manual cols
@@ -14218,12 +14215,11 @@ function formGen_renderCards() {
                 style="width:100%;padding:8px 10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:13px;font-weight:600;color:#1e3c72;margin-bottom:8px;outline:none;">
             <select onchange="formGen_updateType(${idx},this.value)"
                 style="width:100%;padding:7px 10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:12px;color:#2a5298;background:#f7f9ff;margin-bottom:6px;">
-                <option value="manual"   ${col.type==='manual'   ?'selected':''}>✏️ Manual entry (blank)</option>
-                <option value="auto"     ${col.type==='auto'     ?'selected':''}>🔢 Auto Sl.No (1,2,3…)</option>
-                <option value="pin"      ${col.type==='pin'      ?'selected':''}>🔑 PIN (from Firestore)</option>
-                <option value="name"     ${col.type==='name'     ?'selected':''}>👤 Student Name (from Firestore)</option>
-                <option value="scholarship" ${col.type==='scholarship'?'selected':''}>🎓 Scholarship (from Firestore)</option>
-                <option value="formula"  ${col.type==='formula'  ?'selected':''}>∑ Total / Formula</option>
+                <option value="manual"  ${col.type==='manual'  ?'selected':''}>✏️ Manual (blank)</option>
+                <option value="auto"    ${col.type==='auto'    ?'selected':''}>🔢 Auto Sl.No (1,2,3…)</option>
+                <option value="pin"     ${col.type==='pin'     ?'selected':''}>🔑 PIN (Firestore)</option>
+                <option value="name"    ${col.type==='name'    ?'selected':''}>👤 Student Name (Firestore)</option>
+                <option value="formula" ${col.type==='formula' ?'selected':''}>∑ Total / Formula</option>
             </select>
             <div style="font-size:11px;color:#888;font-style:italic;">${hints[col.type]}</div>
             ${sumCheckboxes}
@@ -14362,7 +14358,6 @@ function formGen_buildPreviewTable(students, cols, isPreview) {
             if (col.type === 'auto')        val = rowIdx + 1;
             else if (col.type === 'pin')    val = st.pin || '';
             else if (col.type === 'name')   val = st.name || '';
-            else if (col.type === 'scholarship') val = st.scholarship || '';
             else if (col.type === 'formula') val = '∑ (auto)';
             const isName = col.type === 'name';
             const isFormula = col.type === 'formula';
@@ -14458,13 +14453,12 @@ async function formGen_download() {
                 if (col.type === 'auto')        return rowIdx + 1;
                 if (col.type === 'pin')         return st.pin || '';
                 if (col.type === 'name')        return st.name || '';
-                if (col.type === 'scholarship') return st.scholarship || '';
                 if (col.type === 'formula') {
-                    // Find manual cols that are selected for sum
+                    // Build SUM() formula — handles empty cells without #VALUE! error
                     const sumIdxs = col.sumCols.map(id => cols.findIndex(c => String(c.id) === id)).filter(i => i >= 0);
-                    if (sumIdxs.length === 0) return '';
-                    const formula = sumIdxs.map(i => `${colLetter(i)}${excelRowNum}`).join('+');
-                    return { f: formula };
+                    if (sumIdxs.length === 0) return 0;
+                    const refs = sumIdxs.map(i => `${colLetter(i)}${excelRowNum}`).join(',');
+                    return { f: `SUM(${refs})` };
                 }
                 return '';
             });
