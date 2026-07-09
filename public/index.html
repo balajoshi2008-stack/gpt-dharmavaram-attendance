@@ -14490,8 +14490,8 @@ async function formGen_download() {
 
         // Apply styles to every cell — matching screenshot exactly
         const range = XLSX.utils.decode_range(ws['!ref']);
-        const thinBlack = { style: 'thin', color: { rgb: '000000' } };
-        const allBorders = { top: thinBlack, bottom: thinBlack, left: thinBlack, right: thinBlack };
+        const medBorder = { style: 'medium', color: { rgb: '000000' } }; // thick/bold borders
+        const allBorders = { top: medBorder, bottom: medBorder, left: medBorder, right: medBorder };
 
         for (let R = range.s.r; R <= range.e.r; R++) {
             for (let C = range.s.c; C <= range.e.c; C++) {
@@ -14550,7 +14550,8 @@ async function formGen_download() {
         const dateStr = localYMD ? localYMD(new Date()) : new Date().toISOString().slice(0,10);
         const fileName = `${safeYs}_${safeFt}_${dateStr}.xlsx`;
 
-        XLSX.writeFile(wb, fileName);
+        // cellStyles:true is REQUIRED — without it SheetJS silently drops all .s style properties
+        XLSX.writeFile(wb, fileName, { cellStyles: true });
         formGen_toast('✅ Excel downloaded!', 'success');
 
     } catch(err) {
