@@ -14457,72 +14457,86 @@ async function formGen_download() {
                 if (col.type === 'pin')         return st.pin || '';
                 if (col.type === 'name')        return st.name || '';
                 if (col.type === 'formula') {
-                    // Build SUM() formula — handles empty cells without #VALUE! error
+                    // IFERROR(SUM(...),0) — shows 0 instead of #VALUE! when mark cells are empty
                     const sumIdxs = col.sumCols.map(id => cols.findIndex(c => String(c.id) === id)).filter(i => i >= 0);
                     if (sumIdxs.length === 0) return 0;
                     const refs = sumIdxs.map(i => `${colLetter(i)}${excelRowNum}`).join(',');
-                    return { f: `SUM(${refs})` };
+                    return { f: `IFERROR(SUM(${refs}),0)` };
                 }
                 return '';
             });
             aoa.push(row);
         });
 
-        // ── Build styled HTML table for Excel (inline CSS — 100% reliable styling) ──
-        const BD = 'border:2pt solid #000;';
-        const FN = 'font-family:Calibri,sans-serif;';
-        const mkTd = (val, sty, attr) => `<td ${attr||''} style="${FN}${BD}${sty}">${val}</td>`;
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        let trs = '';
-        // Row 1 — Title: size 16, bold, center
-        trs += `<tr>${mkTd('GOVERNMENT POLYTECHNIC, DHARMAVARAM',
-            'font-size:16pt;font-weight:bold;text-align:center;vertical-align:middle;',
-            `colspan="${colCount}"`)}</tr>`;
-        // Row 2 — Subtitle: size 14, bold, center
-        trs += `<tr>${mkTd(ysLabel + ' \u2013 ' + ft,
-            'font-size:14pt;font-weight:bold;text-align:center;vertical-align:middle;',
-            `colspan="${colCount}"`)}</tr>`;
-        // Row 3 — Additional Info (optional): size 14, bold, center
-        if (ai) {
-            trs += `<tr>${mkTd(ai,
-                'font-size:14pt;font-weight:bold;text-align:center;vertical-align:middle;',
-                `colspan="${colCount}"`)}</tr>`;
-        }
-        // Header row — blue fill, white bold, all centered
-        trs += '<tr>' + cols.map(col => mkTd(col.label,
-            'font-size:11pt;font-weight:bold;text-align:center;vertical-align:middle;background-color:#2A5298;color:#FFFFFF;'
-        )).join('') + '</tr>';
-        // Data rows
-        students.forEach((st, rowIdx) => {
-            const excelRowNum = headerRowIdx + 2 + rowIdx;
-            trs += '<tr>' + cols.map((col, ci) => {
-                let val = '', sty = 'font-size:11pt;text-align:center;vertical-align:middle;', attr = '';
-                if (col.type === 'auto')      { val = rowIdx + 1; }
-                else if (col.type === 'pin')  { val = st.pin || ''; }
-                else if (col.type === 'name') { val = st.name || ''; sty = 'font-size:11pt;text-align:left;vertical-align:middle;'; }
-                else if (col.type === 'formula') {
-                    const idxs = col.sumCols.map(id => cols.findIndex(c => String(c.id) === id)).filter(i => i >= 0);
-                    if (idxs.length) { attr = `x:fmla="=SUM(${idxs.map(i=>`${colLetter(i)}${excelRowNum}`).join(',')})"`;  val = 0; }
-                }
-                return mkTd(val, sty, attr);
-            }).join('') + '</tr>';
+        // Merges for header rows
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } },
+            ...(ai ? [{ s: { r: 2, c: 0 }, e: { r: 2, c: colCount - 1 } }] : [])
+        ];
+
+        // Column widths
+        ws['!cols'] = cols.map(col => {
+            if (col.type === 'auto')  return { wch: 7 };
+            if (col.type === 'pin')   return { wch: 16 };
+            if (col.type === 'name')  return { wch: 28 };
+            return { wch: Math.max((col.label.length || 0) + 4, 12) };
         });
-        // Assemble Excel-HTML document with MS Office XML namespace for formula support
-        const xlsHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Form</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table border="1" cellspacing="0" style="border-collapse:collapse;">' + trs + '</table></body></html>';
+
+        // Apply styles — thin borders, bold titles, blue header
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const thinB = { style: 'thin', color: { rgb: '000000' } };
+        const borders = { top: thinB, bottom: thinB, left: thinB, right: thinB };
+
+        for (let R = range.s.r; R <= range.e.r; R++) {
+            for (let C = range.s.c; C <= range.e.c; C++) {
+                const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+                let fill, font, alignment;
+                if (R === 0) {
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { bold: true, sz: 16, name: 'Calibri', color: { rgb: '000000' } };
+                    alignment = { horizontal: 'center', vertical: 'center' };
+                } else if (R === 1) {
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { bold: true, sz: 14, name: 'Calibri', color: { rgb: '000000' } };
+                    alignment = { horizontal: 'center', vertical: 'center' };
+                } else if (ai && R === 2) {
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { bold: true, sz: 14, name: 'Calibri', color: { rgb: '000000' } };
+                    alignment = { horizontal: 'center', vertical: 'center' };
+                } else if (R === headerRowIdx) {
+                    fill = { fgColor: { rgb: '2A5298' } };
+                    font = { bold: true, sz: 11, name: 'Calibri', color: { rgb: 'FFFFFF' } };
+                    alignment = { horizontal: 'center', vertical: 'center' };
+                } else {
+                    fill = { fgColor: { rgb: 'FFFFFF' } };
+                    font = { sz: 11, name: 'Calibri', color: { rgb: '000000' } };
+                    const isName = cols[C] && cols[C].type === 'name';
+                    alignment = { horizontal: isName ? 'left' : 'center', vertical: 'center' };
+                }
+                ws[addr].s = { fill: { patternType: 'solid', ...fill }, font, alignment, border: borders };
+            }
+        }
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Form');
 
         const safeYs = ysLabel.replace(/ /g, '_');
         const safeFt = ft.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/ /g, '_');
         const dateStr = localYMD ? localYMD(new Date()) : new Date().toISOString().slice(0, 10);
-        const fileName = `${safeYs}_${safeFt}_${dateStr}.xls`;
+        const fileName = `${safeYs}_${safeFt}_${dateStr}.xlsx`;
 
-        // Download as .xls — Excel opens HTML with full inline-CSS styling preserved
-        const blob = new Blob(['\uFEFF' + xlsHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        // Use XLSX.write with cellStyles:true → proper .xlsx binary → no format warning
+        const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
+        const blob  = new Blob([wbOut], { type: 'application/octet-stream' });
         const dlUrl = URL.createObjectURL(blob);
-        const dlA = document.createElement('a');
+        const dlA   = document.createElement('a');
         dlA.href = dlUrl; dlA.download = fileName;
         document.body.appendChild(dlA); dlA.click(); document.body.removeChild(dlA);
         setTimeout(() => URL.revokeObjectURL(dlUrl), 1000);
-
         formGen_toast('✅ Excel downloaded!', 'success');
 
     } catch(err) {
