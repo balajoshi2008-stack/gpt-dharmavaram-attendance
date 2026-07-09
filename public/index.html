@@ -3198,6 +3198,8 @@
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script>
@@ -14431,112 +14433,129 @@ async function formGen_download() {
 
         const cols = fg_columns_data;
         const colCount = cols.length;
-        // Build a map of col id → excel column letter (0-indexed from A)
-        const colLetter = idx => String.fromCharCode(65 + idx);
 
-        // Build AOA rows
-        const aoa = [];
-        // Row 0: Title (merged)
-        aoa.push(['GOVERNMENT POLYTECHNIC, DHARMAVARAM', ...Array(colCount - 1).fill(null)]);
-        // Row 1: Subtitle
-        aoa.push([`${ysLabel} – ${ft}`, ...Array(colCount - 1).fill(null)]);
-        // Row 2: Additional info (if any)
-        let headerRowIdx = 2;
-        if (ai) {
-            aoa.push([ai, ...Array(colCount - 1).fill(null)]);
-            headerRowIdx = 3;
-        }
-        // Header row
-        aoa.push(cols.map(c => c.label));
-
-        // Data rows
-        students.forEach((st, rowIdx) => {
-            const excelRowNum = headerRowIdx + 2 + rowIdx; // 1-indexed excel row
-            const row = cols.map((col, ci) => {
-                if (col.type === 'auto')        return rowIdx + 1;
-                if (col.type === 'pin')         return st.pin || '';
-                if (col.type === 'name')        return st.name || '';
-                if (col.type === 'formula') {
-                    // IFERROR(SUM(...),0) — shows 0 instead of #VALUE! when mark cells are empty
-                    const sumIdxs = col.sumCols.map(id => cols.findIndex(c => String(c.id) === id)).filter(i => i >= 0);
-                    if (sumIdxs.length === 0) return 0;
-                    const refs = sumIdxs.map(i => `${colLetter(i)}${excelRowNum}`).join(',');
-                    return { f: `IFERROR(SUM(${refs}),0)` };
-                }
-                return '';
-            });
-            aoa.push(row);
-        });
-
-        const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-        // Merges for header rows
-        ws['!merges'] = [
-            { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
-            { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } },
-            ...(ai ? [{ s: { r: 2, c: 0 }, e: { r: 2, c: colCount - 1 } }] : [])
-        ];
+        // ── Use ExcelJS for full styling support ──
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Form');
 
         // Column widths
-        ws['!cols'] = cols.map(col => {
-            if (col.type === 'auto')  return { wch: 7 };
-            if (col.type === 'pin')   return { wch: 16 };
-            if (col.type === 'name')  return { wch: 28 };
-            return { wch: Math.max((col.label.length || 0) + 4, 12) };
+        sheet.columns = cols.map(col => {
+            if (col.type === 'auto')  return { width: 7 };
+            if (col.type === 'pin')   return { width: 16 };
+            if (col.type === 'name')  return { width: 28 };
+            return { width: Math.max((col.label.length || 0) + 4, 12) };
         });
 
-        // Apply styles — thin borders, bold titles, blue header
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        const thinB = { style: 'thin', color: { rgb: '000000' } };
-        const borders = { top: thinB, bottom: thinB, left: thinB, right: thinB };
+        // Helper: thin border style for all sides
+        const thinBorder = {
+            top:    { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            left:   { style: 'thin', color: { argb: 'FF000000' } },
+            right:  { style: 'thin', color: { argb: 'FF000000' } }
+        };
 
-        for (let R = range.s.r; R <= range.e.r; R++) {
-            for (let C = range.s.c; C <= range.e.c; C++) {
-                const addr = XLSX.utils.encode_cell({ r: R, c: C });
-                if (!ws[addr]) ws[addr] = { v: '', t: 's' };
-                let fill, font, alignment;
-                if (R === 0) {
-                    fill = { fgColor: { rgb: 'FFFFFF' } };
-                    font = { bold: true, sz: 16, name: 'Calibri', color: { rgb: '000000' } };
-                    alignment = { horizontal: 'center', vertical: 'center' };
-                } else if (R === 1) {
-                    fill = { fgColor: { rgb: 'FFFFFF' } };
-                    font = { bold: true, sz: 14, name: 'Calibri', color: { rgb: '000000' } };
-                    alignment = { horizontal: 'center', vertical: 'center' };
-                } else if (ai && R === 2) {
-                    fill = { fgColor: { rgb: 'FFFFFF' } };
-                    font = { bold: true, sz: 14, name: 'Calibri', color: { rgb: '000000' } };
-                    alignment = { horizontal: 'center', vertical: 'center' };
-                } else if (R === headerRowIdx) {
-                    fill = { fgColor: { rgb: '2A5298' } };
-                    font = { bold: true, sz: 11, name: 'Calibri', color: { rgb: 'FFFFFF' } };
-                    alignment = { horizontal: 'center', vertical: 'center' };
-                } else {
-                    fill = { fgColor: { rgb: 'FFFFFF' } };
-                    font = { sz: 11, name: 'Calibri', color: { rgb: '000000' } };
-                    const isName = cols[C] && cols[C].type === 'name';
-                    alignment = { horizontal: isName ? 'left' : 'center', vertical: 'center' };
-                }
-                ws[addr].s = { fill: { patternType: 'solid', ...fill }, font, alignment, border: borders };
+        // Helper: apply style to all cells in a row (including merged empties)
+        function styleRow(row, styleFn) {
+            for (let c = 1; c <= colCount; c++) {
+                const cell = row.getCell(c);
+                styleFn(cell, c);
             }
         }
 
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Form');
+        // ── ROW 1: Title ──
+        const row1 = sheet.addRow(['GOVERNMENT POLYTECHNIC, DHARMAVARAM']);
+        sheet.mergeCells(1, 1, 1, colCount);
+        row1.height = 24;
+        styleRow(row1, (cell) => {
+            cell.font      = { bold: true, size: 16, name: 'Calibri', color: { argb: 'FF000000' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+            cell.border    = thinBorder;
+        });
 
-        const safeYs = ysLabel.replace(/ /g, '_');
-        const safeFt = ft.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/ /g, '_');
-        const dateStr = localYMD ? localYMD(new Date()) : new Date().toISOString().slice(0, 10);
+        // ── ROW 2: Subtitle ──
+        let currentRow = 2;
+        const row2 = sheet.addRow([`${ysLabel} – ${ft}`]);
+        sheet.mergeCells(currentRow, 1, currentRow, colCount);
+        row2.height = 20;
+        styleRow(row2, (cell) => {
+            cell.font      = { bold: true, size: 14, name: 'Calibri', color: { argb: 'FF000000' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+            cell.border    = thinBorder;
+        });
+        currentRow++;
+
+        // ── ROW 3 (optional): Additional Info ──
+        let headerRowNum;
+        if (ai) {
+            const row3 = sheet.addRow([ai]);
+            sheet.mergeCells(currentRow, 1, currentRow, colCount);
+            row3.height = 20;
+            styleRow(row3, (cell) => {
+                cell.font      = { bold: true, size: 14, name: 'Calibri', color: { argb: 'FF000000' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+                cell.border    = thinBorder;
+            });
+            currentRow++;
+            headerRowNum = currentRow;
+        } else {
+            headerRowNum = currentRow;
+        }
+
+        // ── HEADER ROW: Column headings (blue background) ──
+        const headerRow = sheet.addRow(cols.map(c => c.label));
+        headerRow.height = 18;
+        styleRow(headerRow, (cell) => {
+            cell.font      = { bold: true, size: 11, name: 'Calibri', color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A5298' } };
+            cell.border    = thinBorder;
+        });
+        currentRow++;
+
+        // ── DATA ROWS ──
+        students.forEach((st, rowIdx) => {
+            const excelDataRowNum = currentRow + rowIdx + 1; // 1-indexed, for SUM formulas
+            const rowData = cols.map((col, ci) => {
+                if (col.type === 'auto')    return rowIdx + 1;
+                if (col.type === 'pin')     return st.pin || '';
+                if (col.type === 'name')    return st.name || '';
+                if (col.type === 'formula') {
+                    const sumIdxs = col.sumCols
+                        .map(id => cols.findIndex(c => String(c.id) === id))
+                        .filter(i => i >= 0);
+                    if (!sumIdxs.length) return 0;
+                    const refs = sumIdxs
+                        .map(i => `${String.fromCharCode(65 + i)}${excelDataRowNum}`)
+                        .join(',');
+                    return { formula: `IFERROR(SUM(${refs}),0)` };
+                }
+                return '';
+            });
+
+            const dataRow = sheet.addRow(rowData);
+            dataRow.height = 16;
+            cols.forEach((col, ci) => {
+                const cell = dataRow.getCell(ci + 1);
+                const isName = col.type === 'name';
+                cell.font      = { size: 11, name: 'Calibri', color: { argb: 'FF000000' } };
+                cell.alignment = { horizontal: isName ? 'left' : 'center', vertical: 'middle' };
+                cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+                cell.border    = thinBorder;
+            });
+        });
+
+        // ── Generate and download ──
+        const safeYs  = ysLabel.replace(/ /g, '_');
+        const safeFt  = ft.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/ /g, '_');
+        const dateStr = (typeof localYMD === 'function') ? localYMD(new Date()) : new Date().toISOString().slice(0, 10);
         const fileName = `${safeYs}_${safeFt}_${dateStr}.xlsx`;
 
-        // Use XLSX.write with cellStyles:true → proper .xlsx binary → no format warning
-        const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
-        const blob  = new Blob([wbOut], { type: 'application/octet-stream' });
-        const dlUrl = URL.createObjectURL(blob);
-        const dlA   = document.createElement('a');
-        dlA.href = dlUrl; dlA.download = fileName;
-        document.body.appendChild(dlA); dlA.click(); document.body.removeChild(dlA);
-        setTimeout(() => URL.revokeObjectURL(dlUrl), 1000);
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, fileName);
         formGen_toast('✅ Excel downloaded!', 'success');
 
     } catch(err) {
