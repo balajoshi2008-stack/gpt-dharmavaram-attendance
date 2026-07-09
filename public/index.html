@@ -4442,6 +4442,20 @@
             SUBJECTS[code] = { name: name, type: type };
             saveSettings('subjects', SUBJECTS);
 
+            // Update any existing timetable entries for this code with the new name
+            let ttChanged = false;
+            Object.keys(TIMETABLE).forEach(key => {
+                if (Array.isArray(TIMETABLE[key])) {
+                    TIMETABLE[key].forEach(entry => {
+                        if (entry.code === code && entry.subject !== name) {
+                            entry.subject = name;
+                            ttChanged = true;
+                        }
+                    });
+                }
+            });
+            if (ttChanged) saveSettings('timetable', TIMETABLE);
+
             document.getElementById('subMsg').textContent = `✓ Added: ${code} - ${name} (${type})`;
             document.getElementById('subMsg').classList.remove('hidden');
             document.getElementById('subName').value = '';
@@ -4449,6 +4463,7 @@
             displaySubjects();
             updateTTSubjectList();
             updateMapDropdowns();
+            viewTimetable(); // refresh timetable view if open
         }
 
         function displaySubjects() {
@@ -4636,9 +4651,10 @@
                 sorted.forEach((entry, idx) => {
                     const isActivity = ACTIVITY_CODES.has(entry.code);
                     const displayCode = isActivity ? 'Activity' : entry.code;
+                    const liveSubjectName = getSubjectName(entry.code) || entry.subject;
                     div.innerHTML += `
                         <div style="margin:6px 0; padding:10px 14px; background:#f8f9fa; border-radius:6px; border-left:3px solid ${isActivity ? '#f0c040' : '#667eea'}; display:flex; justify-content:space-between; align-items:center;">
-                            <span><strong>Period ${entry.periods}</strong> — ${displayCode}: ${entry.subject}</span>
+                            <span><strong>Period ${entry.periods}</strong> — ${displayCode}: ${liveSubjectName}</span>
                             <button class="btn btn-danger" onclick="deleteTTEntry('${key}', ${entries.indexOf(entry)})" style="padding:3px 10px; font-size:12px;">Delete</button>
                         </div>`;
                 });
@@ -13669,7 +13685,7 @@ function absList_downloadPDF() {
     const today = al_fmt(localYMD(new Date()));
     const fromLabel = al_fmt(al_dates[0]);
     const toLabel   = al_fmt(al_dates[al_dates.length - 1]);
-    const subHeading = `${al_ysLabel}  |  All Subjects  |  ${fromLabel} to ${toLabel}`;
+    const subHeading = `${al_ysLabel}  |  ${fromLabel} to ${toLabel}`;
     const fileName = `AbsentList_${al_ysLabel.replace(/ /g,'_')}_${al_dates[0]}_to_${al_dates[al_dates.length-1]}.pdf`;
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -13790,8 +13806,7 @@ function absList_downloadPDF() {
         row.push(absDays);
         return row;
     });
-    // Threshold note row (plain ASCII only - no special chars for PDF compatibility)
-    regBody.unshift([{content:`Present rule: >= ${threshold} periods attended = P (Present) | < ${threshold} periods = A (Absent)`, colSpan:regHead.length, styles:{fontStyle:'italic',fillColor:[227,242,253],textColor:[21,101,192],fontSize:7.5,halign:'center',cellPadding:2.5}}]);
+    // Threshold note row removed (not revealed to students)
     // Total row
     const totalRegRow = [
         {content:'Total No. of Students Absent', colSpan:3, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[30,100,30],fontSize:8}},

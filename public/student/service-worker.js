@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gpt-student-v1';
+const CACHE_NAME = 'gpt-student-v8';
 const urlsToCache = [
   '/student/',
   '/student/manifest.json',

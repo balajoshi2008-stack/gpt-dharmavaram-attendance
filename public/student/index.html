@@ -138,20 +138,27 @@
 
         .tabs {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 20px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+            /* hide scrollbar on all browsers */
+            scrollbar-width: none;
         }
+        .tabs::-webkit-scrollbar { display: none; }
 
         .tab {
-            flex: 1;
-            padding: 12px;
+            flex: 0 0 auto;
+            padding: 12px 16px;
             background: #f5f5f5;
             border: none;
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            white-space: nowrap;
         }
 
         .tab.active {
@@ -731,6 +738,138 @@
             background: #fff9c4;
         }
 
+        /* ══ Class Timetable Tab ══════════════════════════════════════════ */
+        .tt-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(102,126,234,0.13);
+            margin-bottom: 6px;
+        }
+        .tt-table {
+            border-collapse: separate;
+            border-spacing: 3px;
+            min-width: 560px;
+            width: 100%;
+            background: #f0f2ff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        /* Period header row */
+        .tt-head-cell {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: #fff;
+            font-weight: 700;
+            font-size: 12px;
+            text-align: center;
+            padding: 9px 4px;
+            border-radius: 6px;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        /* Day label cell */
+        .tt-day-cell {
+            background: linear-gradient(135deg,#1e3c72,#2a5298);
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            text-align: center;
+            padding: 10px 6px;
+            border-radius: 6px;
+            white-space: nowrap;
+            min-width: 38px;
+        }
+        .tt-day-cell.today {
+            background: linear-gradient(135deg,#e53935,#b71c1c) !important;
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e53935;
+        }
+        /* Lunch divider */
+        .tt-lunch {
+            background: linear-gradient(180deg,#78909c,#546e7a);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-align: center;
+            padding: 4px 3px;
+            border-radius: 6px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            min-width: 22px;
+            line-height: 1;
+        }
+        /* Subject cells */
+        .tt-cell {
+            text-align: center;
+            padding: 8px 5px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            vertical-align: middle;
+            line-height: 1.35;
+            min-width: 58px;
+            transition: transform 0.15s;
+        }
+        .tt-cell:active { transform: scale(0.96); }
+        /* Empty cell */
+        .tt-empty {
+            background: #f8f9ff;
+            border: 1.5px dashed #d0d5f5;
+            border-radius: 6px;
+            min-width: 58px;
+        }
+        /* Colour themes for subjects */
+        .tt-theory-1  { background: linear-gradient(135deg,#e3f0ff,#cfe2ff); color: #1a3a6b; border: 1.5px solid #90b8f8; }
+        .tt-theory-2  { background: linear-gradient(135deg,#f3e5ff,#e9d5ff); color: #4a1472; border: 1.5px solid #c08af5; }
+        .tt-theory-3  { background: linear-gradient(135deg,#e5fff0,#d0f5e0); color: #1b5e38; border: 1.5px solid #6dd5a0; }
+        .tt-theory-4  { background: linear-gradient(135deg,#fff8e1,#ffecb3); color: #7a4f00; border: 1.5px solid #ffc93c; }
+        .tt-theory-5  { background: linear-gradient(135deg,#fce4ec,#f8bbd0); color: #7b1034; border: 1.5px solid #f48fb1; }
+        .tt-theory-6  { background: linear-gradient(135deg,#e0f7fa,#b2ebf2); color: #006064; border: 1.5px solid #4dd0e1; }
+        .tt-theory-7  { background: linear-gradient(135deg,#fff3e0,#ffe0b2); color: #7a3200; border: 1.5px solid #ffb74d; }
+        .tt-theory-8  { background: linear-gradient(135deg,#f9fbe7,#f0f4c3); color: #5d6600; border: 1.5px solid #dce775; }
+        .tt-lab       { background: linear-gradient(135deg,#e8f5e9,#c8e6c9); color: #1b5e20; border: 1.5px solid #66bb6a; }
+        .tt-activity  { background: linear-gradient(135deg,#fff8e1,#ffe082); color: #6d4c00; border: 1.5px solid #ffd54f; }
+        .tt-today-row .tt-day-cell { background: linear-gradient(135deg,#e53935,#b71c1c) !important; }
+        .tt-today-row td, .tt-today-row .tt-empty {
+            background-color: #fffde7 !important;
+            outline: 1.5px solid #f9a825;
+        }
+        .tt-today-row .tt-cell {
+            filter: brightness(1.04);
+            box-shadow: 0 2px 8px rgba(249,168,37,0.25);
+        }
+        /* Shimmer skeleton */
+        .tt-skeleton {
+            background: linear-gradient(90deg,#e8ebff 25%,#f3f5ff 50%,#e8ebff 75%);
+            background-size: 200% 100%;
+            animation: ttShimmer 1.2s infinite;
+            border-radius: 8px;
+            height: 38px;
+            width: 100%;
+        }
+        @keyframes ttShimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        /* Legend table */
+        .tt-legend {
+            margin: 12px 0 4px;
+            background: #f8f9ff;
+            border: 1px solid #e0e5f7;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #555;
+            overflow: hidden;
+        }
+        .tt-legend-dot {
+            display: inline-block;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+
         /* 5. Modal action buttons */
         .sn-btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1143,6 +1282,7 @@
                     <button class="tab active" onclick="showTab('today')">📊 Today</button>
                     <button class="tab" onclick="showTab('monthly')">📅 Monthly</button>
                     <button class="tab" onclick="showTab('unitmarks')">📝 Unit Marks</button>
+                    <button class="tab" id="ttTabBtn" onclick="showTab('timetable')">🗓️ Time Table</button>
                     <button class="tab" onclick="showTab('pqp')">📚 PQP</button>
                 </div>
 
@@ -1272,6 +1412,48 @@
                     </div>
                 </div>
 
+                <!-- Timetable Tab (FIFTH) -->
+                <div id="timetableTab" class="tab-content">
+                    <!-- Header -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <h3 style="color:#2a5298;margin:0;font-size:17px;">🗓️ My Class Time Table</h3>
+                            <div id="ttSemLabel" style="font-size:12px;color:#888;margin-top:2px;"></div>
+                        </div>
+                        <div id="ttTodayBadge" style="display:none;background:linear-gradient(135deg,#e53935,#b71c1c);
+                            color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;"></div>
+                    </div>
+
+                    <!-- Loading skeleton -->
+                    <div id="ttLoading">
+                        <div style="display:grid;gap:4px;">
+                            <div class="tt-skeleton" style="width:100%;height:32px;"></div>
+                            <div class="tt-skeleton" style="width:100%;height:44px;margin-top:3px;"></div>
+                            <div class="tt-skeleton" style="width:100%;height:44px;"></div>
+                            <div class="tt-skeleton" style="width:100%;height:44px;"></div>
+                            <div class="tt-skeleton" style="width:100%;height:44px;"></div>
+                            <div class="tt-skeleton" style="width:100%;height:44px;"></div>
+                            <div class="tt-skeleton" style="width:100%;height:44px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Rendered timetable -->
+                    <div id="ttContent" class="hidden">
+                        <div class="tt-wrap">
+                            <table class="tt-table" id="ttGrid"></table>
+                        </div>
+                        <p style="font-size:11px;color:#aaa;margin-top:8px;text-align:center;">Scroll horizontally to see all periods ➡️</p>
+                        <div class="tt-legend" id="ttLegend" style="margin-top:12px;"></div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div id="ttEmpty" class="hidden" style="text-align:center;padding:40px 20px;">
+                        <div style="font-size:56px;margin-bottom:14px;">🗓️</div>
+                        <div style="font-size:16px;font-weight:700;color:#2a5298;">No Timetable Yet</div>
+                        <div style="font-size:13px;color:#999;margin-top:8px;">Your class timetable will appear here once it is set up by the admin.</div>
+                    </div>
+                </div>
+
                 <button class="logout-btn" onclick="logout()">🚪 Logout</button>
             </div>
         </div>
@@ -1305,7 +1487,24 @@
         let currentStudent = null;
         let allAttendance = {}; // Cache: { 'YYYY-MM-DD': { pin: { 1: {status,faculty,subject}, ... } } }
         let allUnitMarks = {};  // Cache: { 'markKey': { pin: mark, ... } }
+        let studentTimetable = {}; // Cache: timetable from settings/timetable
         const MIN_PERIODS_FOR_PRESENT = 3;
+
+        // Helper: find attendance data for the current student in a day's record.
+        // PINs are always strings in Firestore, but type/whitespace inconsistencies
+        // between the faculty portal and student portal can cause a direct key lookup
+        // to miss. This normalizes the comparison.
+        function getStudentDayData(dayData, pin) {
+            if (!dayData || !pin) return null;
+            const normPin = String(pin).trim().toUpperCase();
+            // 1. Try direct key first (fast path)
+            if (dayData[pin] !== undefined) return dayData[pin];
+            // 2. Fallback: scan all keys with normalization
+            for (const key of Object.keys(dayData)) {
+                if (String(key).trim().toUpperCase() === normPin) return dayData[key];
+            }
+            return null;
+        }
 
         // ✅ Auto-restore session: if student was logged in before, skip PIN screen
         window.addEventListener('load', async () => {
@@ -1315,14 +1514,16 @@
                     currentStudent = JSON.parse(saved);
                     showStudentApp();
                     // Fetch attendance data in background
-                    const [attSnap, marksSnap] = await Promise.all([
+                    const [attSnap, marksSnap, ttDoc] = await Promise.all([
                         db.collection('attendance').get(),
-                        db.collection('unitMarks').get()
+                        db.collection('unitMarks').get(),
+                        db.collection('settings').doc('timetable').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
                     allUnitMarks = {};
                     marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
+                    if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
                     loadMonthlyReport();
                     loadTodayAttendance();
                     loadStudentNotifications(false); // auto-restore: no popup
@@ -1406,15 +1607,17 @@
                     // Show app immediately — don't wait for attendance to load
                     showStudentApp();
 
-                    // Batch-fetch ALL attendance and unit marks in parallel (avoids blocking UI)
-                    const [attSnap, marksSnap] = await Promise.all([
+                    // Batch-fetch ALL attendance, unit marks, and timetable in parallel
+                    const [attSnap, marksSnap, ttDoc] = await Promise.all([
                         db.collection('attendance').get(),
-                        db.collection('unitMarks').get()
+                        db.collection('unitMarks').get(),
+                        db.collection('settings').doc('timetable').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
                     allUnitMarks = {};
                     marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
+                    if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
 
                     // Now load content after data is ready
                     loadMonthlyReport();
@@ -1445,6 +1648,23 @@
             // ✅ Clear saved session on logout
             localStorage.removeItem('studentSession');
             currentStudent = null;
+
+            // ✅ Clear all cached data so the next student never sees stale info
+            allAttendance   = {};
+            allUnitMarks    = {};
+            studentTimetable = {};
+            _ttRendered     = false;
+
+            // Reset timetable UI so it shows loading spinner for next login
+            const ttContent = document.getElementById('ttContent');
+            const ttEmpty   = document.getElementById('ttEmpty');
+            const ttGrid    = document.getElementById('ttGrid');
+            const ttLegend  = document.getElementById('ttLegend');
+            if (ttContent) ttContent.classList.add('hidden');
+            if (ttEmpty)   ttEmpty.classList.add('hidden');
+            if (ttGrid)    ttGrid.innerHTML  = '';
+            if (ttLegend)  ttLegend.innerHTML = '';
+
             document.getElementById('mainApp').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('pinInput').value = '';
@@ -1465,6 +1685,9 @@
             document.getElementById('monthlyLoading').classList.remove('hidden');
             document.getElementById('monthlyContent').classList.add('hidden');
             document.getElementById('monthlyNoData').classList.add('hidden');
+
+            // Always start on the Today tab
+            showTab('today');
         }
 
         function showTab(tab) {
@@ -1482,8 +1705,12 @@
                 document.querySelector('.tab:nth-child(3)').classList.add('active');
                 document.getElementById('unitmarksTab').classList.add('active');
                 loadUnitMarks();
+            } else if (tab === 'timetable') {
+                document.getElementById('ttTabBtn').classList.add('active');
+                document.getElementById('timetableTab').classList.add('active');
+                loadStudentTimetable();
             } else if (tab === 'pqp') {
-                document.querySelector('.tab:nth-child(4)').classList.add('active');
+                document.querySelector('.tab:nth-child(5)').classList.add('active');
                 document.getElementById('pqpTab').classList.add('active');
                 loadStudentPQP();
             }
@@ -1517,12 +1744,14 @@
                 for (const date of dates) {
                     // Use in-memory cache (loaded at login) — no extra Firestore reads
                     const attData = allAttendance[date] || {};
-                    if (attData[currentStudent.pin]) {
+                    const periods = getStudentDayData(attData, currentStudent.pin);
+                    if (periods) {
                         workingDays++;
-                        const periods = attData[currentStudent.pin];
                         let presentCount = 0;
                         for (let p = 1; p <= 7; p++) {
-                            if (periods[p] && periods[p].status === 'P') presentCount++;
+                            // Keys stored in Firestore are always strings ("1", "2"...)
+                            const pData = periods[String(p)];
+                            if (pData && pData.status === 'P') presentCount++;
                         }
                         if (presentCount >= MIN_PERIODS_FOR_PRESENT) {
                             presentDays++;
@@ -1641,8 +1870,7 @@
 
             // ── 1. Sunday check ─────────────────────────────────────────
             if (dayName === 'Sunday') {
-                document.getElementById('cumulativePercentage').textContent = '—';
-                document.getElementById('cumulativeStats').textContent = 'No classes today';
+                await calculateCumulativePercentage();
                 showTodayNoDataMsg({
                     emoji: '🏖️',
                     headline: 'No Attendance – Sunday',
@@ -1659,8 +1887,7 @@
 
                 if (todayHoliday) {
                     const name = todayHoliday.reason || 'Holiday';
-                    document.getElementById('cumulativePercentage').textContent = '—';
-                    document.getElementById('cumulativeStats').textContent = 'No classes today';
+                    await calculateCumulativePercentage();
                     showTodayNoDataMsg({
                         emoji: '🎉',
                         headline: `No Attendance – ${name}`,
@@ -1672,7 +1899,7 @@
                 // ── 3. Normal day — load cumulative then attendance ───────────────
                 await calculateCumulativePercentage();
 
-                const periods = (allAttendance[dateStr] || {})[currentStudent.pin];
+                const periods = getStudentDayData(allAttendance[dateStr] || {}, currentStudent.pin);
 
                 if (!periods) {
                     showTodayNoDataMsg({
@@ -1699,8 +1926,10 @@
                     const statusDiv = document.createElement('div');
                     statusDiv.className = 'period-status';
 
-                    if (periods[p]) {
-                        if (periods[p].status === 'P') {
+                    // Keys stored in Firestore are always strings ("1", "2"...)
+                    const pData = periods[String(p)];
+                    if (pData) {
+                        if (pData.status === 'P') {
                             card.classList.add('present');
                             statusDiv.textContent = 'P';
                         } else {
@@ -1749,12 +1978,14 @@
                 const dateStr = toLocalDateStr(d);
                 const attData = allAttendance[dateStr] || {};
 
-                if (attData[currentStudent.pin]) {
+                const dayPeriods = getStudentDayData(attData, currentStudent.pin);
+                if (dayPeriods) {
                     totalWorkingDays++;
-                    const periods = attData[currentStudent.pin];
                     let presentCount = 0;
                     for (let p = 1; p <= 7; p++) {
-                        if (periods[p] && periods[p].status === 'P') presentCount++;
+                        // Keys stored in Firestore are always strings ("1", "2"...)
+                        const pData = dayPeriods[String(p)];
+                        if (pData && pData.status === 'P') presentCount++;
                     }
                     if (presentCount >= MIN_PERIODS_FOR_PRESENT) totalPresentDays++;
                 }
@@ -2240,6 +2471,254 @@
                 <div style="margin-top:18px;text-align:right;">
                     <button class="sn-btn-secondary" onclick="closeDetailModal()">Close</button>
                 </div>`;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+
+        // ══════════════════════════════════════════════════════════════════
+        //  STUDENT TIMETABLE MODULE
+        // ══════════════════════════════════════════════════════════════════
+
+        // Colour palette: 8 theory colours + lab + activity
+        const TT_THEORY_COLOURS = [
+            'tt-theory-1','tt-theory-2','tt-theory-3','tt-theory-4',
+            'tt-theory-5','tt-theory-6','tt-theory-7','tt-theory-8'
+        ];
+        const TT_LEGEND_COLOURS = [
+            '#90b8f8','#c08af5','#6dd5a0','#ffc93c',
+            '#f48fb1','#4dd0e1','#ffb74d','#dce775'
+        ];
+        const TT_LAB_COLOUR   = 'tt-lab';
+        const TT_ACT_COLOUR   = 'tt-activity';
+        let _ttRendered = false; // render once per login
+
+        function isLabSubject(name) {
+            return /lab|practical|prac\b/i.test(name || '');
+        }
+        function isActivity(name) {
+            return /activity|sport|nss|yoga|library|mentor/i.test(name || '');
+        }
+
+        function loadStudentTimetable() {
+            if (!currentStudent) return;
+
+            const loadEl    = document.getElementById('ttLoading');
+            const contentEl = document.getElementById('ttContent');
+            const emptyEl   = document.getElementById('ttEmpty');
+            const gridEl    = document.getElementById('ttGrid');
+            const legendEl  = document.getElementById('ttLegend');
+            const semLbl    = document.getElementById('ttSemLabel');
+            const todayBadge= document.getElementById('ttTodayBadge');
+
+            loadEl.style.display    = 'block';
+            contentEl.classList.add('hidden');
+            emptyEl.classList.add('hidden');
+
+            const [y, s] = currentStudent.yearSem.split('-');
+            const SEM_LABELS = {'1-1':'1st Year (Year-wise Course)','2-3':'2nd Year – Sem 3','2-4':'2nd Year – Sem 4','3-5':'3rd Year – Sem 5'};
+            semLbl.textContent = SEM_LABELS[currentStudent.yearSem] || `Year ${y}, Sem ${s}`;
+
+            const DAY_ORDER  = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+            const DAY_FULL   = {Mon:'Mon',Tue:'Tue',Wed:'Wed',Thu:'Thu',Fri:'Fri',Sat:'Sat'};
+            const todayShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
+
+            // Update today badge
+            const todayFull = {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
+            if (todayFull[todayShort]) {
+                todayBadge.textContent = '📌 Today: ' + todayFull[todayShort];
+                todayBadge.style.display = 'inline-block';
+            } else {
+                todayBadge.style.display = 'none';
+            }
+
+            // Collect all entries for this year-sem from the cached doc
+            // Key format in Firestore: "y-s-Day" e.g. "2-3-Mon"
+            const dayEntries = {};
+            let hasAny = false;
+            DAY_ORDER.forEach(day => {
+                const key = `${y}-${s}-${day}`;
+                const entries = studentTimetable[key];
+                if (entries && entries.length) { dayEntries[day] = entries; hasAny = true; }
+                else dayEntries[day] = [];
+            });
+
+            loadEl.style.display = 'none';
+
+            if (!hasAny) {
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            // ------------------------------------------------------------------
+            // Build a per-day occupancy map: periodIndex(1-7) → entry object
+            // An entry with periods="1-3" occupies periods 1,2,3
+            // An entry with periods="1,3" occupies periods 1 and 3 (non-consecutive)
+            // ------------------------------------------------------------------
+            function parsePeriods(pStr) {
+                const s = String(pStr);
+                if (s.includes('-')) {
+                    const [a, b] = s.split('-').map(Number);
+                    const arr = [];
+                    for (let i = a; i <= b; i++) arr.push(i);
+                    return arr;
+                }
+                return s.split(',').map(Number).filter(n => !isNaN(n));
+            }
+
+            // Assign a stable colour index per unique subject code across the whole timetable
+            const subColourMap = {};
+            let colourIdx = 0;
+            Object.values(dayEntries).forEach(entries => {
+                entries.forEach(e => {
+                    if (!isLabSubject(e.subject) && !isActivity(e.subject)) {
+                        if (subColourMap[e.code] === undefined) {
+                            subColourMap[e.code] = colourIdx % TT_THEORY_COLOURS.length;
+                            colourIdx++;
+                        }
+                    }
+                });
+            });
+
+            function cellClass(entry) {
+                if (isActivity(entry.subject)) return TT_ACT_COLOUR;
+                if (isLabSubject(entry.subject)) return TT_LAB_COLOUR;
+                return TT_THEORY_COLOURS[subColourMap[entry.code] ?? 0];
+            }
+
+            // Build legend as a table below the timetable
+            const legendSubjects = {};
+            Object.values(dayEntries).forEach(entries => entries.forEach(e => {
+                const key = e.code || e.subject;
+                if (!legendSubjects[key]) legendSubjects[key] = e;
+            }));
+
+            // Sort: theory first (by code), then labs, then activity
+            const legendEntries = Object.values(legendSubjects).sort((a, b) => {
+                const aAct = isActivity(a.subject), bAct = isActivity(b.subject);
+                const aLab = isLabSubject(a.subject), bLab = isLabSubject(b.subject);
+                if (aAct !== bAct) return aAct ? 1 : -1;
+                if (aLab !== bLab) return aLab ? 1 : -1;
+                return (a.code || '').localeCompare(b.code || '');
+            });
+
+            if (legendEntries.length > 0) {
+                let legHtml = `<div style="margin-top:4px;">
+                    <div style="font-size:12px;font-weight:700;color:#2a5298;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #e8eaf6;">
+                        📋 Subject Legend
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <thead>
+                            <tr style="background:#f0f4ff;">
+                                <th style="padding:5px 8px;text-align:left;color:#667eea;font-weight:700;border-bottom:1px solid #dde3f5;width:16px;"></th>
+                                <th style="padding:5px 8px;text-align:left;color:#667eea;font-weight:700;border-bottom:1px solid #dde3f5;">Code</th>
+                                <th style="padding:5px 8px;text-align:left;color:#667eea;font-weight:700;border-bottom:1px solid #dde3f5;">Subject Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                legendEntries.forEach(e => {
+                    let dotColour;
+                    if (isActivity(e.subject)) dotColour = '#ffd54f';
+                    else if (isLabSubject(e.subject)) dotColour = '#66bb6a';
+                    else dotColour = TT_LEGEND_COLOURS[subColourMap[e.code] ?? 0];
+
+                    const displayCode = isActivity(e.subject) ? '—' : (e.code || '—');
+                    const displayName = e.fullName || e.subject || e.code || '—';
+
+                    legHtml += `<tr style="border-bottom:1px solid #f0f0f0;">
+                        <td style="padding:5px 8px;">
+                            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${dotColour};flex-shrink:0;"></span>
+                        </td>
+                        <td style="padding:5px 8px;font-weight:700;color:#333;">${displayCode}</td>
+                        <td style="padding:5px 8px;color:#555;">${displayName}</td>
+                    </tr>`;
+                });
+                legHtml += `</tbody></table></div>`;
+                legendEl.innerHTML = legHtml;
+            }
+
+            // ------------------------------------------------------------------
+            // Render HTML table
+            // Columns: [Day] [P1][P2][P3][P4] [LUNCH] [P5][P6][P7]
+            //          col0  c1   c2   c3   c4   c5      c6   c7   c8
+            // ------------------------------------------------------------------
+            let html = '<thead><tr>';
+            html += '<th class="tt-head-cell" style="min-width:38px;">Day</th>';
+            for (let p = 1; p <= 4; p++)
+                html += `<th class="tt-head-cell">P${p}</th>`;
+            html += '<th class="tt-head-cell" style="background:linear-gradient(135deg,#78909c,#546e7a);min-width:22px;">🍽</th>';
+            for (let p = 5; p <= 7; p++)
+                html += `<th class="tt-head-cell">P${p}</th>`;
+            html += '</tr></thead><tbody>';
+
+            DAY_ORDER.forEach(day => {
+                const entries  = dayEntries[day];
+                const isToday  = day === todayShort;
+                const rowClass = isToday ? ' class="tt-today-row"' : '';
+
+                // Build occupancy grid for this day: slot[p] = entry or null
+                // We also track which slot is the "start" of a merged span
+                const slot    = {}; // p → entry
+                const spanOf  = {}; // p → number of periods to span (for start)
+                const skip    = {}; // p → true if this slot is covered by a previous span
+
+                entries.forEach(entry => {
+                    const periods = parsePeriods(entry.periods);
+                    periods.forEach(p => { slot[p] = entry; });
+                    // Determine if periods are a single consecutive run
+                    const sorted = [...periods].sort((a,b) => a-b);
+                    const isConsec = sorted.every((p,i) => i===0 || p===sorted[i-1]+1);
+                    if (isConsec && sorted.length > 1) {
+                        spanOf[sorted[0]] = sorted.length;
+                        sorted.slice(1).forEach(p => { skip[p] = true; });
+                    } else {
+                        sorted.forEach(p => { spanOf[p] = 1; });
+                    }
+                });
+
+                html += `<tr${rowClass}>`;
+                html += `<td class="tt-day-cell${isToday ? ' today' : ''}">${isToday ? '📌 '+day : day}</td>`;
+
+                // Periods 1-4 (before lunch)
+                for (let p = 1; p <= 4; p++) {
+                    if (skip[p]) continue;
+                    const entry = slot[p];
+                    if (!entry) {
+                        html += '<td class="tt-empty"></td>';
+                    } else {
+                        const span  = spanOf[p] || 1;
+                        const cls   = cellClass(entry);
+                        const label = entry.subject || entry.code || '—';
+                        const code  = isActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                        html += `<td colspan="${span}" class="tt-cell ${cls}">📖 ${label}${code}</td>`;
+                        // If span crosses into lunch zone (p+span-1 > 4), we skip lunch cell too
+                    }
+                }
+
+                // Lunch divider
+                html += '<td class="tt-lunch">L&nbsp;U&nbsp;N&nbsp;C&nbsp;H</td>';
+
+                // Periods 5-7 (after lunch)
+                for (let p = 5; p <= 7; p++) {
+                    if (skip[p]) continue;
+                    const entry = slot[p];
+                    if (!entry) {
+                        html += '<td class="tt-empty"></td>';
+                    } else {
+                        const span  = spanOf[p] || 1;
+                        const cls   = cellClass(entry);
+                        const label = entry.subject || entry.code || '—';
+                        const code  = isActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                        const icon  = isActivity(entry.subject) ? '⭐' : isLabSubject(entry.subject) ? '🔬' : '📖';
+                        html += `<td colspan="${span}" class="tt-cell ${cls}">${icon} ${label}${code}</td>`;
+                    }
+                }
+
+                html += '</tr>';
+            });
+
+            html += '</tbody>';
+            gridEl.innerHTML = html;
+            contentEl.classList.remove('hidden');
         }
 
         // ═══════════════════════════════════════════════════════════════
