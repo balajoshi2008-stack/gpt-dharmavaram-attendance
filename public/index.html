@@ -3349,6 +3349,20 @@
                 const fmDoc = await db.collection('settings').doc('facultyMap').get();
                 if (fmDoc.exists) { FACULTY_MAP = fmDoc.data(); delete FACULTY_MAP._v; }
 
+                // ── Self-heal: remove stale subject keys from FACULTY_MAP ──
+                // Old code used merge:true when saving facultyMap, so deleted subjects could
+                // linger in Firestore. Strip any key that no longer exists in SUBJECTS and
+                // write the clean map back (without merge) if any stale entries were found.
+                {
+                    const staleKeys = Object.keys(FACULTY_MAP).filter(code => !SUBJECTS[code]);
+                    if (staleKeys.length > 0) {
+                        console.warn('🧹 Removing stale facultyMap keys:', staleKeys);
+                        staleKeys.forEach(code => delete FACULTY_MAP[code]);
+                        db.collection('settings').doc('facultyMap').set(FACULTY_MAP)
+                            .catch(e => console.error('❌ Failed to clean stale facultyMap:', e));
+                    }
+                }
+
                 // period faculty
                 const pfDoc = await db.collection('settings').doc('periodFaculty').get();
                 if (pfDoc.exists) { PERIOD_FACULTY = pfDoc.data(); delete PERIOD_FACULTY._v; }
@@ -4079,6 +4093,7 @@
             else if (tab === 'students') { document.getElementById('viewYear').value = ''; document.getElementById('studentList').innerHTML = ''; }
             else if (tab === 'usermanage') { displayBranches(); displayUsers(); updateBranchDropdowns(); }
             else if (tab === 'classlogbook') initClassLogbookTab();
+            else if (tab === 'logbook') initLogbookTab();
         }
 
         function showTabDirect(tab) {
@@ -4218,7 +4233,9 @@
             }
 
             FACULTY_MAP[sub] = fac;
-            saveSettings('facultyMap', FACULTY_MAP);
+            // Use set() without merge so the full map (including deletions) is always in sync
+            db.collection('settings').doc('facultyMap').set(FACULTY_MAP)
+                .catch(e => console.error('❌ Failed to save facultyMap:', e));
 
             document.getElementById('mapMsg').textContent = `✓ ${getSubjectName(sub)} → ${USERS[fac].name}`;
             document.getElementById('mapMsg').classList.remove('hidden');
@@ -4252,7 +4269,9 @@
         function deleteMapping(subCode) {
             if (confirm('Delete mapping?')) {
                 delete FACULTY_MAP[subCode];
-                saveSettings('facultyMap', FACULTY_MAP);
+                // Use set() without merge so the deleted key is actually removed from Firestore
+                db.collection('settings').doc('facultyMap').set(FACULTY_MAP)
+                    .catch(e => console.error('❌ Failed to clean facultyMap:', e));
                 displayMappings();
             }
         }
@@ -4584,10 +4603,14 @@
                 db.collection('settings').doc('subjects').set(SUBJECTS)
                     .catch(e => alert('❌ Failed to delete: ' + e.message));
 
-                // Also clean up faculty mapping for this subject
+                // Also clean up faculty mapping for this subject.
+                // IMPORTANT: must use set() WITHOUT merge:true — saveSettings uses merge:true
+                // which never removes existing Firestore fields, so deleted subjects would keep
+                // reappearing in FACULTY_MAP after next login.
                 if (FACULTY_MAP[code]) {
                     delete FACULTY_MAP[code];
-                    saveSettings('facultyMap', FACULTY_MAP);
+                    db.collection('settings').doc('facultyMap').set(FACULTY_MAP)
+                        .catch(e => console.error('❌ Failed to clean facultyMap:', e));
                 }
 
                 displaySubjects();
@@ -10360,16 +10383,28 @@
             const sel = document.getElementById('logbookSubject');
             if (!sel) return;
 
-            // ── Reset controls ──
-            // Repopulate subject dropdown (always reset selection)
-            const mySubjects = Object.keys(FACULTY_MAP).filter(code => FACULTY_MAP[code] === currentUser);
+            // ── Repopulate subject dropdown ──
+            // Filter: subject must be assigned to current faculty AND still exist in SUBJECTS
+            // (FACULTY_MAP can retain stale keys for subjects deleted by admin since last login)
+            const mySubjects = Object.keys(FACULTY_MAP).filter(code =>
+                FACULTY_MAP[code] === currentUser && SUBJECTS[code]
+            );
+
             sel.innerHTML = '<option value="">-- Select Subject --</option>';
-            mySubjects.sort().forEach(code => {
-                const opt = document.createElement('option');
-                opt.value = code;
-                opt.textContent = `${code}: ${getSubjectName(code)}`;
-                sel.appendChild(opt);
-            });
+
+            // If data hasn't loaded yet (FACULTY_MAP empty), show a hint and retry shortly
+            if (Object.keys(FACULTY_MAP).length === 0) {
+                sel.innerHTML = '<option value="">⏳ Loading subjects…</option>';
+                setTimeout(initLogbookTab, 800);
+            } else {
+                mySubjects.sort().forEach(code => {
+                    const opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = `${code}: ${getSubjectName(code)}`;
+                    sel.appendChild(opt);
+                });
+            }
+
             // Reset date range
             const fromEl = document.getElementById('logbookFrom');
             const toEl = document.getElementById('logbookTo');
@@ -10445,8 +10480,31 @@
                     // Fall back: derive from subject code prefix
                     const sortedPeriods = Array.from(myPeriods).sort((a, b) => a - b);
 
-                    // Detect yearSem from subject code (e.g. CM-506 → 5xx → 3rd year sem5 → "3-5")
-                    if (!ysKey) {
+                    // ── BUG FIX: Use find() instead of forEach() to stop at the FIRST
+                    // PERIOD_FACULTY entry that actually confirms our subject+faculty for
+                    // this date's detected periods.
+                    // The old forEach() overwrote ysKey for every matching date entry, so
+                    // when two different year/sem classes happened on the same date the last
+                    // entry processed would win non-deterministically, giving the wrong key.
+                    const pfMatch = Object.keys(PERIOD_FACULTY).find(pfKey => {
+                        if (!pfKey.startsWith(date + '_')) return false;
+                        const pfData = PERIOD_FACULTY[pfKey];
+                        if (!pfData) return false;
+                        // Confirm at least one of our detected periods in this entry belongs
+                        // to the correct subject AND faculty
+                        return sortedPeriods.some(p => {
+                            const pEntry = pfData[String(p)];
+                            return pEntry &&
+                                   pEntry.subject === subCode &&
+                                   (pEntry.faculty === myFacultyName || pEntry.faculty === currentUser);
+                        });
+                    });
+                    if (pfMatch) {
+                        const pfParts = pfMatch.split('_'); // ["2026-07-07", "2", "3"]
+                        const y = pfParts[1], s = pfParts[2];
+                        ysKey = (y == 1) ? '1-1' : `${y}-${s}`;
+                    } else if (!ysKey) {
+                        // Fallback: derive yearSem from subject code prefix
                         const match = subCode.match(/CM-(\d)/);
                         if (match) {
                             const prefix = match[1];
@@ -10456,16 +10514,6 @@
                             else if (prefix === '5') ysKey = '3-5';
                         }
                     }
-                    // Also try PERIOD_FACULTY for this date to get yearSem precisely
-                    Object.keys(PERIOD_FACULTY).forEach(pfKey => {
-                        if (pfKey.startsWith(date + '_')) {
-                            const pfParts = pfKey.split('_');
-                            if (pfParts.length >= 3) {
-                                const y = pfParts[1], s = pfParts[2];
-                                ysKey = (y == 1) ? '1-1' : `${y}-${s}`;
-                            }
-                        }
-                    });
 
                     if (!detectedYearSem && ysKey) detectedYearSem = ysKey;
 
@@ -10507,11 +10555,18 @@
                     const docData = topicsMap[r.date];
                     if (!docData) return;
                     const ysKey = r.yearSem;
-                    // Try to find a topic entry that covers ANY of this row's periods
+                    // Find a topic entry that covers ANY of this row's periods AND matches
+                    // the correct subject code (BUG FIX: the old code only checked yearSem
+                    // prefix + period overlap, so it could return a topic from a different
+                    // subject that happened to share the same year/sem/period slot).
                     for (const k of Object.keys(docData)) {
                         const entry = docData[k];
-                        if (!entry || !k.startsWith(ysKey + '_')) continue;
-                        const periodPart = k.replace(ysKey + '_P', '');
+                        if (!entry) continue;
+                        // Guard 1: subject code must match
+                        if (entry.subject && entry.subject !== r.subject) continue;
+                        // Guard 2: yearSem prefix must match (skip if ysKey unknown)
+                        if (ysKey && !k.startsWith(ysKey + '_')) continue;
+                        const periodPart = k.replace((ysKey ? ysKey + '_P' : /^[^_]+_P/), '');
                         const coveredList = getPeriodList(periodPart);
                         const rowPeriodStrs = r._myPeriods.map(String);
                         if (coveredList.some(cp => rowPeriodStrs.includes(cp))) {
