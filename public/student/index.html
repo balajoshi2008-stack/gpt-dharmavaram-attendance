@@ -1488,6 +1488,7 @@
         let allAttendance = {}; // Cache: { 'YYYY-MM-DD': { pin: { 1: {status,faculty,subject}, ... } } }
         let allUnitMarks = {};  // Cache: { 'markKey': { pin: mark, ... } }
         let studentTimetable = {}; // Cache: timetable from settings/timetable
+        let studentSubjects = {}; // Cache: { code: { name, type } } from settings/subjects
         let studentCalendarDates = {}; // Cache: { '2-3': {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ... }
         const MIN_PERIODS_FOR_PRESENT = 3;
 
@@ -1515,11 +1516,12 @@
                     currentStudent = JSON.parse(saved);
                     showStudentApp();
                     // Fetch attendance data in background
-                    const [attSnap, marksSnap, ttDoc, calDoc] = await Promise.all([
+                    const [attSnap, marksSnap, ttDoc, calDoc, subjDoc] = await Promise.all([
                         db.collection('attendance').get(),
                         db.collection('unitMarks').get(),
                         db.collection('settings').doc('timetable').get(),
-                        db.collection('settings').doc('calendarDates').get()
+                        db.collection('settings').doc('calendarDates').get(),
+                        db.collection('settings').doc('subjects').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
@@ -1527,6 +1529,7 @@
                     marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
                     if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
                     if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
+                    if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
                     loadMonthlyReport();
                     loadTodayAttendance();
                     loadStudentNotifications(false); // auto-restore: no popup
@@ -1611,11 +1614,12 @@
                     showStudentApp();
 
                     // Batch-fetch ALL attendance, unit marks, timetable and academic calendar in parallel
-                    const [attSnap, marksSnap, ttDoc, calDoc] = await Promise.all([
+                    const [attSnap, marksSnap, ttDoc, calDoc, subjDoc] = await Promise.all([
                         db.collection('attendance').get(),
                         db.collection('unitMarks').get(),
                         db.collection('settings').doc('timetable').get(),
-                        db.collection('settings').doc('calendarDates').get()
+                        db.collection('settings').doc('calendarDates').get(),
+                        db.collection('settings').doc('subjects').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
@@ -1623,6 +1627,7 @@
                     marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
                     if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
                     if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
+                    if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
 
                     // Now load content after data is ready
                     loadMonthlyReport();
@@ -2662,7 +2667,8 @@
                     else dotColour = TT_LEGEND_COLOURS[subColourMap[e.code] ?? 0];
 
                     const displayCode = isActivity(e.subject) ? '—' : (e.code || '—');
-                    const displayName = e.fullName || e.subject || e.code || '—';
+                    const liveSubjName = e.code && studentSubjects[e.code] ? studentSubjects[e.code].name : null;
+                    const displayName = liveSubjName || e.fullName || e.subject || e.code || '—';
 
                     legHtml += `<tr style="border-bottom:1px solid #f0f0f0;">
                         <td style="padding:5px 8px;">
@@ -2727,7 +2733,8 @@
                     } else {
                         const span  = spanOf[p] || 1;
                         const cls   = cellClass(entry);
-                        const label = entry.subject || entry.code || '—';
+                        const liveLabel = entry.code && studentSubjects[entry.code] ? studentSubjects[entry.code].name : null;
+                        const label = liveLabel || entry.subject || entry.code || '—';
                         const code  = isActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
                         html += `<td colspan="${span}" class="tt-cell ${cls}">📖 ${label}${code}</td>`;
                         // If span crosses into lunch zone (p+span-1 > 4), we skip lunch cell too
@@ -2746,7 +2753,8 @@
                     } else {
                         const span  = spanOf[p] || 1;
                         const cls   = cellClass(entry);
-                        const label = entry.subject || entry.code || '—';
+                        const liveLabel2 = entry.code && studentSubjects[entry.code] ? studentSubjects[entry.code].name : null;
+                        const label = liveLabel2 || entry.subject || entry.code || '—';
                         const code  = isActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
                         const icon  = isActivity(entry.subject) ? '⭐' : isLabSubject(entry.subject) ? '🔬' : '📖';
                         html += `<td colspan="${span}" class="tt-cell ${cls}">${icon} ${label}${code}</td>`;
