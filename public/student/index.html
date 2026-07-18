@@ -1313,7 +1313,7 @@
                     <div class="info-card"
                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
                         <div style="text-align: center; padding: 10px 0;">
-                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 3px;">Overall Attendance (Till Today)</div>
+                            <div style="font-size: 12px; opacity: 0.9; margin-bottom: 3px;" id="overallAttLabel">Overall Attendance (Till Today)</div>
                             <div id="cumulativePercentage" style="font-size: 36px; font-weight: bold; margin: 5px 0;">
                                 --%</div>
                             <div id="cumulativeStats" style="font-size: 11px; opacity: 0.9;">Loading...</div>
@@ -1488,6 +1488,7 @@
         let allAttendance = {}; // Cache: { 'YYYY-MM-DD': { pin: { 1: {status,faculty,subject}, ... } } }
         let allUnitMarks = {};  // Cache: { 'markKey': { pin: mark, ... } }
         let studentTimetable = {}; // Cache: timetable from settings/timetable
+        let studentCalendarDates = {}; // Cache: { '2-3': {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ... }
         const MIN_PERIODS_FOR_PRESENT = 3;
 
         // Helper: find attendance data for the current student in a day's record.
@@ -1514,16 +1515,18 @@
                     currentStudent = JSON.parse(saved);
                     showStudentApp();
                     // Fetch attendance data in background
-                    const [attSnap, marksSnap, ttDoc] = await Promise.all([
+                    const [attSnap, marksSnap, ttDoc, calDoc] = await Promise.all([
                         db.collection('attendance').get(),
                         db.collection('unitMarks').get(),
-                        db.collection('settings').doc('timetable').get()
+                        db.collection('settings').doc('timetable').get(),
+                        db.collection('settings').doc('calendarDates').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
                     allUnitMarks = {};
                     marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
                     if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
+                    if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
                     loadMonthlyReport();
                     loadTodayAttendance();
                     loadStudentNotifications(false); // auto-restore: no popup
@@ -1607,17 +1610,19 @@
                     // Show app immediately — don't wait for attendance to load
                     showStudentApp();
 
-                    // Batch-fetch ALL attendance, unit marks, and timetable in parallel
-                    const [attSnap, marksSnap, ttDoc] = await Promise.all([
+                    // Batch-fetch ALL attendance, unit marks, timetable and academic calendar in parallel
+                    const [attSnap, marksSnap, ttDoc, calDoc] = await Promise.all([
                         db.collection('attendance').get(),
                         db.collection('unitMarks').get(),
-                        db.collection('settings').doc('timetable').get()
+                        db.collection('settings').doc('timetable').get(),
+                        db.collection('settings').doc('calendarDates').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
                     allUnitMarks = {};
                     marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
                     if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
+                    if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
 
                     // Now load content after data is ready
                     loadMonthlyReport();
@@ -1741,7 +1746,17 @@
                 let presentDays = 0;
                 const dayStatus = {};
 
+                // Cutoff: 4:30 PM — same rule as the calendar P/A display.
+                // Before 4:30 PM → skip today entirely (don't count as working day).
+                const nowMR = new Date();
+                const todayStrMR = toLocalDateStr(nowMR);
+                const afterCutoffMR = nowMR.getHours() > 16 ||
+                    (nowMR.getHours() === 16 && nowMR.getMinutes() >= 30);
+
                 for (const date of dates) {
+                    // Skip today if we are still within college hours (before 4:30 PM)
+                    if (date === todayStrMR && !afterCutoffMR) continue;
+
                     // Use in-memory cache (loaded at login) — no extra Firestore reads
                     const attData = allAttendance[date] || {};
                     const periods = getStudentDayData(attData, currentStudent.pin);
@@ -1961,20 +1976,38 @@
         }
 
         async function calculateCumulativePercentage() {
-            const [y, s] = currentStudent.yearSem.split('-');
-            const today = new Date();
+            const now = new Date();
 
-            // Get all attendance from start of academic year till today
-            // For simplicity, assuming academic year starts July 1st
-            const currentYear = today.getFullYear();
-            const academicStartYear = today.getMonth() >= 6 ? currentYear : currentYear - 1;
-            const startDate = new Date(academicStartYear, 6, 1); // July 1st
+            // ── Determine cut-off date using 4:30 PM rule (matches monthly calendar) ──
+            // Before 4:30 PM → count up to yesterday; 4:30 PM or later → count up to today.
+            const afterCutoff = now.getHours() > 16 ||
+                (now.getHours() === 16 && now.getMinutes() >= 30);
+            const cutoffDate = new Date(now);
+            if (!afterCutoff) {
+                cutoffDate.setDate(cutoffDate.getDate() - 1); // go to yesterday
+            }
+            const cutoffStr = toLocalDateStr(cutoffDate);
+
+            // ── Determine academic start date from calendarDates settings ──
+            // studentCalendarDates structure: { '2-3': { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }, ... }
+            const ysKey = currentStudent.yearSem; // e.g. '2-3'
+            const calEntry = studentCalendarDates[ysKey];
+            let startStr = null;
+            if (calEntry && calEntry.start) {
+                startStr = calEntry.start; // 'YYYY-MM-DD'
+            } else {
+                // Fallback: July 1st of current/previous academic year
+                const currentYear = now.getFullYear();
+                const academicStartYear = now.getMonth() >= 6 ? currentYear : currentYear - 1;
+                startStr = `${academicStartYear}-07-01`;
+            }
 
             let totalWorkingDays = 0;
             let totalPresentDays = 0;
 
-            // Use in-memory cache to calculate cumulative (no per-day Firestore reads)
-            for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+            // ── Iterate from sem start → cutoff date (inclusive) ──
+            const startDate = new Date(startStr + 'T00:00:00');
+            for (let d = new Date(startDate); toLocalDateStr(d) <= cutoffStr; d.setDate(d.getDate() + 1)) {
                 const dateStr = toLocalDateStr(d);
                 const attData = allAttendance[dateStr] || {};
 
@@ -1983,7 +2016,6 @@
                     totalWorkingDays++;
                     let presentCount = 0;
                     for (let p = 1; p <= 7; p++) {
-                        // Keys stored in Firestore are always strings ("1", "2"...)
                         const pData = dayPeriods[String(p)];
                         if (pData && pData.status === 'P') presentCount++;
                     }
@@ -1991,7 +2023,15 @@
                 }
             }
 
-            // Update display
+            // ── Update display label to show effective range ──
+            const labelEl = document.getElementById('overallAttLabel');
+            if (labelEl) {
+                labelEl.textContent = afterCutoff
+                    ? 'Overall Attendance (Till Today)'
+                    : 'Overall Attendance (Till Yesterday)';
+            }
+
+            // Update stats
             const percentage = totalWorkingDays > 0 ? Math.round((totalPresentDays / totalWorkingDays) * 100) : 0;
             document.getElementById('cumulativePercentage').textContent = percentage + '%';
             document.getElementById('cumulativeStats').textContent =

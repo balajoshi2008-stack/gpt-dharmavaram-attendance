@@ -10517,30 +10517,88 @@
 
                     if (!detectedYearSem && ysKey) detectedYearSem = ysKey;
 
-                    // Build period string (e.g. "1-4" or "2,3" or "5")
-                    let periodStr;
-                    if (sortedPeriods.length === 1) {
-                        periodStr = String(sortedPeriods[0]);
-                    } else {
-                        let consecutive = true;
-                        for (let i = 1; i < sortedPeriods.length; i++) {
-                            if (sortedPeriods[i] !== sortedPeriods[i - 1] + 1) { consecutive = false; break; }
+                    // ── Split periods into timetable slot groups ──
+                    // Look up the TIMETABLE for this date's day-of-week + yearSem + subject,
+                    // so that combined periods (e.g., "3-4") get their OWN row rather than
+                    // being merged with solo periods (e.g., "1") into a single row.
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const dayAbbr = DAY_ABBR[dateObj.getDay()];
+
+                    // Derive the year and sem digits from ysKey (e.g., "2-3" → y=2, s=3)
+                    let ttYear = '', ttSem = '';
+                    if (ysKey) {
+                        const ykParts = ysKey.split('-');
+                        ttYear = ykParts[0] || '';
+                        ttSem  = ykParts[1] || '';
+                    }
+                    const ttKey = `${ttYear}-${ttSem}-${dayAbbr}`;
+                    const ttEntries = (TIMETABLE[ttKey] || []).filter(e => e.code === subCode);
+
+                    // Build groups: each timetable slot whose periods overlap with myPeriods
+                    const periodGroups = []; // [{periodStr, periods:[…]}, …]
+                    const assignedPeriods = new Set();
+
+                    ttEntries.forEach(ttEntry => {
+                        const slotPeriods = getPeriodList(ttEntry.periods)
+                            .map(Number)
+                            .filter(p => myPeriods.has(p));
+                        if (slotPeriods.length === 0) return;
+                        slotPeriods.forEach(p => assignedPeriods.add(p));
+                        slotPeriods.sort((a, b) => a - b);
+                        periodGroups.push({ periodStr: ttEntry.periods, periods: slotPeriods });
+                    });
+
+                    // Any periods not covered by any timetable slot → fall back to one group
+                    const unassigned = sortedPeriods.filter(p => !assignedPeriods.has(p));
+                    if (unassigned.length > 0) {
+                        let uStr;
+                        if (unassigned.length === 1) {
+                            uStr = String(unassigned[0]);
+                        } else {
+                            let consec = true;
+                            for (let i = 1; i < unassigned.length; i++) {
+                                if (unassigned[i] !== unassigned[i - 1] + 1) { consec = false; break; }
+                            }
+                            uStr = consec
+                                ? `${unassigned[0]}-${unassigned[unassigned.length - 1]}`
+                                : unassigned.join(',');
                         }
-                        periodStr = consecutive
-                            ? `${sortedPeriods[0]}-${sortedPeriods[sortedPeriods.length - 1]}`
-                            : sortedPeriods.join(',');
+                        periodGroups.push({ periodStr: uStr, periods: unassigned });
                     }
 
-                    allRows.push({
-                        date, yearSem: ysKey || '',
-                        subject: subCode,
-                        subjectName: getSubjectName(subCode),
-                        periods: periodStr,
-                        topic: '',          // filled in step 2
-                        faculty: currentUser,
-                        isExtraClass: false,
-                        _periodCount: sortedPeriods.length,
-                        _myPeriods: sortedPeriods
+                    // If no timetable match at all, create one group for all sortedPeriods
+                    if (periodGroups.length === 0) {
+                        let fallbackStr;
+                        if (sortedPeriods.length === 1) {
+                            fallbackStr = String(sortedPeriods[0]);
+                        } else {
+                            let consecutive = true;
+                            for (let i = 1; i < sortedPeriods.length; i++) {
+                                if (sortedPeriods[i] !== sortedPeriods[i - 1] + 1) { consecutive = false; break; }
+                            }
+                            fallbackStr = consecutive
+                                ? `${sortedPeriods[0]}-${sortedPeriods[sortedPeriods.length - 1]}`
+                                : sortedPeriods.join(',');
+                        }
+                        periodGroups.push({ periodStr: fallbackStr, periods: sortedPeriods });
+                    }
+
+                    // Sort groups by their first period number so rows appear in period order
+                    periodGroups.sort((a, b) => a.periods[0] - b.periods[0]);
+
+                    periodGroups.forEach(grp => {
+                        allRows.push({
+                            date, yearSem: ysKey || '',
+                            subject: subCode,
+                            subjectName: getSubjectName(subCode),
+                            periods: grp.periodStr,
+                            topic: '',          // filled in step 2
+                            faculty: currentUser,
+                            isExtraClass: false,
+                            _periodCount: grp.periods.length,
+                            _myPeriods: grp.periods
+                        });
                     });
                 });
 
