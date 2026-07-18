@@ -14437,11 +14437,22 @@ async function formGen_loadStudents(ys) {
         students = [...(STUDENTS[y]?.[sem] || STUDENTS[y]?.['1'] || [])];
     }
     if (!students.length) {
-        const snap = await db.collection('students').where('yearSem', '==', ys).orderBy('name').get();
+        const snap = await db.collection('students').where('yearSem', '==', ys).get();
         snap.forEach(d => students.push(d.data()));
-    } else {
-        students.sort((a, b) => a.name.localeCompare(b.name));
     }
+    // Sort by PIN: admission year → college code → roll number
+    // PIN format: YYCCС-BR-RRR  e.g. 24170-CM-010
+    //   admissionYear = pin[0..1]  ("24")
+    //   collegeCode   = pin[2..4]  ("170")
+    //   rollNumber    = last segment after final '-'  ("010")
+    function pinSortKey(pin) {
+        const p = String(pin || '');
+        const admYear    = p.substring(0, 2);           // "24"
+        const collegeCode = p.substring(2, 5);          // "170" or "057"
+        const rollNum    = p.split('-').pop();           // "010"
+        return admYear + '|' + collegeCode + '|' + rollNum;
+    }
+    students.sort((a, b) => pinSortKey(a.pin).localeCompare(pinSortKey(b.pin), undefined, { numeric: true }));
     return students;
 }
 
