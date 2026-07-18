@@ -13583,12 +13583,12 @@ async function absList_loadData() {
         al_students = [];
         if (typeof STUDENTS === 'object' && STUDENTS[al_y]) {
             const semStudents = STUDENTS[al_y]?.[al_s] || STUDENTS[al_y]?.['1'] || [];
-            al_students = [...semStudents].sort((a,b) => a.name.localeCompare(b.name));
+            al_students = [...semStudents].sort((a,b) => a.pin.localeCompare(b.pin));
         }
         if (!al_students.length) {
             const stSnap = await db.collection('students').where('yearSem','==',ys).get();
             stSnap.forEach(d => al_students.push(d.data()));
-            al_students.sort((a,b) => a.name.localeCompare(b.name));
+            al_students.sort((a,b) => a.pin.localeCompare(b.pin));
         }
         if (!al_students.length) { al_msg('⚠️ No students found for this class', 'red'); document.getElementById('al_viewBtn').disabled = false; return; }
 
@@ -13733,8 +13733,9 @@ function absList_switchView(view) {
 function absList_renderMatrix(container) {
     if (!al_dataLoaded) return;
     // Students with at least 1 absent
-    const absentStudents = al_students.filter(st =>
-        Object.values(al_matrix[st.pin] || {}).some(v => v === 'A'));
+    const absentStudents = al_students
+        .filter(st => Object.values(al_matrix[st.pin] || {}).some(v => v === 'A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
     if (!absentStudents.length) {
         container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found in this range.</div>';
         return;
@@ -13842,9 +13843,9 @@ function al_isDayPresent(pin, date) {
 function absList_renderRegister(container) {
     if (!al_dataLoaded) return;
     const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
-    const absentStudents = al_students.filter(st =>
-        al_dates.some(date => al_isDayPresent(st.pin, date) === 'A')
-    );
+    const absentStudents = al_students
+        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
     if (!absentStudents.length) {
         container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found.</div>';
         return;
@@ -13935,7 +13936,9 @@ function absList_downloadPDF() {
     // ── PAGE 1: Period-wise Matrix ──
     addHeader(doc, 'PAGE 1 - Period-wise Matrix (Absent Students)');
     let mStartY = 33;
-    const absStuMat = al_students.filter(st => Object.values(al_matrix[st.pin]||{}).some(v => v==='A'));
+    const absStuMat = al_students
+        .filter(st => Object.values(al_matrix[st.pin]||{}).some(v => v==='A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
 
     al_dates.forEach(date => {
         const periods = [...(al_periods[date]||[])].sort((a,b)=>a-b);
@@ -14005,7 +14008,9 @@ function absList_downloadPDF() {
     doc.addPage();
     addHeader(doc, 'PAGE 2 - Register Format (Day-wise Absent/Present)');
     const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
-    const absStuReg = al_students.filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'));
+    const absStuReg = al_students
+        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
     const regHead = ['Sl.No', 'PIN', 'Name', ...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`), 'Total Days Absent'];
     const colAbsCount = {};
     al_dates.forEach(d=>{ colAbsCount[d]=0; });
@@ -14093,7 +14098,9 @@ function absList_downloadExcel() {
 
     // ── SHEET 2: Register Format (uses MIN_PERIODS_FOR_PRESENT threshold) ──
     const thresholdXL = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
-    const absStuReg=al_students.filter(st=>al_dates.some(date=>al_isDayPresent(st.pin,date)==='A'));
+    const absStuReg=al_students
+        .filter(st=>al_dates.some(date=>al_isDayPresent(st.pin,date)==='A'))
+        .sort((a,b)=>a.pin.localeCompare(b.pin));
     const s2=[[heading],[subHead],[`Present rule: >= ${thresholdXL} periods present = P (Present day) | < ${thresholdXL} periods = A (Absent day)`],['Sl.No','PIN','Name',...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`)]]; // no Total Absent Days col
     const colAbs={}; al_dates.forEach(d=>{colAbs[d]=0;});
     let totalAbsStu=0;
