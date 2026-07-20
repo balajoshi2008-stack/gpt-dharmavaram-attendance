@@ -11380,6 +11380,7 @@
                 // Tracking maps filled during drawing hooks
                 const rowPageMap  = {}; // rowIndex → page number it was drawn on
                 const mergeActive = {}; // rowIndex → bool (visual merge applied)
+                const rowCellInfo = {}; // rowIndex → { x, y, width, height, page } for col 0
 
                 // ── Build table body ──────────────────────────────────────
                 const tableBody = rows.map((r, idx) => {
