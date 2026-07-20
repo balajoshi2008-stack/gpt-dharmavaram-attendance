@@ -11454,7 +11454,7 @@
                         5: { cellWidth: 18, halign: 'center' }
                     },
                     alternateRowStyles: { fillColor: [255, 255, 255] },
-                    margin: { top: 35, left: margin, right: margin },
+                    margin: { top: 35, bottom: 28, left: margin, right: margin },
                     tableWidth: pageW - margin * 2,
 
                     // ── Decide per cell: merge or restore date text ────────
@@ -11484,11 +11484,21 @@
                         }
                     },
 
-                    // ── Erase shared top-border for merged cells ───────────
+                    // ── Record cell geometry + erase shared top-border for merged cells ─
                     didDrawCell: (data) => {
                         if (data.section !== 'body' || data.column.index !== 0) return;
-                        if (!mergeActive[data.row.index]) return;
-                        // Overdraw the top border with white to visually join the cells
+                        const rowIdx = data.row.index;
+                        const curPage = data.doc.internal.getCurrentPageInfo().pageNumber;
+
+                        // Always record geometry so post-process can use it
+                        rowCellInfo[rowIdx] = {
+                            x: data.cell.x, y: data.cell.y,
+                            width: data.cell.width, height: data.cell.height,
+                            page: curPage
+                        };
+
+                        if (!mergeActive[rowIdx]) return;
+                        // Overdraw top border with white to visually join merged cells
                         const { x, y, width } = data.cell;
                         data.doc.setDrawColor(255, 255, 255);
                         data.doc.setLineWidth(0.7);
@@ -11503,19 +11513,70 @@
 
                         const pageH = doc.internal.pageSize.height;
 
-                        // Footer on LAST page: signature lines + H.O.D / Principal
+                        // Footer on LAST page: H.O.D / Principal (space above = table bottom margin)
                         if (data.pageNumber === doc.internal.getNumberOfPages()) {
-                            // Short horizontal lines as signature guides
-                            doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
-                            doc.line(margin,                  pageH - 22, margin + 38,          pageH - 22);
-                            doc.line(pageW - margin - 38,     pageH - 22, pageW - margin,        pageH - 22);
-
                             doc.setFontSize(10).setFont(undefined, 'bold');
-                            doc.text('H.O.D',     margin,         pageH - 16);
-                            doc.text('Principal', pageW - margin, pageH - 16, { align: 'right' });
+                            doc.text('H.O.D',     margin,         pageH - 12);
+                            doc.text('Principal', pageW - margin, pageH - 12, { align: 'right' });
                         }
                     }
                 });
+
+                // ── Post-process: redraw group-leader date text vertically centred ──
+                // Now that all rows are drawn and their heights are recorded, we can
+                // re-draw the date text for group leaders so it sits in the middle of
+                // the combined merged area (leader row + active continuation rows).
+                rows.forEach((r, idx) => {
+                    const info = dateGroupInfo[idx];
+                    if (info.isContinuation) return;          // skip non-leaders
+                    const leaderCell = rowCellInfo[idx];
+                    if (!leaderCell) return;                   // not drawn yet (shouldn't happen)
+
+                    // Sum heights of consecutive active continuation rows on the same page
+                    let totalH = leaderCell.height;
+                    let hasActiveMerge = false;
+                    for (let j = idx + 1; j < rows.length; j++) {
+                        if (dateGroupInfo[j].groupLeader !== idx) break;
+                        if (!mergeActive[j]) break;            // cross-page → stop
+                        const ci = rowCellInfo[j];
+                        if (!ci || ci.page !== leaderCell.page) break;
+                        totalH += ci.height;
+                        hasActiveMerge = true;
+                    }
+                    if (!hasActiveMerge) return;               // single-row group, nothing to do
+
+                    // Switch to the correct page, fill white over leader cell, redraw text
+                    doc.setPage(leaderCell.page);
+
+                    const cx = leaderCell.x;
+                    const cy = leaderCell.y;
+                    const cw = leaderCell.width;
+
+                    // White fill (leave 0.3 px border gap)
+                    doc.setFillColor(255, 255, 255);
+                    doc.rect(cx + 0.2, cy + 0.2, cw - 0.4, totalH - 0.4, 'F');
+
+                    // Redraw left, right, top borders of merged area
+                    doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
+                    doc.line(cx,      cy, cx,      cy + totalH);   // left
+                    doc.line(cx + cw, cy, cx + cw, cy + totalH);   // right
+                    doc.line(cx,      cy, cx + cw, cy);            // top
+
+                    // Vertically centred date text
+                    const d    = new Date(r.date + 'T00:00:00');
+                    const dd_  = String(d.getDate()).padStart(2, '0');
+                    const mm_  = String(d.getMonth() + 1).padStart(2, '0');
+                    const yy_  = String(d.getFullYear()).slice(-2);
+                    const day_ = DAY3[d.getDay()];
+                    const midY = cy + totalH / 2;
+
+                    doc.setFontSize(8).setFont(undefined, 'bold');
+                    doc.text(`${dd_}/${mm_}/${yy_}`, cx + cw / 2, midY - 1.5, { align: 'center' });
+                    doc.text(day_,                   cx + cw / 2, midY + 2.5, { align: 'center' });
+                });
+
+                // Return to last page for save
+                doc.setPage(doc.internal.getNumberOfPages());
 
                 // ── Save ──────────────────────────────────────────────────
                 const safeName = facultyName.replace(/\s+/g, '_');
