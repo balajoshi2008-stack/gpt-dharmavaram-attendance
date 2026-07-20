@@ -11166,7 +11166,7 @@
                         if (slotPeriods.length === 0) return;
                         slotPeriods.forEach(p => assignedPeriods.add(p));
                         slotPeriods.sort((a, b) => a - b);
-                        periodGroups.push({ periodStr: ttEntry.periods, periods: slotPeriods });
+                    periodGroups.push({ periodStr: ttEntry.periods, periods: slotPeriods });
                     });
 
                     const unassigned = sortedPeriods.filter(p => !assignedPeriods.has(p));
@@ -11368,8 +11368,21 @@
                     }
                 }
 
+                // ── Pre-process: mark consecutive same-date rows ──────────
+                // isContinuation = true for rows[i] when rows[i].date === rows[i-1].date
+                const dateGroupInfo = rows.map((r, idx) => {
+                    const isContinuation = idx > 0 && rows[idx - 1].date === r.date;
+                    let leader = idx;
+                    while (leader > 0 && rows[leader - 1].date === r.date) leader--;
+                    return { isContinuation, groupLeader: leader };
+                });
+
+                // Tracking maps filled during drawing hooks
+                const rowPageMap  = {}; // rowIndex → page number it was drawn on
+                const mergeActive = {}; // rowIndex → bool (visual merge applied)
+
                 // ── Build table body ──────────────────────────────────────
-                const tableBody = rows.map(r => {
+                const tableBody = rows.map((r, idx) => {
                     const d     = new Date(r.date + 'T00:00:00');
                     const dd    = String(d.getDate()).padStart(2, '0');
                     const mm    = String(d.getMonth() + 1).padStart(2, '0');
@@ -11383,8 +11396,13 @@
                         periodCell = `${r._session}*\n${sz(r._timeFrom)}-${sz(r._timeTo)}`;
                     }
 
+                    // Continuation rows: leave col 0 empty; willDrawCell restores if cross-page
+                    const dateCell = dateGroupInfo[idx].isContinuation
+                        ? ''
+                        : `${dd}/${mm}/${yy}\n${day3}`;
+
                     return [
-                        `${dd}/${mm}/${yy}\n${day3}`,
+                        dateCell,
                         periodCell,
                         `${r.subject}\n${sName}`,
                         r.topic || '—',
@@ -11438,20 +11456,64 @@
                     alternateRowStyles: { fillColor: [255, 255, 255] },
                     margin: { top: 35, left: margin, right: margin },
                     tableWidth: pageW - margin * 2,
+
+                    // ── Decide per cell: merge or restore date text ────────
+                    willDrawCell: (data) => {
+                        if (data.section !== 'body' || data.column.index !== 0) return;
+                        const rowIdx  = data.row.index;
+                        const curPage = data.doc.internal.getCurrentPageInfo().pageNumber;
+                        rowPageMap[rowIdx] = curPage;                    // record this row's page
+
+                        const info = dateGroupInfo[rowIdx];
+                        if (!info || !info.isContinuation) return;
+
+                        const leaderPage = rowPageMap[info.groupLeader];
+                        if (leaderPage === curPage) {
+                            // Same page → visual merge: keep text blank
+                            mergeActive[rowIdx] = true;
+                            data.cell.text = [];
+                        } else {
+                            // Cross-page → restore full date so it appears normally
+                            mergeActive[rowIdx] = false;
+                            const r2  = rows[rowIdx];
+                            const d2  = new Date(r2.date + 'T00:00:00');
+                            const dd2 = String(d2.getDate()).padStart(2, '0');
+                            const mm2 = String(d2.getMonth() + 1).padStart(2, '0');
+                            const yy2 = String(d2.getFullYear()).slice(-2);
+                            data.cell.text = [`${dd2}/${mm2}/${yy2}`, DAY3[d2.getDay()]];
+                        }
+                    },
+
+                    // ── Erase shared top-border for merged cells ───────────
+                    didDrawCell: (data) => {
+                        if (data.section !== 'body' || data.column.index !== 0) return;
+                        if (!mergeActive[data.row.index]) return;
+                        // Overdraw the top border with white to visually join the cells
+                        const { x, y, width } = data.cell;
+                        data.doc.setDrawColor(255, 255, 255);
+                        data.doc.setLineWidth(0.7);
+                        data.doc.line(x, y, x + width, y);
+                        data.doc.setDrawColor(0, 0, 0);
+                        data.doc.setLineWidth(0.3);
+                    },
+
                     didDrawPage: (data) => {
                         // Re-draw header on continuation pages
                         if (data.pageNumber > 1) dwDrawHeader(data.pageNumber);
 
                         const pageH = doc.internal.pageSize.height;
 
-                        // Footer: H.O.D and Principal on LAST page
+                        // Footer on LAST page: signature lines + H.O.D / Principal
                         if (data.pageNumber === doc.internal.getNumberOfPages()) {
+                            // Short horizontal lines as signature guides
+                            doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
+                            doc.line(margin,                  pageH - 22, margin + 38,          pageH - 22);
+                            doc.line(pageW - margin - 38,     pageH - 22, pageW - margin,        pageH - 22);
+
                             doc.setFontSize(10).setFont(undefined, 'bold');
-                            doc.text('H.O.D',      margin,          pageH - 12);
-                            doc.text('Principal',  pageW - margin,  pageH - 12, { align: 'right' });
+                            doc.text('H.O.D',     margin,         pageH - 16);
+                            doc.text('Principal', pageW - margin, pageH - 16, { align: 'right' });
                         }
-
-
                     }
                 });
 
