@@ -5860,6 +5860,21 @@
             XLSX.writeFile(wb, `Attendance_Week${weekNum}_Year${y}_Sem${s}.xlsx`);
         }
 
+        /**
+         * Centre-align all populated cells in a given column index of an XLSX worksheet.
+         * col: 0-based column index (0 = A = Sl.No)
+         */
+        function xlsCenterCol(ws, col) {
+            if (!ws) return;
+            const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                const addr = XLSX.utils.encode_cell({ r: R, c: col });
+                if (!ws[addr]) continue;
+                if (!ws[addr].s) ws[addr].s = {};
+                ws[addr].s.alignment = { horizontal: 'center', vertical: 'center', wrapText: false };
+            }
+        }
+
         function getMonthWeeks(yearMonth) {
             const [year, month] = yearMonth.split('-').map(Number);
             const firstDay = new Date(year, month - 1, 1);
@@ -5986,6 +6001,7 @@
                 });
                 ws['!merges'] = merges;
                 ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }];
+                xlsCenterCol(ws, 0);  // centre Sl.No column
                 XLSX.utils.book_append_sheet(wb, ws, `Week ${wIdx + 1}`);
             });
 
@@ -6002,6 +6018,7 @@
             const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
             ws2['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 14 }, { wch: 20 }, { wch: 12 }];
             ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
+            xlsCenterCol(ws2, 0);  // centre Sl.No column
             XLSX.utils.book_append_sheet(wb, ws2, 'Monthly Summary');
 
             XLSX.writeFile(wb, `Attendance_${monthName}${mYear}_Year${y}_Sem${s}.xlsx`);
@@ -6136,6 +6153,7 @@
             ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }];
             ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 12 }];
             dates.forEach(() => ws['!cols'].push({ wch: 8 }));
+            xlsCenterCol(ws, 0);  // centre Sl.No column
 
             const wb = XLSX.utils.book_new();
             const semText = y == 1 ? 'Year 1' : `Year ${y} Sem ${s}`;
@@ -6226,6 +6244,7 @@
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(data);
             ws['!cols'] = [{ wch: 6 }, { wch: 20 }, { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 25 }, { wch: 12 }];
+            xlsCenterCol(ws, 0);  // centre Sl.No column
             ws['!merges'] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
                 { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
