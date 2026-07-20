@@ -3163,6 +3163,73 @@
                 </div>
 
                 <div id="recLoading" style="display:none;color:#667eea;font-weight:600;margin-top:16px;">⏳ Checking records...</div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- SECTION 2: Force Clear by Date & Period (Wrong-Subject Fix) -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div style="margin-top:36px;border-top:2px dashed #e0534a;padding-top:28px;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+                        <span style="font-size:26px;">🗓️</span>
+                        <div>
+                            <h3 style="margin:0;color:#b71c1c;font-size:17px;font-weight:700;">Force Clear Attendance by Date &amp; Period</h3>
+                            <p style="margin:4px 0 0;color:#888;font-size:12px;">Use this to clear a correctly-posted but wrong-subject attendance so the faculty can re-post with the correct subject.</p>
+                        </div>
+                    </div>
+                    <div style="background:#fff3e0;border-left:4px solid #f57c00;border-radius:8px;padding:10px 16px;margin-bottom:18px;font-size:13px;color:#7f4600;">
+                        ⚠️ <strong>Admin-only destructive action.</strong> This will permanently delete the attendance lock, student records, and topic entry for the selected date &amp; period. The faculty will need to re-post attendance after this.
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Year</label>
+                            <select id="fc_year" onchange="fc_onYearChange()" class="form-control">
+                                <option value="">Select Year</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Semester</label>
+                            <select id="fc_sem" onchange="fc_onSemChange()" class="form-control" disabled>
+                                <option value="">Select Year first</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="fc_date" onchange="fc_loadPeriods()" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="max-width:500px;margin-top:10px;">
+                        <label>Period (All periods posted for this date)</label>
+                        <select id="fc_period" onchange="fc_onPeriodChange()" class="form-control" disabled>
+                            <option value="">Select Year / Sem / Date first</option>
+                        </select>
+                    </div>
+
+                    <!-- Preview card shown after a period is selected -->
+                    <div id="fc_previewPanel" style="display:none;margin-top:18px;background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 12px rgba(0,0,0,0.09);max-width:560px;border:2px solid #ffccbc;">
+                        <h4 style="margin:0 0 12px;color:#bf360c;font-size:15px;">🔍 Selected Record to Clear</h4>
+                        <div style="display:grid;grid-template-columns:140px 1fr;gap:7px 14px;font-size:14px;">
+                            <div style="color:#555;font-weight:600;">Date:</div><div id="fc_prevDate" style="color:#222;"></div>
+                            <div style="color:#555;font-weight:600;">Period(s):</div><div id="fc_prevPeriod" style="color:#222;"></div>
+                            <div style="color:#555;font-weight:600;">Subject (Wrong):</div><div id="fc_prevSubject" style="color:#c62828;font-weight:700;"></div>
+                            <div style="color:#555;font-weight:600;">Posted By:</div><div id="fc_prevFaculty" style="color:#222;"></div>
+                        </div>
+                        <div style="margin-top:16px;padding:11px 14px;background:#fce4ec;border-radius:8px;font-size:13px;color:#880e4f;font-weight:600;">
+                            ⚠️ After clearing, faculty must go to Attendance tab, select the <em>correct</em> subject, and re-post.
+                        </div>
+                        <div style="margin-top:14px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                            <button id="fc_clearBtn" onclick="fc_forceClear()" class="btn btn-danger"
+                                style="background:linear-gradient(135deg,#c62828,#b71c1c);color:#fff;font-weight:700;padding:10px 24px;border-radius:9px;border:none;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(198,40,40,0.28);">
+                                🗑️ Force Clear This Attendance
+                            </button>
+                            <span id="fc_loadingSpinner" style="display:none;color:#667eea;font-weight:600;">⏳ Clearing...</span>
+                        </div>
+                        <div id="fc_resultMsg" style="display:none;margin-top:14px;padding:12px 16px;background:#e8f5e9;border-left:4px solid #4caf50;border-radius:8px;color:#2e7d32;font-weight:600;"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -13725,6 +13792,18 @@ function initAttRecoveryTab() {
     document.getElementById('recDiagPanel').style.display = 'none';
     document.getElementById('recClearMsg').style.display = 'none';
     document.getElementById('recLoading').style.display = 'none';
+
+    // Also reset Force Clear section
+    document.getElementById('fc_year').value = '';
+    const fcSemEl = document.getElementById('fc_sem');
+    fcSemEl.innerHTML = '<option value="">Select Year first</option>';
+    fcSemEl.disabled = true;
+    document.getElementById('fc_date').value = '';
+    const fcPerEl = document.getElementById('fc_period');
+    fcPerEl.innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+    fcPerEl.disabled = true;
+    document.getElementById('fc_previewPanel').style.display = 'none';
+    _fcCtx = null;
 }
 
 function onRecYearChange() {
@@ -14014,8 +14093,254 @@ async function clearRecoveryAttendance() {
 }
 
 // ╔══════════════════════════════════════════════════════════════╗
+// ║   FORCE CLEAR BY DATE & PERIOD  (fc_ prefix)                ║
+// ║   Admin-only: clears any posted attendance regardless of     ║
+// ║   consistency status (e.g. wrong subject was posted)         ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let _fcCtx = null; // stores selected context for force-clear
+
+function fc_onYearChange() {
+    const y = document.getElementById('fc_year').value;
+    const semEl = document.getElementById('fc_sem');
+    semEl.innerHTML = '';
+    if (!y) {
+        semEl.innerHTML = '<option value="">Select Year first</option>';
+        semEl.disabled = true;
+    } else if (y == 1) {
+        semEl.innerHTML = '<option value="1">Year-wise Course</option>';
+        semEl.disabled = true;
+    } else if (y == 2) {
+        semEl.innerHTML = '<option value="">Select Semester</option><option value="3">Sem 3</option><option value="4">Sem 4</option>';
+        semEl.disabled = false;
+    } else if (y == 3) {
+        semEl.innerHTML = '<option value="">Select Semester</option><option value="5">Sem 5</option>';
+        semEl.disabled = false;
+    }
+    document.getElementById('fc_period').innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+    document.getElementById('fc_period').disabled = true;
+    document.getElementById('fc_previewPanel').style.display = 'none';
+    _fcCtx = null;
+    if (y == 1) fc_loadPeriods();
+}
+
+function fc_onSemChange() {
+    document.getElementById('fc_period').innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+    document.getElementById('fc_period').disabled = true;
+    document.getElementById('fc_previewPanel').style.display = 'none';
+    _fcCtx = null;
+    fc_loadPeriods();
+}
+
+function fc_loadPeriods() {
+    const y = document.getElementById('fc_year').value;
+    const s = (y == 1) ? '1' : document.getElementById('fc_sem').value;
+    const date = document.getElementById('fc_date').value;
+    const perEl = document.getElementById('fc_period');
+
+    document.getElementById('fc_previewPanel').style.display = 'none';
+    _fcCtx = null;
+
+    if (!y || !s || !date) {
+        perEl.innerHTML = '<option value="">Select Year / Sem / Date first</option>';
+        perEl.disabled = true;
+        return;
+    }
+
+    const facultyKey = `${date}_${y}_${s}`;
+    const postedData = PERIOD_FACULTY[facultyKey] || {};
+    const postedPeriods = Object.keys(postedData).sort((a, b) => parseInt(a) - parseInt(b));
+
+    perEl.innerHTML = '<option value="">-- Select Posted Period --</option>';
+
+    if (postedPeriods.length === 0) {
+        perEl.innerHTML = '<option value="">No attendance posted for this date/class</option>';
+        perEl.disabled = true;
+        return;
+    }
+
+    const day = getDayFromDate(date);
+    const ttKey = `${y}-${s}-${day}`;
+    const schedule = TIMETABLE[ttKey] || [];
+
+    const addedGroups = new Set();
+    schedule.forEach(item => {
+        const pList = getPeriodList(item.periods);
+        const hasPosted = pList.some(p => postedData[p]);
+        if (hasPosted && !addedGroups.has(item.periods)) {
+            addedGroups.add(item.periods);
+            const firstP = pList[0];
+            const faculty = postedData[firstP]?.faculty || '?';
+            const subjectCode = postedData[firstP]?.subject || '?';
+            const subjectName = getSubjectName(subjectCode) || subjectCode;
+            const opt = document.createElement('option');
+            opt.value = item.periods;
+            opt.textContent = `${item.periods} — ${subjectCode}: ${subjectName} (${faculty})`;
+            perEl.appendChild(opt);
+        }
+    });
+
+    // Also add periods not in timetable (extra class / other mode)
+    postedPeriods.forEach(p => {
+        let covered = false;
+        addedGroups.forEach(grp => { if (getPeriodList(grp).includes(p)) covered = true; });
+        if (!covered) {
+            const faculty = postedData[p]?.faculty || '?';
+            const subjectCode = postedData[p]?.subject || '?';
+            const subjectName = getSubjectName(subjectCode) || subjectCode;
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = `${p} — ${subjectCode}: ${subjectName} (${faculty})`;
+            perEl.appendChild(opt);
+        }
+    });
+
+    perEl.disabled = false;
+}
+
+function fc_onPeriodChange() {
+    const y = document.getElementById('fc_year').value;
+    const s = (y == 1) ? '1' : document.getElementById('fc_sem').value;
+    const date = document.getElementById('fc_date').value;
+    const periods = document.getElementById('fc_period').value;
+    const previewPanel = document.getElementById('fc_previewPanel');
+
+    if (!periods) {
+        previewPanel.style.display = 'none';
+        _fcCtx = null;
+        return;
+    }
+
+    const periodList = getPeriodList(periods);
+    const facultyKey = `${date}_${y}_${s}`;
+    const postedData = PERIOD_FACULTY[facultyKey] || {};
+    const firstP = periodList[0];
+    const faculty = postedData[firstP]?.faculty || '—';
+    const subjectCode = postedData[firstP]?.subject || '—';
+    const subjectName = getSubjectName(subjectCode) || subjectCode;
+
+    // Format date for display
+    const [yy, mm, dd] = date.split('-');
+    const displayDate = `${dd}/${mm}/${yy}`;
+
+    document.getElementById('fc_prevDate').textContent = displayDate;
+    document.getElementById('fc_prevPeriod').textContent = `Period ${periods}`;
+    document.getElementById('fc_prevSubject').textContent = `${subjectCode}: ${subjectName}`;
+    document.getElementById('fc_prevFaculty').textContent = faculty;
+
+    // Reset result message
+    document.getElementById('fc_resultMsg').style.display = 'none';
+    document.getElementById('fc_clearBtn').disabled = false;
+    document.getElementById('fc_clearBtn').style.opacity = '1';
+    document.getElementById('fc_clearBtn').style.cursor = 'pointer';
+
+    previewPanel.style.display = 'block';
+
+    _fcCtx = { y, s, date, periods, periodList, facultyKey, subjectCode, faculty };
+}
+
+async function fc_forceClear() {
+    if (!_fcCtx) { alert('Please select a period first.'); return; }
+    const { y, s, date, periods, periodList, facultyKey, subjectCode, faculty } = _fcCtx;
+    const students = STUDENTS[y]?.[s] || [];
+
+    const confirmed = confirm(
+        `⚠️ FORCE CLEAR CONFIRMATION\n\n` +
+        `This will permanently delete ALL attendance records for:\n` +
+        `  Date    : ${date}\n` +
+        `  Class   : Year ${y} / Sem ${s}\n` +
+        `  Period(s): ${periods}\n` +
+        `  Subject : ${subjectCode}\n` +
+        `  Posted by: ${faculty}\n\n` +
+        `This action CANNOT be undone.\nThe faculty will need to re-post attendance with the correct subject.\n\nProceed?`
+    );
+    if (!confirmed) return;
+
+    const spinner = document.getElementById('fc_loadingSpinner');
+    const clearBtn = document.getElementById('fc_clearBtn');
+    const resultMsg = document.getElementById('fc_resultMsg');
+
+    spinner.style.display = 'inline';
+    clearBtn.disabled = true;
+    clearBtn.style.opacity = '0.5';
+    clearBtn.style.cursor = 'not-allowed';
+    resultMsg.style.display = 'none';
+
+    try {
+        const batch = db.batch();
+
+        // 1. Remove periods from PERIOD_FACULTY lock
+        const updatedPF = JSON.parse(JSON.stringify(PERIOD_FACULTY));
+        if (updatedPF[facultyKey]) {
+            periodList.forEach(p => delete updatedPF[facultyKey][p]);
+            if (Object.keys(updatedPF[facultyKey]).length === 0) delete updatedPF[facultyKey];
+        }
+        batch.set(db.collection('settings').doc('periodFaculty'), updatedPF);
+
+        // 2. Remove per-student period data from attendance document
+        let attDoc = {};
+        try {
+            const snap = await db.collection('attendance').doc(date).get();
+            if (snap.exists) attDoc = JSON.parse(JSON.stringify(snap.data()));
+        } catch(e) {}
+        students.forEach(st => {
+            if (attDoc[st.pin]) {
+                periodList.forEach(p => delete attDoc[st.pin][p]);
+            }
+        });
+        batch.set(db.collection('attendance').doc(date), attDoc);
+
+        // 3. Remove topic entry for this period if it exists
+        try {
+            const topicSnap = await db.collection('dailyTopics').doc(date).get();
+            if (topicSnap.exists) {
+                const topicData = JSON.parse(JSON.stringify(topicSnap.data()));
+                const yearSem = (y == 1) ? '1-1' : `${y}-${s}`;
+                Object.keys(topicData).forEach(k => {
+                    if (topicData[k]?.yearSem === yearSem && topicData[k]?.subject === subjectCode) {
+                        const pl = getPeriodList(topicData[k]?.periods || '');
+                        if (pl.some(p => periodList.includes(p))) delete topicData[k];
+                    }
+                });
+                batch.set(db.collection('dailyTopics').doc(date), topicData);
+            }
+        } catch(e) { console.warn('[ForceClear] Topic clear skipped:', e); }
+
+        await batch.commit();
+
+        // Update in-memory cache
+        PERIOD_FACULTY = updatedPF;
+        ATTENDANCE_CACHE['att_' + date] = attDoc;
+
+        spinner.style.display = 'none';
+        resultMsg.style.background = '#e8f5e9';
+        resultMsg.style.color = '#2e7d32';
+        resultMsg.textContent = `✅ Force Clear successful! Attendance for Period ${periods} on ${date} (Subject: ${subjectCode}) has been removed. Faculty can now re-post with the correct subject.`;
+        resultMsg.style.display = 'block';
+
+        // Refresh period dropdown and hide preview
+        fc_loadPeriods();
+        document.getElementById('fc_period').value = '';
+        document.getElementById('fc_previewPanel').style.display = 'none';
+        _fcCtx = null;
+
+        // Show success message persistently
+        resultMsg.style.display = 'block';
+
+    } catch(err) {
+        spinner.style.display = 'none';
+        clearBtn.disabled = false;
+        clearBtn.style.opacity = '1';
+        clearBtn.style.cursor = 'pointer';
+        console.error('[ForceClear] Failed:', err);
+        alert('❌ Force Clear failed. Error: ' + err.message + '\n\nPlease check your internet connection and try again.');
+    }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
 // ║             ABSENT LIST MODULE  (absList_ prefix)           ║
 // ╚══════════════════════════════════════════════════════════════╝
+
 
 let al_students   = [];
 let al_matrix     = {};   // pin → { 'YYYY-MM-DD__Pp': 'A'|'P' }
