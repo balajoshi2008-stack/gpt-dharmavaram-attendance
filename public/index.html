@@ -1288,6 +1288,63 @@
                     <h3 style="color:#2a5298;margin-bottom:12px;">📋 Logbook Preview</h3>
                     <div id="logbookTableContainer" style="overflow-x:auto;"></div>
                 </div>
+
+                <!-- ══════════════════════════════════════════════════════════════
+                     NEW SECTION: Date-wise Merged Logbook (All Subjects)
+                     DO NOT remove or edit the section above — this is ADDITIVE ONLY
+                ══════════════════════════════════════════════════════════════ -->
+                <div id="datewiseLogbookSection"
+                     style="border-top:2px dashed #c7d2fe;margin-top:2rem;padding-top:1.5rem;">
+
+                    <h3 style="color:#1F3864;margin-bottom:6px;font-size:16px;">📋 Date-wise Logbook <span style="font-weight:400;font-size:13px;color:#6b7280;">(All Subjects Combined)</span></h3>
+                    <p style="color:#6b7280;font-size:12.5px;margin-bottom:16px;">
+                        Generates a single PDF with <strong>all your subjects</strong>, sorted by date.
+                        Each subject keeps its own independent cumulative period count.
+                    </p>
+
+                    <div style="background:#f8f9fa;border-radius:12px;padding:20px;border:1px solid #e0e0e0;margin-bottom:16px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Academic Year</label>
+                                <select id="dw_academicYear"
+                                        style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;">
+                                    <option value="">-- Select --</option>
+                                    <option value="2024-25">2024-25</option>
+                                    <option value="2025-26">2025-26</option>
+                                    <option value="2026-27">2026-27</option>
+                                    <option value="2027-28">2027-28</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>From Date</label>
+                                <input type="date" id="dw_fromDate"
+                                       style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;" />
+                            </div>
+                            <div class="form-group">
+                                <label>To Date</label>
+                                <input type="date" id="dw_toDate"
+                                       style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;" />
+                            </div>
+                        </div>
+
+                        <div style="background:#EFF6FF;border-left:3px solid #2E75B6;padding:.65rem 1rem;
+                                    border-radius:0 8px 8px 0;font-size:12px;color:#1E40AF;margin:14px 0;">
+                            💡 Cumulative counts continue from the semester start date — so the numbers are always accurate even if you pick a mid-semester From Date.
+                        </div>
+
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+                            <button onclick="generateDatewisePDF()"
+                                    style="background:linear-gradient(135deg,#1F3864,#2E75B6);color:white;
+                                           padding:.75rem 1.4rem;border:none;border-radius:8px;
+                                           font-size:.9rem;font-weight:700;cursor:pointer;flex:1;min-width:220px;">
+                                📋 Download Date-wise Logbook (All Subjects)
+                            </button>
+                        </div>
+                        <div id="dwLogbookMsg" style="display:none;margin-top:10px;font-size:13px;"></div>
+                    </div>
+                </div>
+                <!-- ── END: Date-wise Merged Logbook section ── -->
+
             </div>
 
             <!-- EXTRA CLASS TAB (Faculty only) -->
@@ -10895,6 +10952,458 @@
         }
 
         // ─────────────────────────────────────────────────────────────
+        // DATE-WISE MERGED LOGBOOK (All Subjects) — NEW FEATURE
+        // Completely separate from the subject logbook above.
+        // DO NOT modify the subject logbook functions above this line.
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * Count the number of period slots in a period string.
+         * Examples:  "1" → 1,  "3-4" → 2,  "5-7" → 3
+         */
+        function dwCountPeriods(periodStr) {
+            if (!periodStr) return 1;
+            const s = String(periodStr);
+            // Handle comma-separated lists like "1,3,5"
+            if (s.includes(',')) return s.split(',').length;
+            const parts = s.split('-');
+            if (parts.length === 2) {
+                const a = parseInt(parts[0]), b = parseInt(parts[1]);
+                if (!isNaN(a) && !isNaN(b) && b >= a) return b - a + 1;
+            }
+            return 1;
+        }
+
+        /** Format "YYYY-MM-DD" → "DD/MM/YY" */
+        function dwFormatDate(dateStr) {
+            if (!dateStr) return '';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${String(y).slice(-2)}`;
+        }
+
+        /**
+         * Build all logbook rows for ALL subjects the faculty teaches,
+         * sorted by date.  Each subject keeps its own per-subject cumulative
+         * count that starts from the semester start date (same behaviour as
+         * the single-subject logbook).
+         *
+         * Returns an array of row objects:
+         *   { date, subject, subjectName, yearSem, periods, topic,
+         *     isExtraClass, _isWorkingDay, _session, _timeFrom, _timeTo,
+         *     _periodCount, cumulativePeriod }
+         */
+        async function generateDatewiseLogbook(fromDate, toDate) {
+            const myFacultyName = USERS[currentUser]?.name || currentUser;
+
+            // ── Step 1: Collect all subject codes this faculty teaches ────
+            // Source: FACULTY_MAP (preloaded at login) — same as initLogbookTab()
+            const mySubjectCodes = Object.keys(FACULTY_MAP).filter(
+                code => FACULTY_MAP[code] === currentUser && SUBJECTS[code]
+            );
+
+            if (mySubjectCodes.length === 0) return [];
+
+            // ── Step 2: Detect yearSem per subject (from PERIOD_FACULTY / subject code) ──
+            const subjectYearSem = {}; // { subCode: ysKey }
+
+            // We derive yearSem for each subject the same way the single-subject
+            // logbook does — look through PERIOD_FACULTY for any entry that confirms
+            // the faculty+subject, then fall back to the subject-code prefix.
+            const pfKeys = Object.keys(PERIOD_FACULTY);
+            mySubjectCodes.forEach(subCode => {
+                let ysKey = null;
+                for (const pfKey of pfKeys) {
+                    const pfData = PERIOD_FACULTY[pfKey];
+                    if (!pfData) continue;
+                    const found = Object.values(pfData).some(e =>
+                        e && e.subject === subCode &&
+                        (e.faculty === myFacultyName || e.faculty === currentUser)
+                    );
+                    if (found) {
+                        // pfKey format: "YYYY-MM-DD_Y_S"
+                        const parts = pfKey.split('_');
+                        if (parts.length >= 3) {
+                            const y = parts[1], s = parts[2];
+                            ysKey = (y === '1') ? '1-1' : `${y}-${s}`;
+                            break;
+                        }
+                    }
+                }
+                // Fallback: derive from CM-XXX prefix (e.g. CM-302 → 3 → sem 3 → 2-3)
+                if (!ysKey) {
+                    const m = subCode.match(/CM-(\d)/);
+                    if (m) {
+                        const p = m[1];
+                        if (p === '1') ysKey = '1-1';
+                        else if (p === '3') ysKey = '2-3';
+                        else if (p === '4') ysKey = '2-4';
+                        else if (p === '5') ysKey = '3-5';
+                    }
+                }
+                subjectYearSem[subCode] = ysKey;
+            });
+
+            // ── Step 3: Get semester start per subject (from CALENDAR_DATES) ──
+            const semStart = {}; // { subCode: 'YYYY-MM-DD' | null }
+            mySubjectCodes.forEach(subCode => {
+                const ys = subjectYearSem[subCode];
+                semStart[subCode] = (ys && CALENDAR_DATES[ys]) ? CALENDAR_DATES[ys].start : null;
+            });
+
+            // ── Step 4: Scan ATTENDANCE_CACHE for regular classes ─────────
+            const allRows = [];   // will contain rows for ALL subjects
+
+            Object.keys(ATTENDANCE_CACHE).forEach(cacheKey => {
+                if (!cacheKey.startsWith('att_')) return;
+                const date = cacheKey.slice(4);   // → "YYYY-MM-DD"
+                const attDoc = ATTENDANCE_CACHE[cacheKey];
+                if (!attDoc || typeof attDoc !== 'object') return;
+
+                // For each of the faculty's subjects, check whether they taught
+                // it on this date.
+                mySubjectCodes.forEach(subCode => {
+                    const myPeriods = new Set();
+                    Object.values(attDoc).forEach(pinData => {
+                        if (!pinData || typeof pinData !== 'object') return;
+                        Object.keys(pinData).forEach(pStr => {
+                            const pEntry = pinData[pStr];
+                            if (!pEntry) return;
+                            if (pEntry.subject === subCode &&
+                                (pEntry.faculty === myFacultyName || pEntry.faculty === currentUser)) {
+                                myPeriods.add(parseInt(pStr));
+                            }
+                        });
+                    });
+                    if (myPeriods.size === 0) return;
+
+                    const ysKey  = subjectYearSem[subCode];
+                    const sortedPeriods = Array.from(myPeriods).sort((a, b) => a - b);
+
+                    // Use timetable slot grouping (same logic as single-subject logbook)
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const dayAbbr  = DAY_ABBR[dateObj.getDay()];
+                    let ttYear = '', ttSem = '';
+                    if (ysKey) {
+                        const yp = ysKey.split('-'); ttYear = yp[0]; ttSem = yp[1];
+                    }
+                    const ttKey     = `${ttYear}-${ttSem}-${dayAbbr}`;
+                    const ttEntries = (TIMETABLE[ttKey] || []).filter(e => e.code === subCode);
+
+                    const periodGroups = [];
+                    const assignedPeriods = new Set();
+                    ttEntries.forEach(ttEntry => {
+                        const slotPeriods = getPeriodList(ttEntry.periods)
+                            .map(Number)
+                            .filter(p => myPeriods.has(p));
+                        if (slotPeriods.length === 0) return;
+                        slotPeriods.forEach(p => assignedPeriods.add(p));
+                        slotPeriods.sort((a, b) => a - b);
+                        periodGroups.push({ periodStr: ttEntry.periods, periods: slotPeriods });
+                    });
+
+                    const unassigned = sortedPeriods.filter(p => !assignedPeriods.has(p));
+                    if (unassigned.length > 0) {
+                        let uStr;
+                        if (unassigned.length === 1) {
+                            uStr = String(unassigned[0]);
+                        } else {
+                            let consec = true;
+                            for (let i = 1; i < unassigned.length; i++) {
+                                if (unassigned[i] !== unassigned[i - 1] + 1) { consec = false; break; }
+                            }
+                            uStr = consec
+                                ? `${unassigned[0]}-${unassigned[unassigned.length - 1]}`
+                                : unassigned.join(',');
+                        }
+                        periodGroups.push({ periodStr: uStr, periods: unassigned });
+                    }
+                    if (periodGroups.length === 0) {
+                        let fb;
+                        if (sortedPeriods.length === 1) {
+                            fb = String(sortedPeriods[0]);
+                        } else {
+                            let consec = true;
+                            for (let i = 1; i < sortedPeriods.length; i++) {
+                                if (sortedPeriods[i] !== sortedPeriods[i - 1] + 1) { consec = false; break; }
+                            }
+                            fb = consec
+                                ? `${sortedPeriods[0]}-${sortedPeriods[sortedPeriods.length - 1]}`
+                                : sortedPeriods.join(',');
+                        }
+                        periodGroups.push({ periodStr: fb, periods: sortedPeriods });
+                    }
+                    periodGroups.sort((a, b) => a.periods[0] - b.periods[0]);
+
+                    periodGroups.forEach(grp => {
+                        allRows.push({
+                            date, yearSem: ysKey || '',
+                            subject: subCode,
+                            subjectName: getSubjectName(subCode),
+                            periods: grp.periodStr,
+                            topic: '',
+                            isExtraClass: false,
+                            _periodCount: grp.periods.length,
+                            _myPeriods: grp.periods
+                        });
+                    });
+                });
+            });
+
+            // ── Step 5: Fetch topics and join ──────────────────────────────
+            const topicsSnap = await db.collection('dailyTopics').get();
+            const topicsMap = {};
+            topicsSnap.forEach(doc => { topicsMap[doc.id] = doc.data(); });
+
+            allRows.forEach(r => {
+                const docData = topicsMap[r.date];
+                if (!docData) return;
+                const ysKey = r.yearSem;
+                for (const k of Object.keys(docData)) {
+                    const entry = docData[k];
+                    if (!entry) continue;
+                    if (entry.subject && entry.subject !== r.subject) continue;
+                    if (ysKey && !k.startsWith(ysKey + '_')) continue;
+                    const periodPart = k.replace((ysKey ? ysKey + '_P' : /^[^_]+_P/), '');
+                    const coveredList = getPeriodList(periodPart);
+                    const rowPeriodStrs = r._myPeriods.map(String);
+                    if (coveredList.some(cp => rowPeriodStrs.includes(cp))) {
+                        r.topic = entry.topic || '';
+                        break;
+                    }
+                }
+            });
+
+            // ── Step 6: Fetch extra classes for ALL subjects this faculty teaches ──
+            // We do ONE query per subject (same as single-subject logbook)
+            for (const subCode of mySubjectCodes) {
+                try {
+                    const extraSnap = await db.collection('extraClasses')
+                        .where('subject', '==', subCode)
+                        .where('faculty', '==', currentUser)
+                        .get();
+                    extraSnap.forEach(doc => {
+                        const e = doc.data();
+                        let periodLabel;
+                        if (e.isWorkingDay) {
+                            const stripZero = t => t ? t.replace(/^0(\d:)/, '$1') : t;
+                            periodLabel = `${e.session}*\n${stripZero(e.timeFrom)}-${stripZero(e.timeTo)}`;
+                        } else {
+                            periodLabel = (e.periodsChecked || []).join(',');
+                        }
+                        allRows.push({
+                            date: e.date, yearSem: e.yearSem || subjectYearSem[subCode] || '',
+                            subject: e.subject, subjectName: e.subjectName || getSubjectName(subCode),
+                            periods: periodLabel,
+                            topic: e.topicsCovered || '',
+                            isExtraClass: true,
+                            _periodCount: e.numberOfPeriods || 1,
+                            _isWorkingDay: e.isWorkingDay,
+                            _session: e.session,
+                            _timeFrom: e.timeFrom,
+                            _timeTo: e.timeTo,
+                            _myPeriods: []
+                        });
+                    });
+                } catch (err) {
+                    console.warn('[DW] extraClasses fetch error for', subCode, err.message);
+                }
+            }
+
+            // ── Step 7: Sort all rows (date → regular before extra → session) ──
+            allRows.sort((a, b) => {
+                const dc = a.date.localeCompare(b.date);
+                if (dc !== 0) return dc;
+                const ae = a.isExtraClass ? 1 : 0, be = b.isExtraClass ? 1 : 0;
+                if (ae !== be) return ae - be;
+                const sOrder = s => s === 'FN' ? 0 : s === 'AN' ? 1 : 2;
+                return sOrder(a._session) - sOrder(b._session);
+            });
+
+            // ── Step 8: Build per-subject running cumulative from semStart ──
+            // Running total starts from semester start, but we only DISPLAY rows
+            // in [fromDate, toDate].  Rows before fromDate still count toward
+            // the cumulative — exactly the same as the single-subject logbook.
+            const runningCum = {};   // { subCode: number }
+            mySubjectCodes.forEach(c => { runningCum[c] = 0; });
+
+            const withCumulative = [];
+            allRows.forEach(r => {
+                const ss = semStart[r.subject];
+                // Ignore rows before semester start (shouldn't happen but guard)
+                if (ss && r.date < ss) return;
+                if (!runningCum.hasOwnProperty(r.subject)) runningCum[r.subject] = 0;
+                runningCum[r.subject] += r._periodCount;
+                // Only keep rows in display range
+                if (r.date >= fromDate && r.date <= toDate) {
+                    withCumulative.push({ ...r, cumulativePeriod: runningCum[r.subject] });
+                }
+            });
+
+            return withCumulative;
+        }
+
+        /**
+         * Generate and download the Date-wise Merged Logbook PDF.
+         * Called by the new button in the Logbook tab.
+         */
+        async function generateDatewisePDF() {
+            const fromDate     = (document.getElementById('dw_fromDate').value || '').trim();
+            const toDate       = (document.getElementById('dw_toDate').value || '').trim();
+            const academicYear = (document.getElementById('dw_academicYear').value || '').trim();
+            const msgEl        = document.getElementById('dwLogbookMsg');
+
+            if (!fromDate || !toDate || !academicYear) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '⚠️ Please select Academic Year, From Date and To Date.';
+                return;
+            }
+            if (fromDate > toDate) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '⚠️ From Date must be before To Date.';
+                return;
+            }
+
+            msgEl.style.display = 'block';
+            msgEl.style.color   = '#1565c0';
+            msgEl.textContent   = '⏳ Building date-wise logbook…';
+
+            try {
+                const rows = await generateDatewiseLogbook(fromDate, toDate);
+
+                if (!rows || rows.length === 0) {
+                    msgEl.style.color = '#c62828';
+                    msgEl.textContent = '⚠️ No attendance data found for the selected date range.';
+                    return;
+                }
+
+                msgEl.textContent = '🖨️ Generating PDF…';
+
+                const facultyName = currentUserName || currentUser;
+                const { jsPDF }   = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pageW  = doc.internal.pageSize.width;
+                const margin = 10;
+                const DAY3   = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+                // ── Header drawn on every page ────────────────────────────
+                function dwDrawHeader(pageNum) {
+                    doc.setFontSize(13).setFont(undefined, 'bold');
+                    doc.text('GOVT. POLYTECHNIC, DHARMAVARAM', pageW / 2, 14, { align: 'center' });
+                    doc.setFontSize(9).setFont(undefined, 'normal');
+                    doc.text(`Name of Staff: ${facultyName}`, margin, 22);
+                    doc.text(`AY: ${academicYear}`, pageW - margin, 22, { align: 'right' });
+                    doc.text(`Period: ${dwFormatDate(fromDate)} to ${dwFormatDate(toDate)}`, margin, 28);
+                    if (pageNum > 1) {
+                        doc.text('(Continued…)', pageW - margin, 28, { align: 'right' });
+                    }
+                }
+
+                // ── Build table body ──────────────────────────────────────
+                const tableBody = rows.map(r => {
+                    const d     = new Date(r.date + 'T00:00:00');
+                    const dd    = String(d.getDate()).padStart(2, '0');
+                    const mm    = String(d.getMonth() + 1).padStart(2, '0');
+                    const yy    = String(d.getFullYear()).slice(-2);
+                    const day3  = DAY3[d.getDay()];
+                    const sName = (r.subjectName || getSubjectName(r.subject) || '').substring(0, 22);
+
+                    let periodCell = r.periods || '';
+                    if (r.isExtraClass && r._isWorkingDay) {
+                        const sz = t => t ? t.replace(/^0(\d:)/, '$1') : '';
+                        periodCell = `${r._session}*\n${sz(r._timeFrom)}-${sz(r._timeTo)}`;
+                    }
+
+                    return [
+                        `${dd}/${mm}/${yy}\n${day3}`,
+                        periodCell,
+                        `${r.subject}\n${sName}`,
+                        r.topic || '—',
+                        String(r.cumulativePeriod || 0),
+                        ''
+                    ];
+                });
+
+                // ── First page header ─────────────────────────────────────
+                dwDrawHeader(1);
+
+                // ── AutoTable ─────────────────────────────────────────────
+                doc.autoTable({
+                    startY: 34,
+                    head: [[
+                        { content: 'Date/Day',            styles: { halign: 'center' } },
+                        { content: 'Period\nNos.',        styles: { halign: 'center' } },
+                        { content: 'Sub. Code\nSub. Name', styles: { halign: 'center' } },
+                        { content: 'Topic Covered',       styles: { halign: 'center' } },
+                        { content: 'Cumulative\nPeriods', styles: { halign: 'center' } },
+                        { content: 'Staff\nSign',         styles: { halign: 'center' } }
+                    ]],
+                    body: tableBody,
+                    theme: 'grid',
+                    styles: {
+                        fontSize:    8,
+                        cellPadding: 2.5,
+                        lineColor:   [0, 0, 0],
+                        lineWidth:   0.3,
+                        valign:      'middle'
+                    },
+                    headStyles: {
+                        fillColor:     [89, 102, 184],
+                        textColor:     [255, 255, 255],
+                        fontStyle:     'bold',
+                        fontSize:      8,
+                        halign:        'center',
+                        valign:        'middle',
+                        minCellHeight: 10,
+                        lineColor:     [0, 0, 0],
+                        lineWidth:     0.3
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+                        1: { cellWidth: 18, halign: 'center' },
+                        2: { cellWidth: 28, halign: 'center' },
+                        3: { cellWidth: 84, halign: 'left'   },
+                        4: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+                        5: { cellWidth: 18, halign: 'center' }
+                    },
+                    alternateRowStyles: { fillColor: [255, 255, 255] },
+                    margin: { top: 35, left: margin, right: margin },
+                    tableWidth: pageW - margin * 2,
+                    didDrawPage: (data) => {
+                        // Re-draw header on continuation pages
+                        if (data.pageNumber > 1) dwDrawHeader(data.pageNumber);
+
+                        const pageH = doc.internal.pageSize.height;
+
+                        // Footer: H.O.D and Principal on LAST page
+                        if (data.pageNumber === doc.internal.getNumberOfPages()) {
+                            doc.setFontSize(10).setFont(undefined, 'bold');
+                            doc.text('H.O.D',      margin,          pageH - 12);
+                            doc.text('Principal',  pageW - margin,  pageH - 12, { align: 'right' });
+                        }
+
+
+                    }
+                });
+
+                // ── Save ──────────────────────────────────────────────────
+                const safeName = facultyName.replace(/\s+/g, '_');
+                doc.save(`Datewise_Logbook_${safeName}_${fromDate}_to_${toDate}.pdf`);
+
+                msgEl.style.color = '#166534';
+                msgEl.textContent = '✅ Date-wise Logbook downloaded!';
+                setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+
+            } catch (err) {
+                console.error('[DW Logbook]', err);
+                msgEl.style.color = '#c62828';
+                msgEl.textContent = '❌ Error: ' + err.message;
+            }
+        }
+
+        // ── END: Date-wise Merged Logbook ─────────────────────────────────
 
         // ════════════════════════════════════════════════════════════════
         //  CLASS LOG BOOK MODULE (Admin only)
