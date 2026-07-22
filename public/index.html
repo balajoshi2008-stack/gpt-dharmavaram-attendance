@@ -898,6 +898,77 @@
         }
         .al-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
         /* ══════════════════════════════════════════════════ */
+
+        /* ── Student Filter Bar (TC/Transfer Management) ── */
+        .student-filter-bar {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            padding: .75rem 0;
+        }
+        .filter-btn {
+            padding: .4rem .9rem;
+            border: 1.5px solid #dde1f0;
+            border-radius: 20px;
+            font-size: .82rem;
+            cursor: pointer;
+            background: #fafbff;
+            color: #5a5f7a;
+            font-weight: 600;
+            transition: all .2s;
+        }
+        .filter-btn.active {
+            background: #1F3864;
+            color: white;
+            border-color: #1F3864;
+        }
+        .filter-btn:hover:not(.active) {
+            background: #eef0fb;
+        }
+        /* ── Status badges in student list ── */
+        .badge-transferred {
+            display: inline-block;
+            background: #FFF3E0;
+            color: #E65100;
+            border: 1px solid #FFCC80;
+            border-radius: 12px;
+            padding: .15rem .55rem;
+            font-size: .72rem;
+            font-weight: 600;
+            margin-left: .4rem;
+            vertical-align: middle;
+        }
+        .badge-tc {
+            display: inline-block;
+            background: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #FFCDD2;
+            border-radius: 12px;
+            padding: .15rem .55rem;
+            font-size: .72rem;
+            font-weight: 600;
+            margin-left: .4rem;
+            vertical-align: middle;
+        }
+        /* ── Inactive row styling ── */
+        tr.row-inactive td {
+            opacity: .6;
+            background: #fafafa;
+        }
+        /* ── TC/Transfer modals overlay ── */
+        #markInactiveModal, #reactivateModal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1rem;
+        }
+        #markInactiveModal.show, #reactivateModal.show {
+            display: flex;
+        }
     </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -1716,7 +1787,131 @@
                     🎓 <strong>Scholarship:</strong> All students are marked as scholarship holders by default. Uncheck
                     any student who is NOT a scholarship holder.
                 </div>
+
+                <!-- ── TC/Transfer Filter Bar ── -->
+                <div class="student-filter-bar" id="studentFilterBar">
+                    <button class="filter-btn active" data-filter="active"
+                            onclick="admin_st_filterStudents('active')">
+                        ✅ Active
+                    </button>
+                    <button class="filter-btn" data-filter="transferred"
+                            onclick="admin_st_filterStudents('transferred')">
+                        🔄 Transferred
+                    </button>
+                    <button class="filter-btn" data-filter="tc_issued"
+                            onclick="admin_st_filterStudents('tc_issued')">
+                        📄 TC Issued
+                    </button>
+                    <button class="filter-btn" data-filter="all"
+                            onclick="admin_st_filterStudents('all')">
+                        All Students
+                    </button>
+                </div>
+                <div id="stFilterMsg" class="success-message hidden" style="margin-bottom:10px;"></div>
                 <div id="studentList"></div>
+            </div>
+
+            <!-- ══ MARK INACTIVE MODAL (TC/Transfer) ══════════════════ -->
+            <div id="markInactiveModal" role="dialog" aria-modal="true">
+                <div style="background:white; border-radius:14px; max-width:480px; width:100%;
+                            box-shadow:0 8px 32px rgba(0,0,0,.25); overflow:hidden;">
+                    <div style="background:#C62828; color:white; padding:1.2rem 1.5rem;
+                                display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0;">⚠️ Mark Student Inactive</h3>
+                        <button onclick="admin_st_closeInactiveModal()"
+                                style="background:none; border:none; color:white;
+                                       font-size:1.4rem; cursor:pointer; line-height:1;">×</button>
+                    </div>
+                    <div style="padding:1.5rem;">
+                        <!-- Student info (read-only) -->
+                        <div style="background:#f5f5f5; border-radius:8px; padding:1rem;
+                                    margin-bottom:1.2rem; font-size:.9rem; line-height:1.8;">
+                            <div><strong>PIN:</strong> <span id="mi_pin"></span></div>
+                            <div><strong>Name:</strong> <span id="mi_name"></span></div>
+                            <div><strong>Year/Sem:</strong> <span id="mi_yearSem"></span></div>
+                        </div>
+                        <!-- Reason -->
+                        <div style="margin-bottom:1rem;">
+                            <label style="display:block; font-weight:600; font-size:.85rem;
+                                         color:#555; margin-bottom:.4rem;">Reason *</label>
+                            <select id="mi_reason" style="width:100%; padding:.7rem .9rem;
+                                    border:1.5px solid #ddd; border-radius:8px; font-size:.9rem;">
+                                <option value="">-- Select Reason --</option>
+                                <option value="transferred">🔄 Transferred to Another Institution</option>
+                                <option value="tc_issued">📄 TC Issued / Discontinued Studies</option>
+                            </select>
+                        </div>
+                        <!-- Date of leaving -->
+                        <div style="margin-bottom:1rem;">
+                            <label style="display:block; font-weight:600; font-size:.85rem;
+                                         color:#555; margin-bottom:.4rem;">Date of Leaving *</label>
+                            <input type="date" id="mi_date"
+                                   style="width:100%; padding:.7rem .9rem;
+                                          border:1.5px solid #ddd; border-radius:8px; font-size:.9rem;" />
+                        </div>
+                        <!-- Optional note -->
+                        <div style="margin-bottom:1.2rem;">
+                            <label style="display:block; font-weight:600; font-size:.85rem;
+                                         color:#555; margin-bottom:.4rem;">Note (Optional)</label>
+                            <input type="text" id="mi_note"
+                                   placeholder="e.g. Joined RGUKT Srikakulam"
+                                   style="width:100%; padding:.7rem .9rem;
+                                          border:1.5px solid #ddd; border-radius:8px; font-size:.9rem;" />
+                        </div>
+                        <!-- Warning -->
+                        <div style="background:#FFF3E0; border-left:4px solid #FF9800;
+                                    border-radius:0 8px 8px 0; padding:.75rem 1rem;
+                                    font-size:.83rem; color:#E65100; margin-bottom:1.2rem;">
+                            ⚠️ This student will be removed from attendance lists.
+                            All past attendance data is preserved. You can reactivate later if needed.
+                        </div>
+                        <!-- Buttons -->
+                        <div style="display:flex; gap:.75rem;">
+                            <button id="mi_submitBtn" onclick="admin_st_markStudentInactive()"
+                                    style="flex:2; padding:.8rem; background:#C62828;
+                                           color:white; border:none; border-radius:8px;
+                                           font-size:.95rem; font-weight:700; cursor:pointer;">
+                                ⚠️ Mark as Inactive
+                            </button>
+                            <button onclick="admin_st_closeInactiveModal()"
+                                    style="flex:1; padding:.8rem; background:#e0e0e0;
+                                           color:#333; border:none; border-radius:8px;
+                                           font-size:.95rem; cursor:pointer;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ REACTIVATE CONFIRM MODAL ═══════════════════════════ -->
+            <div id="reactivateModal" role="dialog" aria-modal="true">
+                <div style="background:white; border-radius:14px; max-width:420px; width:100%;
+                            box-shadow:0 8px 32px rgba(0,0,0,.25); overflow:hidden;">
+                    <div style="background:#2E7D32; color:white; padding:1.2rem 1.5rem;">
+                        <h3 style="margin:0;">✅ Reactivate Student</h3>
+                    </div>
+                    <div style="padding:1.5rem;">
+                        <p style="margin-bottom:1.2rem; font-size:.9rem; color:#333;">
+                            Reactivate student: <strong id="ra_studentInfo"></strong>?<br><br>
+                            Student will be added back to attendance lists.
+                        </p>
+                        <div style="display:flex; gap:.75rem;">
+                            <button id="ra_submitBtn" onclick="admin_st_reactivateStudent()"
+                                    style="flex:2; padding:.8rem; background:#2E7D32;
+                                           color:white; border:none; border-radius:8px;
+                                           font-size:.95rem; font-weight:700; cursor:pointer;">
+                                ✅ Reactivate
+                            </button>
+                            <button onclick="admin_st_closeReactivateModal()"
+                                    style="flex:1; padding:.8rem; background:#e0e0e0;
+                                           color:#333; border:none; border-radius:8px;
+                                           font-size:.95rem; cursor:pointer;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- USER MANAGEMENT TAB (Admin only) -->
@@ -5087,17 +5282,45 @@
             const val = document.getElementById('viewYear').value;
             if (!val) return;
             const [y, s] = val.split('-');
-            const stu = STUDENTS[y]?.[s] || [];
+            if (typeof window.admin_st_currentFilter === 'undefined') window.admin_st_currentFilter = 'active';
+            const allStu = STUDENTS[y]?.[s] || [];
             const list = document.getElementById('studentList');
             list.innerHTML = '';
 
-            if (!stu.length) {
+            if (!allStu.length) {
                 list.innerHTML = '<p style="color: #999;">No students found. Please generate students first.</p>';
                 return;
             }
 
-            const scholarCount = stu.filter(st => st.scholarship !== false).length;
-            list.innerHTML = `<p style="margin-bottom:10px;color:#555;"><strong>Total: ${stu.length}</strong> &nbsp;|&nbsp; 🎓 Scholarship Holders: <strong style="color:#2a5298;">${scholarCount}</strong> &nbsp;|&nbsp; Non-Scholarship: <strong style="color:#dc3545;">${stu.length - scholarCount}</strong></p>`;
+            // Apply TC/Transfer filter
+            const filter = window.admin_st_currentFilter || 'active';
+            const stu = allStu.filter(st => {
+                const status = st.status || 'active';
+                if (filter === 'all')         return true;
+                if (filter === 'active')      return status === 'active' || !st.status;
+                if (filter === 'transferred') return status === 'transferred';
+                if (filter === 'tc_issued')   return status === 'tc_issued';
+                return true;
+            });
+
+            const activeStu  = allStu.filter(st => !st.status || st.status === 'active');
+            const scholarCount = activeStu.filter(st => st.scholarship !== false).length;
+            const transferredCount = allStu.filter(st => st.status === 'transferred').length;
+            const tcCount = allStu.filter(st => st.status === 'tc_issued').length;
+
+            let summaryHtml = `<p style="margin-bottom:10px;color:#555;">
+                <strong>Active: ${activeStu.length}</strong> &nbsp;|&nbsp;
+                🎓 Scholarship: <strong style="color:#2a5298;">${scholarCount}</strong> &nbsp;|&nbsp;
+                Non-Scholar: <strong style="color:#dc3545;">${activeStu.length - scholarCount}</strong>`;
+            if (transferredCount) summaryHtml += ` &nbsp;|&nbsp; <span style="color:#E65100;">🔄 Transferred: <strong>${transferredCount}</strong></span>`;
+            if (tcCount)          summaryHtml += ` &nbsp;|&nbsp; <span style="color:#C62828;">📄 TC Issued: <strong>${tcCount}</strong></span>`;
+            summaryHtml += `</p>`;
+            list.innerHTML = summaryHtml;
+
+            if (stu.length === 0) {
+                list.innerHTML += '<p style="color:#888;padding:1rem;">No students match the selected filter.</p>';
+                return;
+            }
 
             const table = document.createElement('table');
             table.className = 'attendance-table';
@@ -5112,24 +5335,60 @@
 
             stu.forEach((st, i) => {
                 // Default scholarship = true if not explicitly set to false
-                const isScholar = st.scholarship !== false;
-                const mobile = st.parentMobile || '';
-                const row = table.querySelector('tbody').insertRow();
+                const isScholar  = st.scholarship !== false;
+                const mobile     = st.parentMobile || '';
+                const status     = st.status || 'active';
+                const isActive   = (status === 'active' || !st.status);
+                const row        = table.querySelector('tbody').insertRow();
+                if (!isActive) row.className = 'row-inactive';
+
+                // Status badge
+                let badge = '';
+                if (status === 'transferred') badge = `<span class="badge-transferred">🔄 Transferred</span>`;
+                else if (status === 'tc_issued') badge = `<span class="badge-tc">📄 TC Issued</span>`;
+
+                // Inactive note
+                let inactiveNote = '';
+                if (!isActive && st.inactiveDate) {
+                    const fd = admin_st_formatDate(st.inactiveDate);
+                    inactiveNote = `<div style="font-size:.72rem;color:#888;margin-top:.2rem;">Left: ${fd}${st.inactiveNote ? ' | ' + st.inactiveNote : ''}</div>`;
+                }
+
+                // Action buttons
+                const safePin  = st.pin.replace(/'/g, "\'");
+                const safeName = (st.name || '').replace(/'/g, "\'");
+                let actionBtns = '';
+                if (isActive) {
+                    actionBtns = `<button class="btn btn-danger" onclick="deleteStu('${y}','${s}',${i})" style="padding:6px 12px;">Delete</button>
+                        <button onclick="admin_st_showInactiveModal('${safePin}','${safeName}','${y}-${s}')"
+                                style="padding:5px 10px;background:#C62828;color:white;border:none;border-radius:6px;font-size:.75rem;cursor:pointer;font-weight:600;margin-left:4px;">
+                            ⚠️ TC/Transfer
+                        </button>`;
+                } else {
+                    actionBtns = `<button onclick="admin_st_showReactivateModal('${safePin}','${safeName}','${y}','${s}')"
+                                style="padding:5px 10px;background:#2E7D32;color:white;border:none;border-radius:6px;font-size:.75rem;cursor:pointer;font-weight:600;">
+                            ✅ Reactivate
+                        </button>`;
+                }
+
                 row.innerHTML = `
                     <td style="text-align:center;">${i + 1}</td>
                     <td><span class="editable" onclick="editPIN('${y}','${s}',${i},'${st.pin}')">${st.pin}</span></td>
-                    <td><span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span></td>
+                    <td>
+                        <span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span>
+                        ${badge}${inactiveNote}
+                    </td>
                     <td><span class="editable" onclick="editParentMobile('${y}','${s}',${i},'${mobile}')" style="color:${mobile ? '#1565c0' : '#aaa'};">${mobile || '+ Add mobile'}</span></td>
                     <td style="text-align:center;">
-                        <input type="checkbox" ${isScholar ? 'checked' : ''} 
+                        <input type="checkbox" ${isScholar ? 'checked' : ''} ${!isActive ? 'disabled' : ''}
                                onchange="toggleScholarship('${y}','${s}',${i},this.checked)"
-                               style="width:18px;height:18px;cursor:pointer;"
+                               style="width:18px;height:18px;cursor:${isActive ? 'pointer' : 'default'};"
                                title="${isScholar ? 'Scholarship Holder' : 'Not a Scholarship Holder'}">
                         <span style="margin-left:5px;font-size:12px;color:${isScholar ? '#28a745' : '#dc3545'};">
                             ${isScholar ? '✓ Yes' : '✗ No'}
                         </span>
                     </td>
-                    <td><button class="btn btn-danger" onclick="deleteStu('${y}','${s}',${i})" style="padding:6px 12px;">Delete</button></td>
+                    <td>${actionBtns}</td>
                 `;
             });
 
@@ -5479,9 +5738,17 @@
                 }
             }
 
-            const stu = STUDENTS[y]?.[s] || [];
+            const allStuList = STUDENTS[y]?.[s] || [];
+            // Filter out TC/Transferred students -- only active students appear in attendance
+            const stu = allStuList.filter(st => {
+                const status = st.status;
+                return !status || status === 'active';
+            });
+
             if (!stu.length) {
-                alert('No students!');
+                alert(allStuList.length
+                    ? 'No active students! All students in this class are Transferred or TC Issued.'
+                    : 'No students!');
                 return;
             }
 
@@ -5545,7 +5812,8 @@
             const y = document.getElementById('year').value;
             const s = (y == 1) ? '1' : document.getElementById('sem').value;
             const date = document.getElementById('date').value;
-            const stu = STUDENTS[y]?.[s] || [];
+            // Use only active students (mirrors filter in loadStudents)
+            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
             const tbody = document.getElementById('tbody');
             const subCode = tbody.dataset.subCode;
             const periods = tbody.dataset.periods;
@@ -5786,8 +6054,9 @@
             const s = (y == 1) ? '1' : document.getElementById('dlSem').value;
             const dateStr = document.getElementById('dlWeekDate').value;
             if (!y || !s || !dateStr) { alert('Fill all fields'); return; }
-            const stu = STUDENTS[y]?.[s] || [];
-            if (!stu.length) { alert('No students for this class'); return; }
+            // Only active students in weekly report
+            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
+            if (!stu.length) { alert('No active students for this class'); return; }
 
             const weekDates = getWeekDates(dateStr);
             const weekNum = getWeekNumber(dateStr);
@@ -5878,10 +6147,17 @@
         function getMonthWeeks(yearMonth) {
             const [year, month] = yearMonth.split('-').map(Number);
             const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
+            const lastDay  = new Date(year, month, 0);
+
+            // Find the Monday of the week that CONTAINS the 1st of the month.
+            // (Step backward, not forward — so days like Jul 1-4 when Jul 1 is Wednesday are NOT skipped.)
+            const dow = firstDay.getDay();                 // 0=Sun,1=Mon,...,6=Sat
+            const daysBack = dow === 0 ? 6 : dow - 1;     // how many days to go back to reach Monday
+            const firstMonday = new Date(firstDay);
+            firstMonday.setDate(firstDay.getDate() - daysBack);
+
             const weeks = [];
-            let cur = new Date(firstDay);
-            while (cur.getDay() !== 1 && cur <= lastDay) cur.setDate(cur.getDate() + 1);
+            let cur = new Date(firstMonday);
             while (cur <= lastDay) {
                 weeks.push(new Date(cur));
                 cur.setDate(cur.getDate() + 7);
@@ -5905,6 +6181,10 @@
             const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const classLabel = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
 
+            // Split students: active only for regular rows; inactive get date-aware treatment
+            const activeStu   = stu.filter(st => !st.status || st.status === 'active');
+            const inactiveStu = stu.filter(st => st.status === 'transferred' || st.status === 'tc_issued');
+
             const wb = XLSX.utils.book_new();
             const weekMondays = getMonthWeeks(month);
             const allMonthDates = [];
@@ -5924,6 +6204,8 @@
                     }
                 }
                 if (!weekDates.length) return;
+                const weekStart = weekDates[0];
+                const weekEnd   = weekDates[weekDates.length - 1];
 
                 // Calculate total columns for this sheet
                 let totalCols = 3; // Sl.No, PIN, Name
@@ -5952,18 +6234,42 @@
                 });
 
                 const data = [titleRow, header1, header2];
-                stu.forEach((st, sidx) => {
-                    const row = [sidx + 1, st.pin, st.name];
+                let rowIdx = 0;
+
+                // ALL students (active + inactive) appear on ALL week sheets
+                // For inactive: show real P/A for dates < inactiveDate, show "TC"/"Tr" from inactiveDate onwards
+                stu.forEach((st) => {
+                    const inactiveDate = st.inactiveDate || '';   // FIRST day they are NOT in school
+                    const statusLabel  = st.status === 'transferred' ? 'Tr' : (st.status === 'tc_issued' ? 'TC' : '');
+                    const isInactive   = !!statusLabel;
+
+                    const row = [rowIdx + 1, st.pin, st.name];
                     weekDates.forEach((d, idx) => {
                         const att = getAttData(d);
-                        const sa = att[st.pin] || {};
-                        for (let p = 1; p <= 7; p++) row.push(sa[p]?.status || '');
+                        const sa  = att[st.pin] || {};
+
+                        if (isInactive && inactiveDate && d >= inactiveDate) {
+                            // From leave date onwards — show TC / Tr for each period cell
+                            for (let p = 1; p <= 7; p++) row.push(statusLabel);
+                        } else {
+                            // Normal attendance
+                            for (let p = 1; p <= 7; p++) row.push(sa[p]?.status || '');
+                        }
+
                         if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
-                            const result = calculateDayBasedPercentage(st.pin, weekDates.slice(0, idx + 1));
-                            row.push(result.pct + '%');
+                            if (isInactive && inactiveDate && inactiveDate <= weekEnd) {
+                                // Show %  only for days they attended (dates < inactiveDate in this week)
+                                const attendedDates = weekDates.slice(0, idx + 1).filter(wd => wd < inactiveDate);
+                                const result = calculateDayBasedPercentage(st.pin, attendedDates);
+                                row.push(attendedDates.length ? result.pct + '% (' + statusLabel + ')' : statusLabel);
+                            } else {
+                                const result = calculateDayBasedPercentage(st.pin, weekDates.slice(0, idx + 1));
+                                row.push(result.pct + '%');
+                            }
                         }
                     });
                     data.push(row);
+                    rowIdx++;
                 });
 
                 const facultyRow = ['', 'Faculty', ''];
@@ -6011,9 +6317,19 @@
                 [`${classLabel2}  |  ${monthName} ${mYear}  |  Monthly Attendance Summary`], [''],
                 ['Sl.No', 'PIN', 'Name', 'Days Present', 'Total Working Days', 'Monthly %']
             ];
-            stu.forEach((st, idx) => {
-                const result = calculateDayBasedPercentage(st.pin, allMonthDates);
-                summaryData.push([idx + 1, st.pin, st.name, result.days, result.total, result.pct + '%']);
+            // Include ALL students: active normally, inactive with actual days (up to leave date) + status note
+            let sumRowIdx = 0;
+            stu.forEach((st) => {
+                const inactiveDate = st.inactiveDate || '';
+                const statusLabel  = st.status === 'transferred' ? '[Tr]' : (st.status === 'tc_issued' ? '[TC]' : '');
+                // For inactive students: only count attendance days before inactiveDate
+                const countDates = (inactiveDate && statusLabel)
+                    ? allMonthDates.filter(d => d < inactiveDate)
+                    : allMonthDates;
+                const result = calculateDayBasedPercentage(st.pin, countDates);
+                const nameCell = statusLabel ? `${st.name} ${statusLabel}` : st.name;
+                summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, result.total, result.pct + '%']);
+                sumRowIdx++;
             });
             const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
             ws2['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 14 }, { wch: 20 }, { wch: 12 }];
@@ -6069,8 +6385,9 @@
             const s = (y == 1) ? '1' : document.getElementById('dlSem').value;
             const month = document.getElementById('dlMonth').value;
             if (!y || !s || !month) { alert('Fill all fields'); return; }
-            const stu = STUDENTS[y]?.[s] || [];
-            if (!stu.length) { alert('No students for this class'); return; }
+            // All students — we'll decide inclusion per-student based on inactiveDate
+            const allStu = STUDENTS[y]?.[s] || [];
+            if (!allStu.length) { alert('No students for this class'); return; }
 
             const [mYear, mMonth] = month.split('-').map(Number);
             const monthStart = new Date(mYear, mMonth - 1, 1);
@@ -6112,15 +6429,45 @@
 
             const data = [titleRow, header];
 
-            // Student data rows
-            stu.forEach((st, idx) => {
-                const row = [idx + 1, st.pin, st.name];
+            // Calendar start of this half (used for include/exclude of inactive students)
+            // First half  → YYYY-MM-01,  Second half → YYYY-MM-16
+            const halfCalStart = half === 'first'
+                ? `${mYear}-${String(mMonth).padStart(2, '0')}-01`
+                : `${mYear}-${String(mMonth).padStart(2, '0')}-16`;
 
+            // Next-month start — any student who left before this month started is fully excluded
+            const nextMonthStart = `${mYear}-${String(mMonth + 1).padStart(2, '0')}-01`;
+            // (for Dec→Jan we use a simple string that's always > any July-style date so no issue for schoolyear)
+
+            let rowNum = 1;
+            allStu.forEach(st => {
+                const inactiveDate = st.inactiveDate || '';  // FIRST day NOT in school (YYYY-MM-DD)
+                const stStatus     = st.status || 'active';
+                const isTC         = stStatus === 'tc_issued';
+                const isTr         = stStatus === 'transferred';
+                const isInactive   = isTC || isTr;
+                const tcLabel      = isTC ? 'TC' : (isTr ? 'Tr' : '');
+
+                // Determine if this student should appear in this half:
+                // - Active students: always include
+                // - Inactive students: include only if inactiveDate > halfCalStart
+                //   (meaning their last day was >= halfCalStart, i.e. they attended at least 1 day in this half)
+                if (isInactive && inactiveDate && inactiveDate <= halfCalStart) return;
+
+                // Name: append [TC] or [Tr] suffix for inactive students
+                const nameCell = isInactive ? `${st.name} [${tcLabel}]` : st.name;
+                const row = [rowNum, st.pin, nameCell];
                 let daysPresent = 0;
                 const attendanceRow = [];
 
                 dates.forEach(date => {
-                    const att = getAttData(date);
+                    // From inactiveDate onwards — show TC/Tr regardless of what faculty marked
+                    if (isInactive && inactiveDate && date >= inactiveDate) {
+                        attendanceRow.push(tcLabel);
+                        return;
+                    }
+                    // Normal attendance
+                    const att        = getAttData(date);
                     const studentAtt = att[st.pin] || {};
                     let periodsPresent = 0, hasAtt = false;
 
@@ -6146,6 +6493,7 @@
                 row.push(daysPresent);
                 row.push(...attendanceRow);
                 data.push(row);
+                rowNum++;
             });
 
             // Create workbook
@@ -6175,10 +6523,11 @@
             if (y != 1 && !s) { alert('Please select Semester'); return; }
             if (!scholDays || scholDays < 1) { alert('Please enter Working Days as per Scholarship Section'); return; }
 
-            const stu = STUDENTS[y]?.[s] || [];
-            if (!stu.length) { alert('No students for this class'); return; }
+            // Only active students — TC/Transferred excluded
+            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
+            if (!stu.length) { alert('No active students for this class'); return; }
 
-            // Filter scholarship holders only
+            // Filter scholarship holders only (from active students)
             const scholars = stu.filter(st => st.scholarship !== false);
             if (!scholars.length) { alert('No scholarship holders found in this class'); return; }
 
@@ -6349,8 +6698,9 @@
             if (!classVal || !fromDate || !toDate) { alert('Please fill all fields'); return; }
 
             const [y, s] = classVal.split('-');
-            const stu = STUDENTS[y]?.[s] || [];
-            if (!stu.length) { alert('No students in this class'); return; }
+            // Only show active students in summary
+            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
+            if (!stu.length) { alert('No active students in this class'); return; }
 
             const dates = [];
             let cur = new Date(fromDate);
@@ -7023,9 +7373,10 @@
                 return;
             }
 
-            const students = STUDENTS[y]?.[s] || [];
+            // Filter out TC/Transferred students — only active students appear in mark sheets
+            const students = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
             if (students.length === 0) {
-                alert('No students in this class');
+                alert('No active students in this class');
                 return;
             }
 
@@ -7203,9 +7554,10 @@
                 return;
             }
 
-            const students = STUDENTS[y]?.[s] || [];
+            // Only show active students in unit marks report
+            const students = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
             if (students.length === 0) {
-                alert('No students in this class');
+                alert('No active students in this class');
                 return;
             }
 
@@ -8671,6 +9023,220 @@
         // Close preview on backdrop click
         document.getElementById('notifPreviewModal').addEventListener('click', function (e) {
             if (e.target === this) this.style.display = 'none';
+        });
+
+        // ══════════════════════════════════════════════════════════════════
+
+        // ================================================================
+        //  STUDENT TRANSFER / TC MANAGEMENT
+        //  Functions prefixed admin_st_ to avoid naming conflicts
+        // ================================================================
+
+        window.admin_st_currentFilter = 'active';  // current students list filter
+        let admin_st_inactivePin   = '';
+        let admin_st_inactiveY     = '';
+        let admin_st_inactiveS     = '';
+        let admin_st_reactivatePin = '';
+        let admin_st_reactivateY   = '';
+        let admin_st_reactivateS   = '';
+
+        // -- Helper: show brief status message in students tab ------------
+        function admin_st_showMsg(msg, isError) {
+            const el = document.getElementById('stFilterMsg');
+            if (!el) return;
+            el.textContent = msg;
+            el.className = isError ? 'warning-message' : 'success-message';
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 3500);
+        }
+
+        // -- FILTER STUDENTS LIST -----------------------------------------
+        function admin_st_filterStudents(filter) {
+            window.admin_st_currentFilter = filter;
+            // Update button active states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            // Re-render the student list with new filter
+            viewStudents();
+        }
+
+        // -- FORMAT DATE dd/mm/yyyy ---------------------------------------
+        function admin_st_formatDate(dateStr) {
+            if (!dateStr) return '';
+            const [yr, mo, dy] = dateStr.split('-');
+            return `${dy}/${mo}/${yr}`;
+        }
+
+        // -- SHOW MARK INACTIVE MODAL -------------------------------------
+        function admin_st_showInactiveModal(pin, name, yearSem) {
+            admin_st_inactivePin = pin;
+            const [y, s] = yearSem.split('-');
+            admin_st_inactiveY = y;
+            admin_st_inactiveS = s;
+
+            document.getElementById('mi_pin').textContent     = pin;
+            document.getElementById('mi_name').textContent    = name;
+            document.getElementById('mi_yearSem').textContent = yearSem;
+            document.getElementById('mi_reason').value        = '';
+            document.getElementById('mi_date').value          = new Date().toISOString().split('T')[0];
+            document.getElementById('mi_note').value          = '';
+
+            document.getElementById('markInactiveModal').classList.add('show');
+        }
+
+        function admin_st_closeInactiveModal() {
+            document.getElementById('markInactiveModal').classList.remove('show');
+            admin_st_inactivePin = '';
+        }
+
+        // -- MARK STUDENT INACTIVE ----------------------------------------
+        async function admin_st_markStudentInactive() {
+            const pin    = admin_st_inactivePin;
+            const y      = admin_st_inactiveY;
+            const s      = admin_st_inactiveS;
+            const reason = document.getElementById('mi_reason').value;
+            const date   = document.getElementById('mi_date').value;
+            const note   = document.getElementById('mi_note').value.trim();
+            const name   = document.getElementById('mi_name').textContent;
+
+            if (!reason) { alert('Please select a reason (Transferred or TC Issued)'); return; }
+            if (!date)   { alert('Please select the date of leaving'); return; }
+
+            const reasonLabel = reason === 'transferred'
+                ? 'Transferred to Another Institution'
+                : 'TC Issued / Discontinued';
+
+            if (!confirm(
+                `Mark ${name} as inactive?\n\n` +
+                `Reason: ${reasonLabel}\nDate: ${date}\n\n` +
+                `Student will NOT appear in attendance lists.\n` +
+                `All past attendance data is preserved.`
+            )) return;
+
+            const btn = document.getElementById('mi_submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                // Update in-memory STUDENTS array
+                const stuArray = STUDENTS[y]?.[s] || [];
+                const idx = stuArray.findIndex(st => st.pin === pin);
+                if (idx === -1) throw new Error(`Student ${pin} not found in class ${y}-${s}`);
+
+                stuArray[idx].status           = reason;
+                stuArray[idx].inactiveReason   = reason;
+                stuArray[idx].inactiveDate     = date;
+                stuArray[idx].inactiveNote     = note;
+                stuArray[idx].markedInactiveBy = currentUser || 'admin';
+                delete stuArray[idx].reactivatedBy;
+
+                // Persist to Firestore (saves whole year document)
+                await db.collection('students').doc(String(y)).set(STUDENTS[y] || {});
+
+                // Log admin action
+                try {
+                    await db.collection('adminLogs').add({
+                        action:      'STUDENT_MARKED_INACTIVE',
+                        pin:         pin,
+                        name:        name,
+                        reason:      reason,
+                        date:        date,
+                        note:        note,
+                        performedBy: currentUser || 'admin',
+                        timestamp:   firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch(logErr) { console.warn('adminLog write failed (non-critical):', logErr); }
+
+                admin_st_closeInactiveModal();
+                admin_st_showMsg(
+                    `${name} marked as ${reason === 'transferred' ? 'Transferred' : 'TC Issued'}`,
+                    false
+                );
+                viewStudents(); // Refresh student list
+
+            } catch(e) {
+                console.error('[admin_st_markStudentInactive]', e);
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚠️ Mark as Inactive';
+            }
+        }
+
+        // -- SHOW REACTIVATE MODAL ----------------------------------------
+        function admin_st_showReactivateModal(pin, name, y, s) {
+            admin_st_reactivatePin = pin;
+            admin_st_reactivateY   = y;
+            admin_st_reactivateS   = s;
+            document.getElementById('ra_studentInfo').textContent = `${name} (${pin})`;
+            document.getElementById('reactivateModal').classList.add('show');
+        }
+
+        function admin_st_closeReactivateModal() {
+            document.getElementById('reactivateModal').classList.remove('show');
+            admin_st_reactivatePin = '';
+        }
+
+        // -- REACTIVATE STUDENT -------------------------------------------
+        async function admin_st_reactivateStudent() {
+            const pin = admin_st_reactivatePin;
+            const y   = admin_st_reactivateY;
+            const s   = admin_st_reactivateS;
+
+            const btn = document.getElementById('ra_submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const stuArray = STUDENTS[y]?.[s] || [];
+                const idx = stuArray.findIndex(st => st.pin === pin);
+                if (idx === -1) throw new Error(`Student ${pin} not found in class ${y}-${s}`);
+
+                // Restore to active -- clear all inactive fields
+                stuArray[idx].status = 'active';
+                delete stuArray[idx].inactiveReason;
+                delete stuArray[idx].inactiveDate;
+                delete stuArray[idx].inactiveNote;
+                delete stuArray[idx].markedInactiveBy;
+                stuArray[idx].reactivatedBy = currentUser || 'admin';
+
+                // Persist to Firestore
+                await db.collection('students').doc(String(y)).set(STUDENTS[y] || {});
+
+                // Log
+                try {
+                    await db.collection('adminLogs').add({
+                        action:      'STUDENT_REACTIVATED',
+                        pin:         pin,
+                        performedBy: currentUser || 'admin',
+                        timestamp:   firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch(logErr) { console.warn('adminLog write failed (non-critical):', logErr); }
+
+                admin_st_closeReactivateModal();
+                admin_st_showMsg('Student reactivated -- will appear in attendance lists', false);
+                viewStudents();
+
+            } catch(e) {
+                console.error('[admin_st_reactivateStudent]', e);
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✅ Reactivate';
+            }
+        }
+
+        // -- Close modals on backdrop click (registered after DOM ready) --
+        document.addEventListener('DOMContentLoaded', () => {
+            const miModal = document.getElementById('markInactiveModal');
+            const raModal = document.getElementById('reactivateModal');
+            if (miModal) miModal.addEventListener('click', e => {
+                if (e.target === miModal) admin_st_closeInactiveModal();
+            });
+            if (raModal) raModal.addEventListener('click', e => {
+                if (e.target === raModal) admin_st_closeReactivateModal();
+            });
         });
 
         // ══════════════════════════════════════════════════════════════════
@@ -12627,8 +13193,9 @@
             _labSem = (_labYear == 1) ? '1' : document.getElementById('labSMSem').value;
             if (!_labYear || !_labSem) { alert('Could not determine Year/Sem.'); return; }
             const ay = (document.getElementById('labAcadYear').value || '').trim();
-            const students = STUDENTS[_labYear]?.[_labSem] || [];
-            if (students.length === 0) { alert('No students found for this Year/Semester.'); return; }
+            // Filter out TC/Transferred students — only active students appear in lab assessment
+            const students = (STUDENTS[_labYear]?.[_labSem] || []).filter(st => !st.status || st.status === 'active');
+            if (students.length === 0) { alert('No active students found for this Year/Semester.'); return; }
             _labStudents = students;
 
             // Fetch saved SM marks from Firestore (non-blocking if AY missing)
@@ -13202,8 +13769,9 @@
             _pmYear = document.getElementById('labPMYear').value;
             _pmSem = (_pmYear == 1) ? '1' : document.getElementById('labPMSem').value;
             if (!_pmYear || !_pmSem) { alert('Could not determine Year/Sem.'); return; }
-            const students = STUDENTS[_pmYear]?.[_pmSem] || [];
-            if (!students.length) { alert('No students found.'); return; }
+            // Filter out TC/Transferred students — only active students appear in practical marks
+            const students = (STUDENTS[_pmYear]?.[_pmSem] || []).filter(st => !st.status || st.status === 'active');
+            if (!students.length) { alert('No active students found.'); return; }
             _pmStudents = students;
             const ay = (document.getElementById('pmAcadYear').value || '').trim();
             const savedData = ay ? await _labLoadSavedData(code, ay) : {};
@@ -14560,7 +15128,10 @@ async function absList_loadData() {
         al_students = [];
         if (typeof STUDENTS === 'object' && STUDENTS[al_y]) {
             const semStudents = STUDENTS[al_y]?.[al_s] || STUDENTS[al_y]?.['1'] || [];
-            al_students = [...semStudents].sort((a,b) => a.pin.localeCompare(b.pin));
+            // Filter out TC/Transferred — only show active students in absent list
+            al_students = semStudents
+                .filter(st => !st.status || st.status === 'active')
+                .sort((a,b) => a.pin.localeCompare(b.pin));
         }
         if (!al_students.length) {
             const stSnap = await db.collection('students').where('yearSem','==',ys).get();
@@ -15408,10 +15979,11 @@ function formGen_toast(msg, type = 'info') {
 async function formGen_loadStudents(ys) {
     const [y, s] = ys.split('-');
     let students = [];
-    // Try in-memory STUDENTS first
+    // Try in-memory STUDENTS first — exclude TC/Transferred
     if (typeof STUDENTS === 'object' && STUDENTS[y]) {
         const sem = (y === '1') ? '1' : s;
-        students = [...(STUDENTS[y]?.[sem] || STUDENTS[y]?.['1'] || [])];
+        const allStu = STUDENTS[y]?.[sem] || STUDENTS[y]?.['1'] || [];
+        students = allStu.filter(st => !st.status || st.status === 'active');
     }
     if (!students.length) {
         const snap = await db.collection('students').where('yearSem', '==', ys).get();
