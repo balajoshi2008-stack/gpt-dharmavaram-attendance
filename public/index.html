@@ -15064,6 +15064,21 @@ let al_dataLoaded = false;
 const AL_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const AL_DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
+// ── TC/Transfer helpers ──────────────────────────────────────
+// Returns 'TC', 'Tr', or '' for a student
+function al_stLabel(st) {
+    if (st.status === 'tc_issued')   return 'TC';
+    if (st.status === 'transferred') return 'Tr';
+    return '';
+}
+// Returns inactiveDate string or '' if student is active
+function al_leftDate(st) { return (al_stLabel(st) && st.inactiveDate) ? st.inactiveDate : ''; }
+// True if a student's TC/Tr applies to this date (date >= inactiveDate)
+function al_isTCDate(st, date) {
+    const ld = al_leftDate(st);
+    return ld ? date >= ld : false;
+}
+
 function al_fmt(dateStr) {
     const [y,m,d] = dateStr.split('-');
     return `${d}/${m}/${y}`;
@@ -15128,10 +15143,8 @@ async function absList_loadData() {
         al_students = [];
         if (typeof STUDENTS === 'object' && STUDENTS[al_y]) {
             const semStudents = STUDENTS[al_y]?.[al_s] || STUDENTS[al_y]?.['1'] || [];
-            // Filter out TC/Transferred — only show active students in absent list
-            al_students = semStudents
-                .filter(st => !st.status || st.status === 'active')
-                .sort((a,b) => a.pin.localeCompare(b.pin));
+            // Include ALL students; TC/Tr handled date-aware in rendering
+            al_students = [...semStudents].sort((a,b) => a.pin.localeCompare(b.pin));
         }
         if (!al_students.length) {
             const stSnap = await db.collection('students').where('yearSem','==',ys).get();
@@ -15280,23 +15293,22 @@ function absList_switchView(view) {
 // ─── VIEW 1: PERIOD-WISE MATRIX (separate table per day) ──────────────────
 function absList_renderMatrix(container) {
     if (!al_dataLoaded) return;
-    // Students with at least 1 absent
-    const absentStudents = al_students
-        .filter(st => Object.values(al_matrix[st.pin] || {}).some(v => v === 'A'))
-        .sort((a, b) => a.pin.localeCompare(b.pin));
-    if (!absentStudents.length) {
-        container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found in this range.</div>';
-        return;
-    }
 
     let html = '';
     al_dates.forEach(date => {
         const periods = [...(al_periods[date] || [])].sort((a,b) => a - b);
         if (!periods.length) return;
 
-        // filter to students with absence on this day
-        const dayAbsent = absentStudents.filter(st =>
-            periods.some(p => (al_matrix[st.pin] || {})[`${date}__P${p}`] === 'A'));
+        // Real absent students (before their leave date)
+        const dayAbsent = al_students.filter(st => {
+            if (al_isTCDate(st, date)) return false; // on/after leave date — not absent, just inactive
+            return periods.some(p => (al_matrix[st.pin] || {})[`${date}__P${p}`] === 'A');
+        });
+
+        // Inactive students whose leave date falls ON this date or earlier (show TC/Tr row)
+        const dayInactive = al_students.filter(st => al_isTCDate(st, date));
+
+        if (!dayAbsent.length && !dayInactive.length) return; // nothing to show for this day
 
         html += `<div class="al-day-header">📅 ${al_fmt(date)} &nbsp;|&nbsp; ${al_dayNameFull(date)}</div>`;
         html += '<div class="al-daytable-wrap"><table class="al-matrix-table">';
@@ -15309,6 +15321,7 @@ function absList_renderMatrix(container) {
         html += '<th style="background:#e65100;">Total Absent</th>';
         html += '</tr></thead><tbody>';
 
+        // Real absent students
         dayAbsent.forEach(st => {
             const pMap = al_matrix[st.pin] || {};
             let rowAbsent = 0;
@@ -15318,21 +15331,27 @@ function absList_renderMatrix(container) {
             periods.forEach(p => {
                 const key = `${date}__P${p}`;
                 const val = pMap[key];
-                if (val === 'A') {
-                    html += '<td class="al-cell-a">A</td>';
-                    rowAbsent++;
-                } else if (val === 'P') {
-                    html += '<td class="al-cell-p">P</td>';
-                } else {
-                    html += '<td class="al-cell-dash">–</td>';
-                }
+                if (val === 'A') { html += '<td class="al-cell-a">A</td>'; rowAbsent++; }
+                else if (val === 'P') { html += '<td class="al-cell-p">P</td>'; }
+                else { html += '<td class="al-cell-dash">–</td>'; }
             });
             html += `<td class="al-cell-total">${rowAbsent}</td>`;
             html += '</tr>';
         });
 
-        // Total row: merge PIN+Name+all period cols into label, last cell = student count
-        const totalCols = 2 + periods.length; // PIN + Name + periods
+        // TC/Tr students — one row per student with TC/Tr in each period cell
+        dayInactive.forEach(st => {
+            const lbl = al_stLabel(st);
+            html += '<tr style="background:#fff3e0;">';
+            html += `<td class="al-pin-col" style="color:#e65100;font-weight:700;">${st.pin}</td>`;
+            html += `<td class="al-name-col" style="color:#e65100;" title="${st.name}">${st.name} <span style="font-size:11px;background:#e65100;color:#fff;border-radius:3px;padding:1px 4px;">${lbl}</span></td>`;
+            periods.forEach(() => { html += `<td style="background:#ffe0b2;color:#bf360c;font-weight:700;text-align:center;">${lbl}</td>`; });
+            html += `<td style="background:#fff3e0;color:#e65100;font-weight:700;text-align:center;">—</td>`;
+            html += '</tr>';
+        });
+
+        // Total row (count only real absent students)
+        const totalCols = 2 + periods.length;
         html += '<tr class="al-total-row">';
         html += `<td colspan="${totalCols}" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
         html += `<td style="font-weight:800;color:#c62828;">${dayAbsent.length}</td>`;
@@ -15340,7 +15359,12 @@ function absList_renderMatrix(container) {
 
         html += '</tbody></table></div>';
     });
-    container.innerHTML = html;
+
+    if (!html) {
+        container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found in this range.</div>';
+    } else {
+        container.innerHTML = html;
+    }
 }
 
 // ─── VIEW 2: DAY-WISE SUMMARY (separate table per day) ────────────────────
@@ -15391,10 +15415,21 @@ function al_isDayPresent(pin, date) {
 function absList_renderRegister(container) {
     if (!al_dataLoaded) return;
     const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
-    const absentStudents = al_students
-        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
-        .sort((a, b) => a.pin.localeCompare(b.pin));
-    if (!absentStudents.length) {
+
+    // Students to show: those with at least 1 real absence (before their leave date)
+    // OR inactive students who left during the date range
+    const showStudents = al_students.filter(st => {
+        const lbl = al_stLabel(st);
+        const ld  = al_leftDate(st);
+        if (lbl && ld) {
+            // Inactive: show if their leave date falls within the selected range
+            return al_dates.some(date => date >= ld) || al_dates.some(date => al_isDayPresent(st.pin, date) === 'A' && date < ld);
+        }
+        // Active: show if they have at least 1 absent day
+        return al_dates.some(date => al_isDayPresent(st.pin, date) === 'A');
+    }).sort((a, b) => a.pin.localeCompare(b.pin));
+
+    if (!showStudents.length) {
         container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found.</div>';
         return;
     }
@@ -15410,27 +15445,36 @@ function absList_renderRegister(container) {
     let colAbsCount = {};
     al_dates.forEach(d => { colAbsCount[d] = 0; });
 
-    absentStudents.forEach((st, idx) => {
+    showStudents.forEach((st, idx) => {
         let absDays = 0;
+        const lbl = al_stLabel(st);
+        const ld  = al_leftDate(st);
         const mobile = st.parentMobile || '';
+        const nameDisplay = lbl ? `${st.name} <span style="font-size:11px;background:#e65100;color:#fff;border-radius:3px;padding:1px 4px;">${lbl}</span>` : st.name;
         const mobileCell = mobile
             ? `<a href="tel:${mobile}" style="display:flex;align-items:center;gap:6px;color:#1565c0;font-weight:700;text-decoration:none;font-size:13px;" title="Call ${mobile}">
                 <span style="background:#1565c0;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">📞</span>
                 ${mobile}
                </a>`
             : `<span style="color:#bbb;font-size:12px;">—</span>`;
-        html += `<tr><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${st.name}</td><td style="background:#e8f4fd;padding:6px 8px;">${mobileCell}</td>`;
+        const rowStyle = lbl ? ' style="background:#fff8f0;"' : '';
+        html += `<tr${rowStyle}><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${nameDisplay}</td><td style="background:#e8f4fd;padding:6px 8px;">${mobileCell}</td>`;
         al_dates.forEach(date => {
-            const status = al_isDayPresent(st.pin, date);
-            if (status === 'A') { colAbsCount[date]++; absDays++; html += '<td class="al-cell-a">A</td>'; }
-            else if (status === 'P') { html += '<td class="al-cell-p">P</td>'; }
-            else { html += '<td class="al-cell-dash">–</td>'; }
+            if (lbl && ld && date >= ld) {
+                // On/after leave date → show TC/Tr (don't count as absent)
+                html += `<td style="background:#ffe0b2;color:#bf360c;font-weight:700;text-align:center;">${lbl}</td>`;
+            } else {
+                const status = al_isDayPresent(st.pin, date);
+                if (status === 'A') { colAbsCount[date]++; absDays++; html += '<td class="al-cell-a">A</td>'; }
+                else if (status === 'P') { html += '<td class="al-cell-p">P</td>'; }
+                else { html += '<td class="al-cell-dash">–</td>'; }
+            }
         });
         html += `<td class="al-cell-total" style="background:#ffebee;color:#b71c1c;font-weight:900;font-size:15px;">${absDays}</td>`;
         html += '</tr>';
     });
 
-    // Total row
+    // Total row (only counts real absences, not TC/Tr)
     html += '<tr class="al-total-row">';
     html += `<td colspan="4" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
     al_dates.forEach(d => { html += `<td style="color:#c62828;font-weight:800;">${colAbsCount[d] || ''}</td>`; });
@@ -15484,17 +15528,24 @@ function absList_downloadPDF() {
     // ── PAGE 1: Period-wise Matrix ──
     addHeader(doc, 'PAGE 1 - Period-wise Matrix (Absent Students)');
     let mStartY = 33;
-    const absStuMat = al_students
-        .filter(st => Object.values(al_matrix[st.pin]||{}).some(v => v==='A'))
-        .sort((a, b) => a.pin.localeCompare(b.pin));
 
     al_dates.forEach(date => {
         const periods = [...(al_periods[date]||[])].sort((a,b)=>a-b);
         if (!periods.length) return;
-        const dayAbsent = absStuMat.filter(st => periods.some(p => (al_matrix[st.pin]||{})[`${date}__P${p}`]==='A'));
-        if (!dayAbsent.length) return;
+
+        // Real absent on this day (before their leave date)
+        const dayAbsent = al_students.filter(st => {
+            if (al_isTCDate(st, date)) return false;
+            return periods.some(p => (al_matrix[st.pin]||{})[`${date}__P${p}`]==='A');
+        });
+        // Inactive students whose leave applies to this date
+        const dayInactive = al_students.filter(st => al_isTCDate(st, date));
+
+        if (!dayAbsent.length && !dayInactive.length) return;
 
         const head = ['PIN', 'Name', ...periods.map(p=>`P${p}`), 'Total Absent'];
+
+        // Rows for real absent students
         const body = dayAbsent.map(st => {
             const pMap = al_matrix[st.pin]||{};
             let rowAbs = 0;
@@ -15508,7 +15559,14 @@ function absList_downloadPDF() {
             return row;
         });
 
-        // Bottom total row
+        // Rows for TC/Tr students
+        dayInactive.forEach(st => {
+            const lbl = al_stLabel(st);
+            const row = [st.pin, `${st.name} (${lbl})`, ...periods.map(() => lbl), '—'];
+            body.push(row);
+        });
+
+        // Bottom total row (count only real absent)
         const totalColSpan = 2 + periods.length;
         const totalRow = [
             {content:'Total No. of Students Absent', colSpan:totalColSpan, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[30,100,30],fontSize:8}},
@@ -15538,6 +15596,13 @@ function absList_downloadPDF() {
                         data.cell.styles.textColor = [0,120,0];
                         data.cell.styles.fontStyle = 'bold';
                     }
+                    // TC/Tr label cells
+                    if (data.cell.raw==='TC' || data.cell.raw==='Tr') {
+                        data.cell.styles.fillColor = [255,224,178];
+                        data.cell.styles.textColor = [191,54,12];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.fontSize  = 9;
+                    }
                     if (typeof data.cell.raw === 'number' && data.row.index < body.length-1) {
                         data.cell.styles.fillColor = [255,240,200];
                         data.cell.styles.textColor = [150,70,0];
@@ -15556,24 +15621,36 @@ function absList_downloadPDF() {
     doc.addPage();
     addHeader(doc, 'PAGE 2 - Register Format (Day-wise Absent/Present)');
     const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
-    const absStuReg = al_students
-        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
-        .sort((a, b) => a.pin.localeCompare(b.pin));
+
+    // Include students with real absences (before leave date) OR inactive students whose leave is in range
+    const absStuReg = al_students.filter(st => {
+        const lbl = al_stLabel(st);
+        const ld  = al_leftDate(st);
+        if (lbl && ld) return al_dates.some(date => date >= ld) || al_dates.some(date => al_isDayPresent(st.pin, date) === 'A' && date < ld);
+        return al_dates.some(date => al_isDayPresent(st.pin, date) === 'A');
+    }).sort((a, b) => a.pin.localeCompare(b.pin));
+
     const regHead = ['Sl.No', 'PIN', 'Name', ...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`), 'Total Days Absent'];
     const colAbsCount = {};
     al_dates.forEach(d=>{ colAbsCount[d]=0; });
     const regBody = absStuReg.map((st, idx) => {
+        const lbl = al_stLabel(st);
+        const ld  = al_leftDate(st);
         let absDays = 0;
-        const row = [idx+1, st.pin, st.name];
+        const nameCell = lbl ? `${st.name} (${lbl})` : st.name;
+        const row = [idx+1, st.pin, nameCell];
         al_dates.forEach(date => {
-            const status = al_isDayPresent(st.pin, date);
-            if (status==='A') { colAbsCount[date]++; absDays++; }
-            row.push(status || '-');
+            if (lbl && ld && date >= ld) {
+                row.push(lbl); // TC or Tr — not counted as absent
+            } else {
+                const status = al_isDayPresent(st.pin, date);
+                if (status==='A') { colAbsCount[date]++; absDays++; }
+                row.push(status || '-');
+            }
         });
         row.push(absDays);
         return row;
     });
-    // Threshold note row removed (not revealed to students)
     // Total row
     const totalRegRow = [
         {content:'Total No. of Students Absent', colSpan:3, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[30,100,30],fontSize:8}},
@@ -15598,6 +15675,9 @@ function absList_downloadPDF() {
             if (data.section==='body') {
                 if (data.cell.raw==='A') { data.cell.styles.fillColor=[255,220,220]; data.cell.styles.textColor=[180,0,0]; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=9; }
                 if (data.cell.raw==='P') { data.cell.styles.fillColor=[220,255,220]; data.cell.styles.textColor=[0,120,0]; data.cell.styles.fontStyle='bold'; }
+                if (data.cell.raw==='TC' || data.cell.raw==='Tr') {
+                    data.cell.styles.fillColor=[255,224,178]; data.cell.styles.textColor=[191,54,12]; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=9;
+                }
                 if (typeof data.cell.raw === 'number' && data.column.index === regHead.length-1 && data.row.index > 0 && data.row.index < regBody.length-1) {
                     data.cell.styles.fillColor=[255,235,230]; data.cell.styles.textColor=[150,0,0]; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=10;
                 }
