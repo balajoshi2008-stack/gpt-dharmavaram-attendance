@@ -6523,34 +6523,47 @@
             if (y != 1 && !s) { alert('Please select Semester'); return; }
             if (!scholDays || scholDays < 1) { alert('Please enter Working Days as per Scholarship Section'); return; }
 
-            // Only active students — TC/Transferred excluded
-            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
-            if (!stu.length) { alert('No active students for this class'); return; }
-
-            // Filter scholarship holders only (from active students)
-            const scholars = stu.filter(st => st.scholarship !== false);
-            if (!scholars.length) { alert('No scholarship holders found in this class'); return; }
-
             const [mYear, mMonth] = month.split('-').map(Number);
             const monthStart = new Date(mYear, mMonth - 1, 1);
-            const monthEnd = new Date(mYear, mMonth, 0);
-            const monthName = monthStart.toLocaleString('default', { month: 'long' });
+            const monthEnd   = new Date(mYear, mMonth, 0);
+            const monthName  = monthStart.toLocaleString('default', { month: 'long' });
+            const monthStartStr = localYMD(monthStart); // 'YYYY-MM-01'
+
+            // All students (active + inactive), filter scholarship holders
+            const allClassStu = STUDENTS[y]?.[s] || [];
+            if (!allClassStu.length) { alert('No students for this class'); return; }
+
+            // Build scholars list:
+            //  - Active scholarship holders: always included
+            //  - Inactive scholarship holders: include only if inactiveDate > monthStartStr
+            //    (they were present at least 1 day this month)
+            const scholars = allClassStu.filter(st => {
+                if (st.scholarship === false) return false; // not a scholar
+                const stStatus = st.status || 'active';
+                const isInactive = stStatus === 'tc_issued' || stStatus === 'transferred';
+                if (!isInactive) return true; // active — include
+                // Inactive: include only if they left during this month
+                const ld = st.inactiveDate || '';
+                return ld && ld > monthStartStr; // left after month started
+            });
+            if (!scholars.length) { alert('No scholarship holders found for this class/month'); return; }
 
             // Collect all dates in month
             const allDates = [];
             const cur = new Date(monthStart);
             while (cur <= monthEnd) {
                 const ds = localYMD(cur);
-                if (!isSunday(ds)) allDates.push(ds); // Skip Sundays
+                if (!isSunday(ds)) allDates.push(ds);
                 cur.setDate(cur.getDate() + 1);
             }
 
-            // Actual working days = days where attendance was POSTED (any scholar has att record)
-            // Do NOT count periods here - just whether the day was a posting day
+            // Actual working days = days where attendance was posted (based on active scholars only)
+            const activeScholars = scholars.filter(st => !st.status || st.status === 'active');
             let actualWorkingDays = 0;
             allDates.forEach(d => {
                 const att = getAttData(d);
-                const dayPosted = scholars.some(st => att[st.pin] && Object.keys(att[st.pin]).length > 0);
+                const dayPosted = (activeScholars.length ? activeScholars : scholars)
+                    .some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
                 if (dayPosted) actualWorkingDays++;
             });
 
@@ -6567,15 +6580,22 @@
             const data = [...headerInfo, tableHeader];
 
             scholars.forEach((st, idx) => {
-                // Count days student was PRESENT (using MIN_PERIODS_FOR_PRESENT rule)
-                // Working days = days posted; present = days student met min periods threshold
+                const stStatus   = st.status || 'active';
+                const isInactive = stStatus === 'tc_issued' || stStatus === 'transferred';
+                const tcLabel    = stStatus === 'tc_issued' ? ' [TC]' : (stStatus === 'transferred' ? ' [Tr]' : '');
+                const inactiveDate = isInactive && st.inactiveDate ? st.inactiveDate : '';
+
+                // Count only dates before inactiveDate for inactive students
+                const countDates = (isInactive && inactiveDate)
+                    ? allDates.filter(d => d < inactiveDate)
+                    : allDates;
+
                 let actualPresent = 0;
-                allDates.forEach(d => {
+                countDates.forEach(d => {
                     const att = getAttData(d);
-                    const sa = att[st.pin] || {};
+                    const sa  = att[st.pin] || {};
                     const dayPosted = scholars.some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
                     if (!dayPosted) return;
-                    // Count periods student attended
                     let periodsPresent = 0;
                     for (let p = 1; p <= 7; p++) {
                         if (sa[p] && sa[p].status === 'P') periodsPresent++;
@@ -6583,11 +6603,11 @@
                     if (periodsPresent >= MIN_PERIODS_FOR_PRESENT) actualPresent++;
                 });
 
-                // Apply formula: Final = Min(actualPresent + daysToAdd, scholDays)
-                const finalDays = Math.min(actualPresent + daysToAdd, scholDays);
+                const finalDays  = Math.min(actualPresent + daysToAdd, scholDays);
                 const percentage = ((finalDays / scholDays) * 100).toFixed(2) + '%';
+                const nameCell   = st.name + tcLabel;
 
-                data.push([idx + 1, st.pin, st.name, actualPresent, daysToAdd, finalDays, scholDays, percentage]);
+                data.push([idx + 1, st.pin, nameCell, actualPresent, daysToAdd, finalDays, scholDays, percentage]);
             });
 
             // Create worksheet
@@ -6698,33 +6718,66 @@
             if (!classVal || !fromDate || !toDate) { alert('Please fill all fields'); return; }
 
             const [y, s] = classVal.split('-');
-            // Only show active students in summary
-            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
-            if (!stu.length) { alert('No active students in this class'); return; }
+            const allStu = (STUDENTS[y]?.[s] || []);
+            if (!allStu.length) { alert('No students in this class'); return; }
 
+            // Build working date list (skip Sundays)
             const dates = [];
             let cur = new Date(fromDate);
             const end = new Date(toDate);
             while (cur <= end) {
                 const ds = localYMD(cur);
-                if (!isSunday(ds)) dates.push(ds); // Skip Sundays
+                if (!isSunday(ds)) dates.push(ds);
                 cur.setDate(cur.getDate() + 1);
             }
 
             const summaryData = [];
             let lowCount = 0;
-            stu.forEach(st => {
-                const result = calculateDayBasedPercentage(st.pin, dates);
-                summaryData.push({ pin: st.pin, name: st.name, daysPresent: result.days, totalDays: result.total, percent: parseFloat(result.pct) });
-                if (parseFloat(result.pct) < 75) lowCount++;
+
+            allStu.forEach(st => {
+                const stStatus = st.status || 'active';
+                const isTC     = stStatus === 'tc_issued';
+                const isTr     = stStatus === 'transferred';
+                const isInactive = isTC || isTr;
+                const inactiveDate = isInactive && st.inactiveDate ? st.inactiveDate : '';
+
+                // Inactive students: include only if their inactiveDate falls within [fromDate, toDate]
+                // (i.e. they were present for at least part of this range)
+                if (isInactive) {
+                    if (!inactiveDate) return;           // no leave date recorded — skip
+                    if (inactiveDate <= fromDate) return; // left before range started — skip
+                    // inactiveDate > fromDate means they were around on at least 1 day of this range
+                }
+
+                // For inactive: count attendance only on dates < inactiveDate
+                const countDates = (isInactive && inactiveDate)
+                    ? dates.filter(d => d < inactiveDate)
+                    : dates;
+
+                const result = calculateDayBasedPercentage(st.pin, countDates);
+                const label  = isTC ? ' [TC]' : (isTr ? ' [Tr]' : '');
+                const pct    = parseFloat(result.pct);
+                if (!isInactive && pct < 75) lowCount++;
+
+                summaryData.push({
+                    pin: st.pin,
+                    name: st.name + label,
+                    daysPresent: result.days,
+                    totalDays: result.total,
+                    percent: pct,
+                    isInactive
+                });
             });
+
+            if (!summaryData.length) { alert('No students to display for this range'); return; }
 
             document.getElementById('summaryTitle').textContent = `Year ${y}, Sem ${s} (${formatDateDDMMYYYY(fromDate)} to ${formatDateDDMMYYYY(toDate)})`;
 
-            const avg = (summaryData.reduce((a, b) => a + b.percent, 0) / summaryData.length).toFixed(2);
-            const high = summaryData.filter(s => s.percent >= 90).length;
-            const med = summaryData.filter(s => s.percent >= 75 && s.percent < 90).length;
-            const low = summaryData.filter(s => s.percent < 75).length;
+            const activeSummary = summaryData.filter(s => !s.isInactive);
+            const avg  = activeSummary.length ? (activeSummary.reduce((a, b) => a + b.percent, 0) / activeSummary.length).toFixed(2) : '0.00';
+            const high = activeSummary.filter(s => s.percent >= 90).length;
+            const med  = activeSummary.filter(s => s.percent >= 75 && s.percent < 90).length;
+            const low  = activeSummary.filter(s => s.percent < 75).length;
             document.getElementById('summaryStats').innerHTML = `
                 <div class="dashboard-card"><h3>${avg}%</h3><p>Class Average</p></div>
                 <div class="dashboard-card" style="background:linear-gradient(135deg,#11998e,#38ef7d)"><h3>${high}</h3><p>≥90% Excellent</p></div>
@@ -6740,10 +6793,14 @@
 
             const tbody = document.getElementById('summaryTableBody');
             tbody.innerHTML = '';
-            summaryData.sort((a, b) => b.percent - a.percent).forEach((st, idx) => {
+            // Sort by PIN (ascending)
+            summaryData.sort((a, b) => a.pin.localeCompare(b.pin)).forEach((st, idx) => {
                 const row = tbody.insertRow();
-                const pc = st.percent >= 90 ? 'percent-high' : (st.percent >= 75 ? 'percent-medium' : 'percent-low');
-                row.innerHTML = `<td>${idx + 1}</td><td>${st.pin}</td><td>${st.name}</td><td>${st.daysPresent}</td><td>${st.totalDays}</td><td class="${pc}">${st.percent}%</td>`;
+                const pc = st.isInactive
+                    ? ''
+                    : (st.percent >= 90 ? 'percent-high' : (st.percent >= 75 ? 'percent-medium' : 'percent-low'));
+                const nameStyle = st.isInactive ? 'style="color:#e65100;font-style:italic;"' : '';
+                row.innerHTML = `<td>${idx + 1}</td><td>${st.pin}</td><td ${nameStyle}>${st.name}</td><td>${st.daysPresent}</td><td>${st.totalDays}</td><td class="${pc}">${st.percent}%</td>`;
             });
             document.getElementById('summaryDisplay').classList.remove('hidden');
         }
@@ -9775,7 +9832,9 @@
         function getStudentList(yearSem) {
             const g = PROMO_GROUPS[yearSem];
             if (!g) return [];
-            return STUDENTS[g.year]?.[g.sem] || [];
+            // Exclude TC/Transferred students — they should NOT be promoted
+            return (STUDENTS[g.year]?.[g.sem] || [])
+                .filter(st => !st.status || st.status === 'active');
         }
 
         function initPromotionTab() {
@@ -9907,8 +9966,10 @@
             };
             try {
                 const fromG   = PROMO_GROUPS[fromKey];
-                const students = [...(STUDENTS[fromG.year]?.[fromG.sem] || [])];
-                if (!students.length) throw new Error('No students found to promote');
+                // Only promote active students — TC/Transferred stay behind
+                const students = (STUDENTS[fromG.year]?.[fromG.sem] || [])
+                    .filter(st => !st.status || st.status === 'active');
+                if (!students.length) throw new Error('No active students found to promote');
                 setProgress(40, `Moving ${students.length} students...`);
                 if (toKey) {
                     const toG = PROMO_GROUPS[toKey];
