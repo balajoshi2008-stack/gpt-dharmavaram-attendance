@@ -6335,6 +6335,8 @@
             ws2['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 14 }, { wch: 20 }, { wch: 12 }];
             ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
             xlsCenterCol(ws2, 0);  // centre Sl.No column
+            xlsCenterCol(ws2, 3);  // centre Days Present column
+            xlsCenterCol(ws2, 4);  // centre Total Working Days column
             XLSX.utils.book_append_sheet(wb, ws2, 'Monthly Summary');
 
             XLSX.writeFile(wb, `Attendance_${monthName}${mYear}_Year${y}_Sem${s}.xlsx`);
@@ -6502,6 +6504,7 @@
             ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 12 }];
             dates.forEach(() => ws['!cols'].push({ wch: 8 }));
             xlsCenterCol(ws, 0);  // centre Sl.No column
+            xlsCenterCol(ws, 3);  // centre Days Present column
 
             const wb = XLSX.utils.book_new();
             const semText = y == 1 ? 'Year 1' : `Year ${y} Sem ${s}`;
@@ -6614,6 +6617,7 @@
             const ws = XLSX.utils.aoa_to_sheet(data);
             ws['!cols'] = [{ wch: 6 }, { wch: 20 }, { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 25 }, { wch: 12 }];
             xlsCenterCol(ws, 0);  // centre Sl.No column
+            xlsCenterCol(ws, 6);  // centre Working Days (Scholarship) column
             ws['!merges'] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
                 { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
