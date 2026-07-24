@@ -6181,6 +6181,10 @@
             const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const classLabel = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
 
+            // Academic calendar start for this class (from Settings tab)
+            const ysKey = `${y}-${s}`;
+            const calStart = (CALENDAR_DATES && CALENDAR_DATES[ysKey]) ? (CALENDAR_DATES[ysKey].start || '') : '';
+
             // Split students: active only for regular rows; inactive get date-aware treatment
             const activeStu   = stu.filter(st => !st.status || st.status === 'active');
             const inactiveStu = stu.filter(st => st.status === 'transferred' || st.status === 'tc_issued');
@@ -6196,8 +6200,8 @@
                     d.setDate(monday.getDate() + i);
                     if (d >= monthStart && d <= monthEnd) {
                         const ds = localYMD(d);
-                        // Skip Sundays and holidays
-                        if (!isSunday(ds) && !isHoliday(ds)) {
+                        // Skip Sundays, holidays, and dates before academic calendar start
+                        if (!isSunday(ds) && !isHoliday(ds) && (!calStart || ds >= calStart)) {
                             weekDates.push(ds);
                             if (!allMonthDates.includes(ds)) allMonthDates.push(ds);
                         }
@@ -6317,18 +6321,36 @@
                 [`${classLabel2}  |  ${monthName} ${mYear}  |  Monthly Attendance Summary`], [''],
                 ['Sl.No', 'PIN', 'Name', 'Days Present', 'Total Working Days', 'Monthly %']
             ];
+            // Class-level working days = days where ANY student has attendance posted
+            // Used as denominator for inactive students so they show correct total (e.g. 18, not 7)
+            const classWorkingDays = allMonthDates.filter(d => {
+                const att = getAttData(d);
+                return stu.some(st => {
+                    const sa = att[st.pin] || {};
+                    return Object.keys(sa).length > 0;
+                });
+            }).length;
+
             // Include ALL students: active normally, inactive with actual days (up to leave date) + status note
             let sumRowIdx = 0;
             stu.forEach((st) => {
                 const inactiveDate = st.inactiveDate || '';
                 const statusLabel  = st.status === 'transferred' ? '[Tr]' : (st.status === 'tc_issued' ? '[TC]' : '');
-                // For inactive students: only count attendance days before inactiveDate
-                const countDates = (inactiveDate && statusLabel)
+                const isInactive   = !!statusLabel;
+
+                // For inactive students: count attendance only on dates before inactiveDate
+                const countDates = (isInactive && inactiveDate)
                     ? allMonthDates.filter(d => d < inactiveDate)
                     : allMonthDates;
+
                 const result = calculateDayBasedPercentage(st.pin, countDates);
+
+                // For inactive students use class-level working days as the total (not individual student's recorded days)
+                // This ensures "Total Working Days" shows the class total (e.g. 18), not the student's data count
+                const totalDays = isInactive ? classWorkingDays : result.total;
+                const pct = totalDays > 0 ? ((result.days / totalDays) * 100).toFixed(2) : '0.00';
                 const nameCell = statusLabel ? `${st.name} ${statusLabel}` : st.name;
-                summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, result.total, result.pct + '%']);
+                summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, totalDays, pct + '%']);
                 sumRowIdx++;
             });
             const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
@@ -6536,22 +6558,31 @@
             const allClassStu = STUDENTS[y]?.[s] || [];
             if (!allClassStu.length) { alert('No students for this class'); return; }
 
-            // Build scholars list:
-            //  - Active scholarship holders: always included
-            //  - Inactive scholarship holders: include only if inactiveDate > monthStartStr
-            //    (they were present at least 1 day this month)
+            // Build scholars list (active + inactive who left during this month)
+            // For inactive: include if inactiveDate is in this month (inactiveDate > monthStart)
+            // OR if inactiveDate is not set but status is inactive (edge case — include them)
             const scholars = allClassStu.filter(st => {
-                if (st.scholarship === false) return false; // not a scholar
-                const stStatus = st.status || 'active';
+                if (st.scholarship === false) return false; // not a scholarship holder
+                const stStatus   = st.status || 'active';
                 const isInactive = stStatus === 'tc_issued' || stStatus === 'transferred';
-                if (!isInactive) return true; // active — include
-                // Inactive: include only if they left during this month
+                if (!isInactive) return true; // active scholar — always include
+                // Inactive scholar: include only if their last active day falls in this month
+                // i.e. inactiveDate > monthStart AND inactiveDate <= monthEnd
+                // (they attended at least 1 day this month)
                 const ld = st.inactiveDate || '';
-                return ld && ld > monthStartStr; // left after month started
+                if (!ld) return false; // no leave date — skip
+                const ldStr = ld; // already 'YYYY-MM-DD'
+                const monthStartStr2 = localYMD(monthStart);
+                const monthEndStr    = localYMD(monthEnd);
+                return ldStr > monthStartStr2 && ldStr <= monthEndStr;
+                // Note: > monthStart means they were present on at least 1st of month
+                // Note: <= monthEnd means they left DURING this month (not next month)
+                // Students who left BEFORE this month: ldStr <= monthStart → excluded ✓
+                // Students who will leave NEXT month: ldStr > monthEnd → excluded ✓
             });
             if (!scholars.length) { alert('No scholarship holders found for this class/month'); return; }
 
-            // Collect all dates in month
+            // Collect all dates in month (skip Sundays)
             const allDates = [];
             const cur = new Date(monthStart);
             while (cur <= monthEnd) {
@@ -6560,13 +6591,14 @@
                 cur.setDate(cur.getDate() + 1);
             }
 
-            // Actual working days = days where attendance was posted (based on active scholars only)
+            // Actual working days = class-level days where attendance was posted
+            // (based on active scholars so inactive students don't affect this count)
             const activeScholars = scholars.filter(st => !st.status || st.status === 'active');
+            const refScholars = activeScholars.length ? activeScholars : scholars;
             let actualWorkingDays = 0;
             allDates.forEach(d => {
                 const att = getAttData(d);
-                const dayPosted = (activeScholars.length ? activeScholars : scholars)
-                    .some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
+                const dayPosted = refScholars.some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
                 if (dayPosted) actualWorkingDays++;
             });
 
@@ -6583,12 +6615,13 @@
             const data = [...headerInfo, tableHeader];
 
             scholars.forEach((st, idx) => {
-                const stStatus   = st.status || 'active';
-                const isInactive = stStatus === 'tc_issued' || stStatus === 'transferred';
-                const tcLabel    = stStatus === 'tc_issued' ? ' [TC]' : (stStatus === 'transferred' ? ' [Tr]' : '');
+                const stStatus     = st.status || 'active';
+                const isInactive   = stStatus === 'tc_issued' || stStatus === 'transferred';
+                const tcLabel      = stStatus === 'tc_issued' ? ' [TC]' : (stStatus === 'transferred' ? ' [Tr]' : '');
                 const inactiveDate = isInactive && st.inactiveDate ? st.inactiveDate : '';
 
-                // Count only dates before inactiveDate for inactive students
+                // For inactive students: count presence only on dates BEFORE their leave date
+                // (inactiveDate is their first day NOT in school, so last day = inactiveDate - 1)
                 const countDates = (isInactive && inactiveDate)
                     ? allDates.filter(d => d < inactiveDate)
                     : allDates;
@@ -6597,7 +6630,8 @@
                 countDates.forEach(d => {
                     const att = getAttData(d);
                     const sa  = att[st.pin] || {};
-                    const dayPosted = scholars.some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
+                    // Check if this was a class working day (any active scholar has data)
+                    const dayPosted = refScholars.some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
                     if (!dayPosted) return;
                     let periodsPresent = 0;
                     for (let p = 1; p <= 7; p++) {
