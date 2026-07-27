@@ -6240,8 +6240,21 @@
                 const data = [titleRow, header1, header2];
                 let rowIdx = 0;
 
+                // Pre-compute which dates in this week have class-level attendance posted
+                // (any student has any period data). Used to fill 'A' for inactive students
+                // whose PIN is missing from the att document (faculty skipped them).
+                const weekDayPosted = {};
+                weekDates.forEach(d => {
+                    const att = getAttData(d);
+                    weekDayPosted[d] = stu.some(st => {
+                        const sa = att[st.pin] || {};
+                        return Object.keys(sa).length > 0;
+                    });
+                });
+
                 // ALL students (active + inactive) appear on ALL week sheets
                 // For inactive: show real P/A for dates < inactiveDate, show "TC"/"Tr" from inactiveDate onwards
+                // If inactive student has NO record for a date where class WAS posted → show 'A' (implied absent)
                 stu.forEach((st) => {
                     const inactiveDate = st.inactiveDate || '';   // FIRST day they are NOT in school
                     const statusLabel  = st.status === 'transferred' ? 'Tr' : (st.status === 'tc_issued' ? 'TC' : '');
@@ -6256,13 +6269,23 @@
                             // From leave date onwards — show TC / Tr for each period cell
                             for (let p = 1; p <= 7; p++) row.push(statusLabel);
                         } else {
-                            // Normal attendance
-                            for (let p = 1; p <= 7; p++) row.push(sa[p]?.status || '');
+                            // Normal attendance — if student has no record but class was posted, show 'A'
+                            const hasRecord = Object.keys(sa).length > 0;
+                            const classPosted = weekDayPosted[d];
+                            for (let p = 1; p <= 7; p++) {
+                                if (sa[p]?.status) {
+                                    row.push(sa[p].status);           // real P or A
+                                } else if (!hasRecord && classPosted) {
+                                    row.push('A');                    // class was held, student missing → absent
+                                } else {
+                                    row.push('');                     // no class data for this period
+                                }
+                            }
                         }
 
                         if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
                             if (isInactive && inactiveDate && inactiveDate <= weekEnd) {
-                                // Show %  only for days they attended (dates < inactiveDate in this week)
+                                // Show % only for days they attended (dates < inactiveDate in this week)
                                 const attendedDates = weekDates.slice(0, idx + 1).filter(wd => wd < inactiveDate);
                                 const result = calculateDayBasedPercentage(st.pin, attendedDates);
                                 row.push(attendedDates.length ? result.pct + '% (' + statusLabel + ')' : statusLabel);
