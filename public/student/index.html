@@ -1513,7 +1513,15 @@
             const saved = localStorage.getItem('studentSession');
             if (saved) {
                 try {
-                    currentStudent = JSON.parse(saved);
+                    const restoredStudent = JSON.parse(saved);
+                    // If student was marked TC / Transferred — do not auto-restore
+                    const restoredStatus = restoredStudent.status;
+                    if (restoredStatus === 'tc_issued' || restoredStatus === 'transferred') {
+                        localStorage.removeItem('studentSession');
+                        // Leave login screen visible — student must re-enter PIN to see status message
+                        return;
+                    }
+                    currentStudent = restoredStudent;
                     showStudentApp();
                     // Fetch attendance data in background
                     const [attSnap, marksSnap, ttDoc, calDoc, subjDoc] = await Promise.all([
@@ -1607,33 +1615,61 @@
                 }
 
                 if (found) {
-                    // ✅ Save session to localStorage (stay logged in)
-                    localStorage.setItem('studentSession', JSON.stringify(currentStudent));
+                    // ── Check if student is TC / Transferred ─────────────────────
+                    const stuStatus = currentStudent.status;
+                    if (stuStatus === 'tc_issued' || stuStatus === 'transferred') {
+                        const isTc = stuStatus === 'tc_issued';
+                        const leaveDate = currentStudent.inactiveDate
+                            ? new Date(currentStudent.inactiveDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+                            : '';
+                        const leaveDateNote = leaveDate ? `<br><small style="font-size:12px;color:#777;">Effective from: ${leaveDate}</small>` : '';
 
-                    // Show app immediately — don't wait for attendance to load
-                    showStudentApp();
+                        errorDiv.innerHTML = `
+                            <div style="text-align:center;padding:10px 0;">
+                                <div style="font-size:40px;margin-bottom:8px;">${isTc ? '📄' : '🔄'}</div>
+                                <div style="font-size:16px;font-weight:700;color:${isTc ? '#C62828' : '#E65100'};">
+                                    ${isTc ? 'Transfer Certificate Issued' : 'You Have Been Transferred'}
+                                </div>
+                                <div style="font-size:13px;margin-top:6px;color:#555;">
+                                    ${isTc
+                                        ? 'Your TC has been issued. Your enrollment at this college has ended.'
+                                        : 'You have been transferred to another institution.'}
+                                </div>
+                                ${leaveDateNote}
+                                <div style="font-size:12px;margin-top:10px;color:#999;">
+                                    Please contact the college admin for any queries.
+                                </div>
+                            </div>`;
+                        errorDiv.style.display = 'block';
+                        // Do NOT log them in — clear any stale session
+                        localStorage.removeItem('studentSession');
+                        currentStudent = null;
+                    } else {
+                        // ✅ Active student — save session and show app
+                        localStorage.setItem('studentSession', JSON.stringify(currentStudent));
+                        showStudentApp();
 
-                    // Batch-fetch ALL attendance, unit marks, timetable and academic calendar in parallel
-                    const [attSnap, marksSnap, ttDoc, calDoc, subjDoc] = await Promise.all([
-                        db.collection('attendance').get(),
-                        db.collection('unitMarks').get(),
-                        db.collection('settings').doc('timetable').get(),
-                        db.collection('settings').doc('calendarDates').get(),
-                        db.collection('settings').doc('subjects').get()
-                    ]);
-                    allAttendance = {};
-                    attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
-                    allUnitMarks = {};
-                    marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
-                    if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
-                    if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
-                    if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
+                        // Batch-fetch ALL attendance, unit marks, timetable and academic calendar in parallel
+                        const [attSnap, marksSnap, ttDoc, calDoc, subjDoc] = await Promise.all([
+                            db.collection('attendance').get(),
+                            db.collection('unitMarks').get(),
+                            db.collection('settings').doc('timetable').get(),
+                            db.collection('settings').doc('calendarDates').get(),
+                            db.collection('settings').doc('subjects').get()
+                        ]);
+                        allAttendance = {};
+                        attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
+                        allUnitMarks = {};
+                        marksSnap.forEach(doc => { allUnitMarks[doc.id] = doc.data(); });
+                        if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
+                        if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
+                        if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
 
-                    // Now load content after data is ready
-                    loadMonthlyReport();
-                    loadTodayAttendance();
-                    loadStudentNotifications(true); // true = fresh login → show popup
-                    loadStudentAssignments();
+                        loadMonthlyReport();
+                        loadTodayAttendance();
+                        loadStudentNotifications(true);
+                        loadStudentAssignments();
+                    }
                 } else {
                     errorDiv.innerHTML = '❌ Invalid PIN<br><small style="font-size:12px;">Please check your PIN and try again</small>';
                     errorDiv.style.display = 'block';

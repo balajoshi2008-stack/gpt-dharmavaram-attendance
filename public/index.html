@@ -5739,15 +5739,25 @@
             }
 
             const allStuList = STUDENTS[y]?.[s] || [];
-            // Filter out TC/Transferred students -- only active students appear in attendance
+            // Date-aware filter: show inactive (TC/Tr) students only for dates BEFORE their leave date.
+            // If faculty selects a past date when the student was still in college — they appear.
             const stu = allStuList.filter(st => {
                 const status = st.status;
-                return !status || status === 'active';
+                if (!status || status === 'active') return true; // active — always show
+                const isInactive = status === 'transferred' || status === 'tc_issued';
+                if (isInactive && st.inactiveDate) {
+                    // Show only if the selected date is BEFORE their leave date
+                    return date < st.inactiveDate;
+                }
+                return false; // inactive without a date — hide
             });
 
             if (!stu.length) {
+                const hasInactive = allStuList.some(st => st.status === 'transferred' || st.status === 'tc_issued');
                 alert(allStuList.length
-                    ? 'No active students! All students in this class are Transferred or TC Issued.'
+                    ? (hasInactive
+                        ? 'No students available for this date. All students had left before or on this date.'
+                        : 'No active students! All students in this class are Transferred or TC Issued.')
                     : 'No students!');
                 return;
             }
@@ -5812,8 +5822,12 @@
             const y = document.getElementById('year').value;
             const s = (y == 1) ? '1' : document.getElementById('sem').value;
             const date = document.getElementById('date').value;
-            // Use only active students (mirrors filter in loadStudents)
-            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
+            // Date-aware filter: mirrors the filter in loadStudents — show inactive only if date < inactiveDate
+            const stu = (STUDENTS[y]?.[s] || []).filter(st => {
+                if (!st.status || st.status === 'active') return true;
+                const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
+                return isInactive && st.inactiveDate && date < st.inactiveDate;
+            });
             const tbody = document.getElementById('tbody');
             const subCode = tbody.dataset.subCode;
             const periods = tbody.dataset.periods;
@@ -6147,17 +6161,10 @@
         function getMonthWeeks(yearMonth) {
             const [year, month] = yearMonth.split('-').map(Number);
             const firstDay = new Date(year, month - 1, 1);
-            const lastDay  = new Date(year, month, 0);
-
-            // Find the Monday of the week that CONTAINS the 1st of the month.
-            // (Step backward, not forward — so days like Jul 1-4 when Jul 1 is Wednesday are NOT skipped.)
-            const dow = firstDay.getDay();                 // 0=Sun,1=Mon,...,6=Sat
-            const daysBack = dow === 0 ? 6 : dow - 1;     // how many days to go back to reach Monday
-            const firstMonday = new Date(firstDay);
-            firstMonday.setDate(firstDay.getDate() - daysBack);
-
+            const lastDay = new Date(year, month, 0);
             const weeks = [];
-            let cur = new Date(firstMonday);
+            let cur = new Date(firstDay);
+            while (cur.getDay() !== 1 && cur <= lastDay) cur.setDate(cur.getDate() + 1);
             while (cur <= lastDay) {
                 weeks.push(new Date(cur));
                 cur.setDate(cur.getDate() + 7);
@@ -6181,33 +6188,52 @@
             const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const classLabel = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
 
-            // Academic calendar start for this class (from Settings tab)
-            const ysKey = `${y}-${s}`;
-            const calStart = (CALENDAR_DATES && CALENDAR_DATES[ysKey]) ? (CALENDAR_DATES[ysKey].start || '') : '';
-
             // Split students: active only for regular rows; inactive get date-aware treatment
             const activeStu   = stu.filter(st => !st.status || st.status === 'active');
             const inactiveStu = stu.filter(st => st.status === 'transferred' || st.status === 'tc_issued');
 
+            // Academic start date for this class (from Settings → Academic Calendar)
+            const yearSem = y == 1 ? '1-1' : `${y}-${s}`;
+            const acadStart = (typeof CALENDAR_DATES !== 'undefined' && CALENDAR_DATES[yearSem])
+                ? (CALENDAR_DATES[yearSem].start || '') : '';
+
             const wb = XLSX.utils.book_new();
-            const weekMondays = getMonthWeeks(month);
             const allMonthDates = [];
 
-            weekMondays.forEach((monday, wIdx) => {
+            // Mon-Sat weeks: Week 1 starts on the 1st of the month (even if mid-week),
+            // ends on first Saturday (or month end). Week 2+ start on the next Monday.
+            // Example: July 1 = Wed → Week 1: July 1-4, Week 2: July 6-11, ...
+            //          June 1 = Mon → Week 1: June 1-6, Week 2: June 8-13, ...
+            const monthWeeks = [];
+            {
+                let wStart = new Date(monthStart);
+                let wNum = 1;
+                while (wStart <= monthEnd) {
+                    let wEnd = new Date(wStart);
+                    // Advance to Saturday (day 6) or stop at month end
+                    while (wEnd.getDay() !== 6 && wEnd < monthEnd) {
+                        wEnd.setDate(wEnd.getDate() + 1);
+                    }
+                    if (wEnd > monthEnd) wEnd = new Date(monthEnd);
+                    monthWeeks.push({ weekNum: wNum, wStart: new Date(wStart), wEnd: new Date(wEnd) });
+                    wNum++;
+                    // Next week: Monday after this week's Saturday (skip Sunday)
+                    wStart = new Date(wEnd);
+                    wStart.setDate(wStart.getDate() + 2); // Sat+2 = Mon
+                }
+            }
+
+            monthWeeks.forEach(({ weekNum, wStart, wEnd }) => {
                 let weekDates = [];
-                for (let i = 0; i < 6; i++) {
-                    const d = new Date(monday);
-                    d.setDate(monday.getDate() + i);
-                    if (d >= monthStart && d <= monthEnd) {
-                        const ds = localYMD(d);
-                        // Skip Sundays, holidays, and dates before academic calendar start
-                        if (!isSunday(ds) && !isHoliday(ds) && (!calStart || ds >= calStart)) {
-                            weekDates.push(ds);
-                            if (!allMonthDates.includes(ds)) allMonthDates.push(ds);
-                        }
+                for (let d = new Date(wStart); d <= wEnd; d.setDate(d.getDate() + 1)) {
+                    const ds = localYMD(d);
+                    // Skip Sundays, holidays, and dates before academic year start
+                    if (!isSunday(ds) && !isHoliday(ds) && (!acadStart || ds >= acadStart)) {
+                        weekDates.push(ds);
+                        if (!allMonthDates.includes(ds)) allMonthDates.push(ds);
                     }
                 }
-                if (!weekDates.length) return;
+                if (!weekDates.length) return; // skip empty weeks (before academic start, etc.)
                 const weekStart = weekDates[0];
                 const weekEnd   = weekDates[weekDates.length - 1];
 
@@ -6219,7 +6245,7 @@
                 });
 
                 // Title row
-                const titleRow = [`${classLabel}  |  ${monthName} ${mYear}  |  Week ${wIdx + 1}`];
+                const titleRow = [`${classLabel}  |  ${monthName} ${mYear}  |  Week ${weekNum}`];
                 for (let i = 1; i < totalCols; i++) titleRow.push('');
 
                 const header1 = ['Sl.No', 'PIN', 'Name'];
@@ -6240,21 +6266,8 @@
                 const data = [titleRow, header1, header2];
                 let rowIdx = 0;
 
-                // Pre-compute which dates in this week have class-level attendance posted
-                // (any student has any period data). Used to fill 'A' for inactive students
-                // whose PIN is missing from the att document (faculty skipped them).
-                const weekDayPosted = {};
-                weekDates.forEach(d => {
-                    const att = getAttData(d);
-                    weekDayPosted[d] = stu.some(st => {
-                        const sa = att[st.pin] || {};
-                        return Object.keys(sa).length > 0;
-                    });
-                });
-
                 // ALL students (active + inactive) appear on ALL week sheets
                 // For inactive: show real P/A for dates < inactiveDate, show "TC"/"Tr" from inactiveDate onwards
-                // If inactive student has NO record for a date where class WAS posted → show 'A' (implied absent)
                 stu.forEach((st) => {
                     const inactiveDate = st.inactiveDate || '';   // FIRST day they are NOT in school
                     const statusLabel  = st.status === 'transferred' ? 'Tr' : (st.status === 'tc_issued' ? 'TC' : '');
@@ -6269,23 +6282,13 @@
                             // From leave date onwards — show TC / Tr for each period cell
                             for (let p = 1; p <= 7; p++) row.push(statusLabel);
                         } else {
-                            // Normal attendance — if student has no record but class was posted, show 'A'
-                            const hasRecord = Object.keys(sa).length > 0;
-                            const classPosted = weekDayPosted[d];
-                            for (let p = 1; p <= 7; p++) {
-                                if (sa[p]?.status) {
-                                    row.push(sa[p].status);           // real P or A
-                                } else if (!hasRecord && classPosted) {
-                                    row.push('A');                    // class was held, student missing → absent
-                                } else {
-                                    row.push('');                     // no class data for this period
-                                }
-                            }
+                            // Normal attendance
+                            for (let p = 1; p <= 7; p++) row.push(sa[p]?.status || '');
                         }
 
                         if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
                             if (isInactive && inactiveDate && inactiveDate <= weekEnd) {
-                                // Show % only for days they attended (dates < inactiveDate in this week)
+                                // Show %  only for days they attended (dates < inactiveDate in this week)
                                 const attendedDates = weekDates.slice(0, idx + 1).filter(wd => wd < inactiveDate);
                                 const result = calculateDayBasedPercentage(st.pin, attendedDates);
                                 row.push(attendedDates.length ? result.pct + '% (' + statusLabel + ')' : statusLabel);
@@ -6335,53 +6338,48 @@
                 ws['!merges'] = merges;
                 ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }];
                 xlsCenterCol(ws, 0);  // centre Sl.No column
-                XLSX.utils.book_append_sheet(wb, ws, `Week ${wIdx + 1}`);
+                XLSX.utils.book_append_sheet(wb, ws, `Week ${weekNum}`);
             });
 
             // Monthly Summary sheet
+            // Total working days for the whole month — used as reference for inactive students too
+            const totalMonthWorkingDays = allMonthDates.reduce((count, d) => {
+                const att = getAttData(d);
+                return count + (Object.keys(att).length > 0 ? 1 : 0);
+            }, 0);
+
             const classLabel2 = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
             const summaryData = [
                 [`${classLabel2}  |  ${monthName} ${mYear}  |  Monthly Attendance Summary`], [''],
                 ['Sl.No', 'PIN', 'Name', 'Days Present', 'Total Working Days', 'Monthly %']
             ];
-            // Class-level working days = days where ANY student has attendance posted
-            // Used as denominator for inactive students so they show correct total (e.g. 18, not 7)
-            const classWorkingDays = allMonthDates.filter(d => {
-                const att = getAttData(d);
-                return stu.some(st => {
-                    const sa = att[st.pin] || {};
-                    return Object.keys(sa).length > 0;
-                });
-            }).length;
-
-            // Include ALL students: active normally, inactive with actual days (up to leave date) + status note
+            // Include ALL students; inactive: days present only up to leave, total = whole month
             let sumRowIdx = 0;
             stu.forEach((st) => {
                 const inactiveDate = st.inactiveDate || '';
                 const statusLabel  = st.status === 'transferred' ? '[Tr]' : (st.status === 'tc_issued' ? '[TC]' : '');
-                const isInactive   = !!statusLabel;
-
-                // For inactive students: count attendance only on dates before inactiveDate
-                const countDates = (isInactive && inactiveDate)
-                    ? allMonthDates.filter(d => d < inactiveDate)
-                    : allMonthDates;
-
-                const result = calculateDayBasedPercentage(st.pin, countDates);
-
-                // For inactive students use class-level working days as the total (not individual student's recorded days)
-                // This ensures "Total Working Days" shows the class total (e.g. 18), not the student's data count
-                const totalDays = isInactive ? classWorkingDays : result.total;
-                const pct = totalDays > 0 ? ((result.days / totalDays) * 100).toFixed(2) : '0.00';
                 const nameCell = statusLabel ? `${st.name} ${statusLabel}` : st.name;
-                summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, totalDays, pct + '%']);
+                if (inactiveDate && statusLabel) {
+                    // Days present: only count days before leave date
+                    const attendedDates = allMonthDates.filter(d => d < inactiveDate);
+                    const result = calculateDayBasedPercentage(st.pin, attendedDates);
+                    // Total working days = whole month (same as active students)
+                    const pct = totalMonthWorkingDays > 0
+                        ? ((result.days / totalMonthWorkingDays) * 100).toFixed(2) : '0.00';
+                    summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, totalMonthWorkingDays, pct + '%']);
+                } else {
+                    const result = calculateDayBasedPercentage(st.pin, allMonthDates);
+                    summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, result.total, result.pct + '%']);
+                }
                 sumRowIdx++;
             });
             const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
             ws2['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 14 }, { wch: 20 }, { wch: 12 }];
             ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
-            xlsCenterCol(ws2, 0);  // centre Sl.No column
-            xlsCenterCol(ws2, 3);  // centre Days Present column
-            xlsCenterCol(ws2, 4);  // centre Total Working Days column
+            xlsCenterCol(ws2, 0);  // centre Sl.No
+            xlsCenterCol(ws2, 3);  // centre Days Present
+            xlsCenterCol(ws2, 4);  // centre Total Working Days
+            xlsCenterCol(ws2, 5);  // centre Monthly %
             XLSX.utils.book_append_sheet(wb, ws2, 'Monthly Summary');
 
             XLSX.writeFile(wb, `Attendance_${monthName}${mYear}_Year${y}_Sem${s}.xlsx`);
@@ -6450,11 +6448,16 @@
                 endDate = monthEnd;
             }
 
-            // Get all dates in range — skip Sundays AND holidays
+            // Academic start date for this class
+            const yearSemH = y == 1 ? '1-1' : `${y}-${s}`;
+            const acadStartH = (typeof CALENDAR_DATES !== 'undefined' && CALENDAR_DATES[yearSemH])
+                ? (CALENDAR_DATES[yearSemH].start || '') : '';
+
+            // Get all dates in range — skip Sundays, holidays, and dates before academic start
             const dates = [];
             for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
                 const ds = localYMD(d);
-                if (!isSunday(ds) && !isHoliday(ds)) dates.push(ds);
+                if (!isSunday(ds) && !isHoliday(ds) && (!acadStartH || ds >= acadStartH)) dates.push(ds);
             }
 
             // Build Excel data
@@ -6548,8 +6551,8 @@
             ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }];
             ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 12 }];
             dates.forEach(() => ws['!cols'].push({ wch: 8 }));
-            xlsCenterCol(ws, 0);  // centre Sl.No column
-            xlsCenterCol(ws, 3);  // centre Days Present column
+            xlsCenterCol(ws, 0);  // centre Sl.No
+            xlsCenterCol(ws, 3);  // centre Days Present
 
             const wb = XLSX.utils.book_new();
             const semText = y == 1 ? 'Year 1' : `Year ${y} Sem ${s}`;
@@ -6573,55 +6576,43 @@
 
             const [mYear, mMonth] = month.split('-').map(Number);
             const monthStart = new Date(mYear, mMonth - 1, 1);
-            const monthEnd   = new Date(mYear, mMonth, 0);
-            const monthName  = monthStart.toLocaleString('default', { month: 'long' });
-            const monthStartStr = localYMD(monthStart); // 'YYYY-MM-01'
+            const monthEnd = new Date(mYear, mMonth, 0);
+            const monthName = monthStart.toLocaleString('default', { month: 'long' });
+            const monthStartStr = localYMD(monthStart);
 
-            // All students (active + inactive), filter scholarship holders
-            const allClassStu = STUDENTS[y]?.[s] || [];
-            if (!allClassStu.length) { alert('No students for this class'); return; }
-
-            // Build scholars list (active + inactive who left during this month)
-            // For inactive: include if inactiveDate is in this month (inactiveDate > monthStart)
-            // OR if inactiveDate is not set but status is inactive (edge case — include them)
-            const scholars = allClassStu.filter(st => {
-                if (st.scholarship === false) return false; // not a scholarship holder
-                const stStatus   = st.status || 'active';
-                const isInactive = stStatus === 'tc_issued' || stStatus === 'transferred';
-                if (!isInactive) return true; // active scholar — always include
-                // Inactive scholar: include only if their last active day falls in this month
-                // i.e. inactiveDate > monthStart AND inactiveDate <= monthEnd
-                // (they attended at least 1 day this month)
-                const ld = st.inactiveDate || '';
-                if (!ld) return false; // no leave date — skip
-                const ldStr = ld; // already 'YYYY-MM-DD'
-                const monthStartStr2 = localYMD(monthStart);
-                const monthEndStr    = localYMD(monthEnd);
-                return ldStr > monthStartStr2 && ldStr <= monthEndStr;
-                // Note: > monthStart means they were present on at least 1st of month
-                // Note: <= monthEnd means they left DURING this month (not next month)
-                // Students who left BEFORE this month: ldStr <= monthStart → excluded ✓
-                // Students who will leave NEXT month: ldStr > monthEnd → excluded ✓
+            // Scholarship holders: active always included; TC/Tr included only if
+            //   they attended at least one day this month (inactiveDate > monthStart)
+            const allStuSchol = STUDENTS[y]?.[s] || [];
+            if (!allStuSchol.length) { alert('No students for this class'); return; }
+            const scholars = allStuSchol.filter(st => {
+                const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
+                if (isInactive) {
+                    // TC/Tr students: show if they attended at least one day in this month
+                    // (bypass scholarship flag — admin wants to see all students who left)
+                    return st.inactiveDate && st.inactiveDate > monthStartStr;
+                }
+                // Active students: apply normal scholarship filter
+                if (st.scholarship === false) return false;
+                return true;
             });
-            if (!scholars.length) { alert('No scholarship holders found for this class/month'); return; }
+            if (!scholars.length) { alert('No scholarship holders found in this class'); return; }
 
-            // Collect all dates in month (skip Sundays)
+            // Collect all dates in month
             const allDates = [];
             const cur = new Date(monthStart);
             while (cur <= monthEnd) {
                 const ds = localYMD(cur);
-                if (!isSunday(ds)) allDates.push(ds);
+                if (!isSunday(ds)) allDates.push(ds); // Skip Sundays
                 cur.setDate(cur.getDate() + 1);
             }
 
-            // Actual working days = class-level days where attendance was posted
-            // (based on active scholars so inactive students don't affect this count)
+            // Actual working days — use active scholars as reference (days attendance was posted)
             const activeScholars = scholars.filter(st => !st.status || st.status === 'active');
             const refScholars = activeScholars.length ? activeScholars : scholars;
             let actualWorkingDays = 0;
             allDates.forEach(d => {
                 const att = getAttData(d);
-                const dayPosted = refScholars.some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
+                const dayPosted = refScholars.some(st => att[st.pin] && Object.keys(att[st.pin]).length > 0);
                 if (dayPosted) actualWorkingDays++;
             });
 
@@ -6637,23 +6628,20 @@
             const tableHeader = ['Sl.No', 'PIN', 'Name', 'Actual Days Present', `Days Added (${daysToAdd})`, `Final Days (Max: ${scholDays})`, `Working Days (Scholarship)`, 'Percentage'];
             const data = [...headerInfo, tableHeader];
 
-            scholars.forEach((st, idx) => {
-                const stStatus     = st.status || 'active';
-                const isInactive   = stStatus === 'tc_issued' || stStatus === 'transferred';
-                const tcLabel      = stStatus === 'tc_issued' ? ' [TC]' : (stStatus === 'transferred' ? ' [Tr]' : '');
-                const inactiveDate = isInactive && st.inactiveDate ? st.inactiveDate : '';
+            let scholRowNum = 0;
+            scholars.forEach((st) => {
+                const isInactive = (st.status === 'transferred' || st.status === 'tc_issued') && st.inactiveDate;
+                const nameCell = isInactive
+                    ? `${st.name} ${st.status === 'transferred' ? '[Tr]' : '[TC]'}`
+                    : st.name;
 
-                // For inactive students: count presence only on dates BEFORE their leave date
-                // (inactiveDate is their first day NOT in school, so last day = inactiveDate - 1)
-                const countDates = (isInactive && inactiveDate)
-                    ? allDates.filter(d => d < inactiveDate)
-                    : allDates;
-
+                // Count days PRESENT — for TC/Tr students, only count up to day before inactiveDate
                 let actualPresent = 0;
-                countDates.forEach(d => {
+                allDates.forEach(d => {
+                    // Skip dates on or after leave date for inactive students
+                    if (isInactive && d >= st.inactiveDate) return;
                     const att = getAttData(d);
-                    const sa  = att[st.pin] || {};
-                    // Check if this was a class working day (any active scholar has data)
+                    const sa = att[st.pin] || {};
                     const dayPosted = refScholars.some(sc => att[sc.pin] && Object.keys(att[sc.pin]).length > 0);
                     if (!dayPosted) return;
                     let periodsPresent = 0;
@@ -6663,18 +6651,23 @@
                     if (periodsPresent >= MIN_PERIODS_FOR_PRESENT) actualPresent++;
                 });
 
-                const finalDays  = Math.min(actualPresent + daysToAdd, scholDays);
+                // Apply formula: Final = Min(actualPresent + daysToAdd, scholDays)
+                const finalDays = Math.min(actualPresent + daysToAdd, scholDays);
                 const percentage = ((finalDays / scholDays) * 100).toFixed(2) + '%';
-                const nameCell   = st.name + tcLabel;
 
-                data.push([idx + 1, st.pin, nameCell, actualPresent, daysToAdd, finalDays, scholDays, percentage]);
+                data.push([scholRowNum + 1, st.pin, nameCell, actualPresent, daysToAdd, finalDays, scholDays, percentage]);
+                scholRowNum++;
             });
 
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(data);
             ws['!cols'] = [{ wch: 6 }, { wch: 20 }, { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 25 }, { wch: 12 }];
-            xlsCenterCol(ws, 0);  // centre Sl.No column
-            xlsCenterCol(ws, 6);  // centre Working Days (Scholarship) column
+            xlsCenterCol(ws, 0);  // centre Sl.No
+            xlsCenterCol(ws, 3);  // centre Actual Days Present
+            xlsCenterCol(ws, 4);  // centre Days Added
+            xlsCenterCol(ws, 5);  // centre Final Days
+            xlsCenterCol(ws, 6);  // centre Working Days (Scholarship)
+            xlsCenterCol(ws, 7);  // centre Percentage
             ws['!merges'] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
                 { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
@@ -6779,66 +6772,33 @@
             if (!classVal || !fromDate || !toDate) { alert('Please fill all fields'); return; }
 
             const [y, s] = classVal.split('-');
-            const allStu = (STUDENTS[y]?.[s] || []);
-            if (!allStu.length) { alert('No students in this class'); return; }
+            // Only show active students in summary
+            const stu = (STUDENTS[y]?.[s] || []).filter(st => !st.status || st.status === 'active');
+            if (!stu.length) { alert('No active students in this class'); return; }
 
-            // Build working date list (skip Sundays)
             const dates = [];
             let cur = new Date(fromDate);
             const end = new Date(toDate);
             while (cur <= end) {
                 const ds = localYMD(cur);
-                if (!isSunday(ds)) dates.push(ds);
+                if (!isSunday(ds)) dates.push(ds); // Skip Sundays
                 cur.setDate(cur.getDate() + 1);
             }
 
             const summaryData = [];
             let lowCount = 0;
-
-            allStu.forEach(st => {
-                const stStatus = st.status || 'active';
-                const isTC     = stStatus === 'tc_issued';
-                const isTr     = stStatus === 'transferred';
-                const isInactive = isTC || isTr;
-                const inactiveDate = isInactive && st.inactiveDate ? st.inactiveDate : '';
-
-                // Inactive students: include only if their inactiveDate falls within [fromDate, toDate]
-                // (i.e. they were present for at least part of this range)
-                if (isInactive) {
-                    if (!inactiveDate) return;           // no leave date recorded — skip
-                    if (inactiveDate <= fromDate) return; // left before range started — skip
-                    // inactiveDate > fromDate means they were around on at least 1 day of this range
-                }
-
-                // For inactive: count attendance only on dates < inactiveDate
-                const countDates = (isInactive && inactiveDate)
-                    ? dates.filter(d => d < inactiveDate)
-                    : dates;
-
-                const result = calculateDayBasedPercentage(st.pin, countDates);
-                const label  = isTC ? ' [TC]' : (isTr ? ' [Tr]' : '');
-                const pct    = parseFloat(result.pct);
-                if (!isInactive && pct < 75) lowCount++;
-
-                summaryData.push({
-                    pin: st.pin,
-                    name: st.name + label,
-                    daysPresent: result.days,
-                    totalDays: result.total,
-                    percent: pct,
-                    isInactive
-                });
+            stu.forEach(st => {
+                const result = calculateDayBasedPercentage(st.pin, dates);
+                summaryData.push({ pin: st.pin, name: st.name, daysPresent: result.days, totalDays: result.total, percent: parseFloat(result.pct) });
+                if (parseFloat(result.pct) < 75) lowCount++;
             });
-
-            if (!summaryData.length) { alert('No students to display for this range'); return; }
 
             document.getElementById('summaryTitle').textContent = `Year ${y}, Sem ${s} (${formatDateDDMMYYYY(fromDate)} to ${formatDateDDMMYYYY(toDate)})`;
 
-            const activeSummary = summaryData.filter(s => !s.isInactive);
-            const avg  = activeSummary.length ? (activeSummary.reduce((a, b) => a + b.percent, 0) / activeSummary.length).toFixed(2) : '0.00';
-            const high = activeSummary.filter(s => s.percent >= 90).length;
-            const med  = activeSummary.filter(s => s.percent >= 75 && s.percent < 90).length;
-            const low  = activeSummary.filter(s => s.percent < 75).length;
+            const avg = (summaryData.reduce((a, b) => a + b.percent, 0) / summaryData.length).toFixed(2);
+            const high = summaryData.filter(s => s.percent >= 90).length;
+            const med = summaryData.filter(s => s.percent >= 75 && s.percent < 90).length;
+            const low = summaryData.filter(s => s.percent < 75).length;
             document.getElementById('summaryStats').innerHTML = `
                 <div class="dashboard-card"><h3>${avg}%</h3><p>Class Average</p></div>
                 <div class="dashboard-card" style="background:linear-gradient(135deg,#11998e,#38ef7d)"><h3>${high}</h3><p>≥90% Excellent</p></div>
@@ -6854,14 +6814,10 @@
 
             const tbody = document.getElementById('summaryTableBody');
             tbody.innerHTML = '';
-            // Sort by PIN (ascending)
-            summaryData.sort((a, b) => a.pin.localeCompare(b.pin)).forEach((st, idx) => {
+            summaryData.sort((a, b) => b.percent - a.percent).forEach((st, idx) => {
                 const row = tbody.insertRow();
-                const pc = st.isInactive
-                    ? ''
-                    : (st.percent >= 90 ? 'percent-high' : (st.percent >= 75 ? 'percent-medium' : 'percent-low'));
-                const nameStyle = st.isInactive ? 'style="color:#e65100;font-style:italic;"' : '';
-                row.innerHTML = `<td>${idx + 1}</td><td>${st.pin}</td><td ${nameStyle}>${st.name}</td><td>${st.daysPresent}</td><td>${st.totalDays}</td><td class="${pc}">${st.percent}%</td>`;
+                const pc = st.percent >= 90 ? 'percent-high' : (st.percent >= 75 ? 'percent-medium' : 'percent-low');
+                row.innerHTML = `<td>${idx + 1}</td><td>${st.pin}</td><td>${st.name}</td><td>${st.daysPresent}</td><td>${st.totalDays}</td><td class="${pc}">${st.percent}%</td>`;
             });
             document.getElementById('summaryDisplay').classList.remove('hidden');
         }
@@ -9893,9 +9849,7 @@
         function getStudentList(yearSem) {
             const g = PROMO_GROUPS[yearSem];
             if (!g) return [];
-            // Exclude TC/Transferred students — they should NOT be promoted
-            return (STUDENTS[g.year]?.[g.sem] || [])
-                .filter(st => !st.status || st.status === 'active');
+            return STUDENTS[g.year]?.[g.sem] || [];
         }
 
         function initPromotionTab() {
@@ -10027,10 +9981,8 @@
             };
             try {
                 const fromG   = PROMO_GROUPS[fromKey];
-                // Only promote active students — TC/Transferred stay behind
-                const students = (STUDENTS[fromG.year]?.[fromG.sem] || [])
-                    .filter(st => !st.status || st.status === 'active');
-                if (!students.length) throw new Error('No active students found to promote');
+                const students = [...(STUDENTS[fromG.year]?.[fromG.sem] || [])];
+                if (!students.length) throw new Error('No students found to promote');
                 setProgress(40, `Moving ${students.length} students...`);
                 if (toKey) {
                     const toG = PROMO_GROUPS[toKey];
@@ -15186,21 +15138,6 @@ let al_dataLoaded = false;
 const AL_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const AL_DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-// ── TC/Transfer helpers ──────────────────────────────────────
-// Returns 'TC', 'Tr', or '' for a student
-function al_stLabel(st) {
-    if (st.status === 'tc_issued')   return 'TC';
-    if (st.status === 'transferred') return 'Tr';
-    return '';
-}
-// Returns inactiveDate string or '' if student is active
-function al_leftDate(st) { return (al_stLabel(st) && st.inactiveDate) ? st.inactiveDate : ''; }
-// True if a student's TC/Tr applies to this date (date >= inactiveDate)
-function al_isTCDate(st, date) {
-    const ld = al_leftDate(st);
-    return ld ? date >= ld : false;
-}
-
 function al_fmt(dateStr) {
     const [y,m,d] = dateStr.split('-');
     return `${d}/${m}/${y}`;
@@ -15265,8 +15202,10 @@ async function absList_loadData() {
         al_students = [];
         if (typeof STUDENTS === 'object' && STUDENTS[al_y]) {
             const semStudents = STUDENTS[al_y]?.[al_s] || STUDENTS[al_y]?.['1'] || [];
-            // Include ALL students; TC/Tr handled date-aware in rendering
-            al_students = [...semStudents].sort((a,b) => a.pin.localeCompare(b.pin));
+            // Filter out TC/Transferred — only show active students in absent list
+            al_students = semStudents
+                .filter(st => !st.status || st.status === 'active')
+                .sort((a,b) => a.pin.localeCompare(b.pin));
         }
         if (!al_students.length) {
             const stSnap = await db.collection('students').where('yearSem','==',ys).get();
@@ -15415,22 +15354,23 @@ function absList_switchView(view) {
 // ─── VIEW 1: PERIOD-WISE MATRIX (separate table per day) ──────────────────
 function absList_renderMatrix(container) {
     if (!al_dataLoaded) return;
+    // Students with at least 1 absent
+    const absentStudents = al_students
+        .filter(st => Object.values(al_matrix[st.pin] || {}).some(v => v === 'A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
+    if (!absentStudents.length) {
+        container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found in this range.</div>';
+        return;
+    }
 
     let html = '';
     al_dates.forEach(date => {
         const periods = [...(al_periods[date] || [])].sort((a,b) => a - b);
         if (!periods.length) return;
 
-        // Real absent students (before their leave date)
-        const dayAbsent = al_students.filter(st => {
-            if (al_isTCDate(st, date)) return false; // on/after leave date — not absent, just inactive
-            return periods.some(p => (al_matrix[st.pin] || {})[`${date}__P${p}`] === 'A');
-        });
-
-        // Inactive students whose leave date falls ON this date or earlier (show TC/Tr row)
-        const dayInactive = al_students.filter(st => al_isTCDate(st, date));
-
-        if (!dayAbsent.length && !dayInactive.length) return; // nothing to show for this day
+        // filter to students with absence on this day
+        const dayAbsent = absentStudents.filter(st =>
+            periods.some(p => (al_matrix[st.pin] || {})[`${date}__P${p}`] === 'A'));
 
         html += `<div class="al-day-header">📅 ${al_fmt(date)} &nbsp;|&nbsp; ${al_dayNameFull(date)}</div>`;
         html += '<div class="al-daytable-wrap"><table class="al-matrix-table">';
@@ -15443,7 +15383,6 @@ function absList_renderMatrix(container) {
         html += '<th style="background:#e65100;">Total Absent</th>';
         html += '</tr></thead><tbody>';
 
-        // Real absent students
         dayAbsent.forEach(st => {
             const pMap = al_matrix[st.pin] || {};
             let rowAbsent = 0;
@@ -15453,27 +15392,21 @@ function absList_renderMatrix(container) {
             periods.forEach(p => {
                 const key = `${date}__P${p}`;
                 const val = pMap[key];
-                if (val === 'A') { html += '<td class="al-cell-a">A</td>'; rowAbsent++; }
-                else if (val === 'P') { html += '<td class="al-cell-p">P</td>'; }
-                else { html += '<td class="al-cell-dash">–</td>'; }
+                if (val === 'A') {
+                    html += '<td class="al-cell-a">A</td>';
+                    rowAbsent++;
+                } else if (val === 'P') {
+                    html += '<td class="al-cell-p">P</td>';
+                } else {
+                    html += '<td class="al-cell-dash">–</td>';
+                }
             });
             html += `<td class="al-cell-total">${rowAbsent}</td>`;
             html += '</tr>';
         });
 
-        // TC/Tr students — one row per student with TC/Tr in each period cell
-        dayInactive.forEach(st => {
-            const lbl = al_stLabel(st);
-            html += '<tr style="background:#fff3e0;">';
-            html += `<td class="al-pin-col" style="color:#e65100;font-weight:700;">${st.pin}</td>`;
-            html += `<td class="al-name-col" style="color:#e65100;" title="${st.name}">${st.name} <span style="font-size:11px;background:#e65100;color:#fff;border-radius:3px;padding:1px 4px;">${lbl}</span></td>`;
-            periods.forEach(() => { html += `<td style="background:#ffe0b2;color:#bf360c;font-weight:700;text-align:center;">${lbl}</td>`; });
-            html += `<td style="background:#fff3e0;color:#e65100;font-weight:700;text-align:center;">—</td>`;
-            html += '</tr>';
-        });
-
-        // Total row (count only real absent students)
-        const totalCols = 2 + periods.length;
+        // Total row: merge PIN+Name+all period cols into label, last cell = student count
+        const totalCols = 2 + periods.length; // PIN + Name + periods
         html += '<tr class="al-total-row">';
         html += `<td colspan="${totalCols}" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
         html += `<td style="font-weight:800;color:#c62828;">${dayAbsent.length}</td>`;
@@ -15481,12 +15414,7 @@ function absList_renderMatrix(container) {
 
         html += '</tbody></table></div>';
     });
-
-    if (!html) {
-        container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found in this range.</div>';
-    } else {
-        container.innerHTML = html;
-    }
+    container.innerHTML = html;
 }
 
 // ─── VIEW 2: DAY-WISE SUMMARY (separate table per day) ────────────────────
@@ -15537,21 +15465,10 @@ function al_isDayPresent(pin, date) {
 function absList_renderRegister(container) {
     if (!al_dataLoaded) return;
     const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
-
-    // Students to show: those with at least 1 real absence (before their leave date)
-    // OR inactive students who left during the date range
-    const showStudents = al_students.filter(st => {
-        const lbl = al_stLabel(st);
-        const ld  = al_leftDate(st);
-        if (lbl && ld) {
-            // Inactive: show if their leave date falls within the selected range
-            return al_dates.some(date => date >= ld) || al_dates.some(date => al_isDayPresent(st.pin, date) === 'A' && date < ld);
-        }
-        // Active: show if they have at least 1 absent day
-        return al_dates.some(date => al_isDayPresent(st.pin, date) === 'A');
-    }).sort((a, b) => a.pin.localeCompare(b.pin));
-
-    if (!showStudents.length) {
+    const absentStudents = al_students
+        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
+    if (!absentStudents.length) {
         container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found.</div>';
         return;
     }
@@ -15567,36 +15484,27 @@ function absList_renderRegister(container) {
     let colAbsCount = {};
     al_dates.forEach(d => { colAbsCount[d] = 0; });
 
-    showStudents.forEach((st, idx) => {
+    absentStudents.forEach((st, idx) => {
         let absDays = 0;
-        const lbl = al_stLabel(st);
-        const ld  = al_leftDate(st);
         const mobile = st.parentMobile || '';
-        const nameDisplay = lbl ? `${st.name} <span style="font-size:11px;background:#e65100;color:#fff;border-radius:3px;padding:1px 4px;">${lbl}</span>` : st.name;
         const mobileCell = mobile
             ? `<a href="tel:${mobile}" style="display:flex;align-items:center;gap:6px;color:#1565c0;font-weight:700;text-decoration:none;font-size:13px;" title="Call ${mobile}">
                 <span style="background:#1565c0;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">📞</span>
                 ${mobile}
                </a>`
             : `<span style="color:#bbb;font-size:12px;">—</span>`;
-        const rowStyle = lbl ? ' style="background:#fff8f0;"' : '';
-        html += `<tr${rowStyle}><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${nameDisplay}</td><td style="background:#e8f4fd;padding:6px 8px;">${mobileCell}</td>`;
+        html += `<tr><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${st.name}</td><td style="background:#e8f4fd;padding:6px 8px;">${mobileCell}</td>`;
         al_dates.forEach(date => {
-            if (lbl && ld && date >= ld) {
-                // On/after leave date → show TC/Tr (don't count as absent)
-                html += `<td style="background:#ffe0b2;color:#bf360c;font-weight:700;text-align:center;">${lbl}</td>`;
-            } else {
-                const status = al_isDayPresent(st.pin, date);
-                if (status === 'A') { colAbsCount[date]++; absDays++; html += '<td class="al-cell-a">A</td>'; }
-                else if (status === 'P') { html += '<td class="al-cell-p">P</td>'; }
-                else { html += '<td class="al-cell-dash">–</td>'; }
-            }
+            const status = al_isDayPresent(st.pin, date);
+            if (status === 'A') { colAbsCount[date]++; absDays++; html += '<td class="al-cell-a">A</td>'; }
+            else if (status === 'P') { html += '<td class="al-cell-p">P</td>'; }
+            else { html += '<td class="al-cell-dash">–</td>'; }
         });
         html += `<td class="al-cell-total" style="background:#ffebee;color:#b71c1c;font-weight:900;font-size:15px;">${absDays}</td>`;
         html += '</tr>';
     });
 
-    // Total row (only counts real absences, not TC/Tr)
+    // Total row
     html += '<tr class="al-total-row">';
     html += `<td colspan="4" style="text-align:right;font-weight:800;">Total No. of Students Absent</td>`;
     al_dates.forEach(d => { html += `<td style="color:#c62828;font-weight:800;">${colAbsCount[d] || ''}</td>`; });
@@ -15650,24 +15558,17 @@ function absList_downloadPDF() {
     // ── PAGE 1: Period-wise Matrix ──
     addHeader(doc, 'PAGE 1 - Period-wise Matrix (Absent Students)');
     let mStartY = 33;
+    const absStuMat = al_students
+        .filter(st => Object.values(al_matrix[st.pin]||{}).some(v => v==='A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
 
     al_dates.forEach(date => {
         const periods = [...(al_periods[date]||[])].sort((a,b)=>a-b);
         if (!periods.length) return;
-
-        // Real absent on this day (before their leave date)
-        const dayAbsent = al_students.filter(st => {
-            if (al_isTCDate(st, date)) return false;
-            return periods.some(p => (al_matrix[st.pin]||{})[`${date}__P${p}`]==='A');
-        });
-        // Inactive students whose leave applies to this date
-        const dayInactive = al_students.filter(st => al_isTCDate(st, date));
-
-        if (!dayAbsent.length && !dayInactive.length) return;
+        const dayAbsent = absStuMat.filter(st => periods.some(p => (al_matrix[st.pin]||{})[`${date}__P${p}`]==='A'));
+        if (!dayAbsent.length) return;
 
         const head = ['PIN', 'Name', ...periods.map(p=>`P${p}`), 'Total Absent'];
-
-        // Rows for real absent students
         const body = dayAbsent.map(st => {
             const pMap = al_matrix[st.pin]||{};
             let rowAbs = 0;
@@ -15681,14 +15582,7 @@ function absList_downloadPDF() {
             return row;
         });
 
-        // Rows for TC/Tr students
-        dayInactive.forEach(st => {
-            const lbl = al_stLabel(st);
-            const row = [st.pin, `${st.name} (${lbl})`, ...periods.map(() => lbl), '—'];
-            body.push(row);
-        });
-
-        // Bottom total row (count only real absent)
+        // Bottom total row
         const totalColSpan = 2 + periods.length;
         const totalRow = [
             {content:'Total No. of Students Absent', colSpan:totalColSpan, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[30,100,30],fontSize:8}},
@@ -15718,13 +15612,6 @@ function absList_downloadPDF() {
                         data.cell.styles.textColor = [0,120,0];
                         data.cell.styles.fontStyle = 'bold';
                     }
-                    // TC/Tr label cells
-                    if (data.cell.raw==='TC' || data.cell.raw==='Tr') {
-                        data.cell.styles.fillColor = [255,224,178];
-                        data.cell.styles.textColor = [191,54,12];
-                        data.cell.styles.fontStyle = 'bold';
-                        data.cell.styles.fontSize  = 9;
-                    }
                     if (typeof data.cell.raw === 'number' && data.row.index < body.length-1) {
                         data.cell.styles.fillColor = [255,240,200];
                         data.cell.styles.textColor = [150,70,0];
@@ -15743,36 +15630,24 @@ function absList_downloadPDF() {
     doc.addPage();
     addHeader(doc, 'PAGE 2 - Register Format (Day-wise Absent/Present)');
     const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
-
-    // Include students with real absences (before leave date) OR inactive students whose leave is in range
-    const absStuReg = al_students.filter(st => {
-        const lbl = al_stLabel(st);
-        const ld  = al_leftDate(st);
-        if (lbl && ld) return al_dates.some(date => date >= ld) || al_dates.some(date => al_isDayPresent(st.pin, date) === 'A' && date < ld);
-        return al_dates.some(date => al_isDayPresent(st.pin, date) === 'A');
-    }).sort((a, b) => a.pin.localeCompare(b.pin));
-
+    const absStuReg = al_students
+        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
+        .sort((a, b) => a.pin.localeCompare(b.pin));
     const regHead = ['Sl.No', 'PIN', 'Name', ...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`), 'Total Days Absent'];
     const colAbsCount = {};
     al_dates.forEach(d=>{ colAbsCount[d]=0; });
     const regBody = absStuReg.map((st, idx) => {
-        const lbl = al_stLabel(st);
-        const ld  = al_leftDate(st);
         let absDays = 0;
-        const nameCell = lbl ? `${st.name} (${lbl})` : st.name;
-        const row = [idx+1, st.pin, nameCell];
+        const row = [idx+1, st.pin, st.name];
         al_dates.forEach(date => {
-            if (lbl && ld && date >= ld) {
-                row.push(lbl); // TC or Tr — not counted as absent
-            } else {
-                const status = al_isDayPresent(st.pin, date);
-                if (status==='A') { colAbsCount[date]++; absDays++; }
-                row.push(status || '-');
-            }
+            const status = al_isDayPresent(st.pin, date);
+            if (status==='A') { colAbsCount[date]++; absDays++; }
+            row.push(status || '-');
         });
         row.push(absDays);
         return row;
     });
+    // Threshold note row removed (not revealed to students)
     // Total row
     const totalRegRow = [
         {content:'Total No. of Students Absent', colSpan:3, styles:{fontStyle:'bold',halign:'right',fillColor:[232,245,233],textColor:[30,100,30],fontSize:8}},
@@ -15797,9 +15672,6 @@ function absList_downloadPDF() {
             if (data.section==='body') {
                 if (data.cell.raw==='A') { data.cell.styles.fillColor=[255,220,220]; data.cell.styles.textColor=[180,0,0]; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=9; }
                 if (data.cell.raw==='P') { data.cell.styles.fillColor=[220,255,220]; data.cell.styles.textColor=[0,120,0]; data.cell.styles.fontStyle='bold'; }
-                if (data.cell.raw==='TC' || data.cell.raw==='Tr') {
-                    data.cell.styles.fillColor=[255,224,178]; data.cell.styles.textColor=[191,54,12]; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=9;
-                }
                 if (typeof data.cell.raw === 'number' && data.column.index === regHead.length-1 && data.row.index > 0 && data.row.index < regBody.length-1) {
                     data.cell.styles.fillColor=[255,235,230]; data.cell.styles.textColor=[150,0,0]; data.cell.styles.fontStyle='bold'; data.cell.styles.fontSize=10;
                 }
