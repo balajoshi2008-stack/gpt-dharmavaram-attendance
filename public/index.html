@@ -8203,9 +8203,20 @@
             if (!date) { alert('Please select Date'); return; }
             if (!period) { alert('Please select Period'); return; }
 
-            const students = STUDENTS[y]?.[s] || [];
-            if (students.length === 0) {
+            const allStuEdit = STUDENTS[y]?.[s] || [];
+            if (allStuEdit.length === 0) {
                 alert('No students found for this class');
+                return;
+            }
+            // Date-aware filter: same rule as mark attendance
+            // Inactive (TC/Tr) students shown only for dates BEFORE their inactiveDate
+            const students = allStuEdit.filter(st => {
+                if (!st.status || st.status === 'active') return true;
+                const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
+                return isInactive && st.inactiveDate && date < st.inactiveDate;
+            });
+            if (students.length === 0) {
+                alert('No students available for this date. All students had left before or on this date.');
                 return;
             }
 
@@ -8331,7 +8342,12 @@
             // Expand period string to all individual period numbers
             const periodList = getPeriodList(period);
 
-            const students = STUDENTS[y]?.[s] || [];
+            // Date-aware filter: same as loadEditStudentsShared — only show/save eligible students
+            const students = (STUDENTS[y]?.[s] || []).filter(st => {
+                if (!st.status || st.status === 'active') return true;
+                const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
+                return isInactive && st.inactiveDate && date < st.inactiveDate;
+            });
             const todayAttendance = { ...getAttData(date) };
 
             let changedCount = 0;
