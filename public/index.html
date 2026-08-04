@@ -969,6 +969,160 @@
         #markInactiveModal.show, #reactivateModal.show {
             display: flex;
         }
+
+        /* ═══════════════════════════════════════════════════════════
+           HOLIDAY MANAGEMENT MODULE CSS
+           ═══════════════════════════════════════════════════════════ */
+
+        /* ── Holiday Mode Bar ────────────────────────────────────── */
+        .hol-mode-bar {
+            display: flex; gap: .4rem;
+            background: #f0f2f8; border-radius: 10px;
+            padding: .35rem; margin-bottom: 1.2rem;
+        }
+        .hol-mode-btn {
+            flex: 1; padding: .6rem .3rem;
+            border: none; border-radius: 7px;
+            font-size: .8rem; font-weight: 600;
+            cursor: pointer; background: transparent;
+            color: #5a5f7a; transition: all .2s; text-align: center;
+        }
+        .hol-mode-btn.active {
+            background: #1F3864; color: #fff;
+            box-shadow: 0 2px 6px rgba(31,56,100,.25);
+        }
+
+        /* ── Panels ──────────────────────────────────────────────── */
+        .hol-panel { animation: holFadeIn .2s ease; }
+        @keyframes holFadeIn {
+            from { opacity:0; transform:translateY(4px); }
+            to   { opacity:1; transform:none; }
+        }
+
+        /* ── Info box ────────────────────────────────────────────── */
+        .hol-info-box {
+            background: #EFF6FF; border-left: 3px solid #2E75B6;
+            border-radius: 0 8px 8px 0; padding: .75rem 1rem;
+            font-size: .82rem; color: #1E40AF;
+            margin-bottom: 1rem; line-height: 1.55;
+        }
+
+        /* ── Checkbox label ──────────────────────────────────────── */
+        .hol-checkbox-label {
+            display: flex; align-items: center; gap: .5rem;
+            font-size: .84rem; color: #555; margin-bottom: .8rem;
+            cursor: pointer;
+        }
+        .hol-checkbox-label input { width: auto; cursor: pointer; }
+
+        /* ── Preview chips ───────────────────────────────────────── */
+        .hol-preview-box {
+            background: #f7f8ff; border: 1.5px solid #dde1f0;
+            border-radius: 8px; padding: .85rem 1rem; margin-bottom: .9rem;
+        }
+        .hol-preview-title {
+            font-size: .8rem; font-weight: 700;
+            color: #1F3864; margin-bottom: .5rem;
+        }
+        .hol-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+        .hol-chip {
+            padding: .22rem .6rem; border-radius: 12px;
+            font-size: .74rem; font-weight: 600;
+        }
+        .hol-chip.new      { background: #FFEBEE; color: #C62828; }
+        .hol-chip.exist    { background: #E8F5E9; color: #2E7D32; }
+        .hol-preview-note  { font-size: .78rem; color: #888; margin-top: .5rem; }
+
+        /* ── Status box (Override mode) ──────────────────────────── */
+        .hol-status-box {
+            border-radius: 8px; padding: .9rem 1rem;
+            font-size: .87rem; line-height: 1.7;
+            margin: .8rem 0;
+            border-left: 4px solid;
+        }
+        .hol-status-box.is-holiday  { background: #FFEBEE; border-color: #F44336; color: #B71C1C; }
+        .hol-status-box.is-working  { background: #E8F5E9; border-color: #4CAF50; color: #1B5E20; }
+        .hol-status-box.is-override { background: #FFF3E0; border-color: #FF9800; color: #E65100; }
+
+        /* ── Buttons ─────────────────────────────────────────────── */
+        .hol-btn-add {
+            width: 100%; padding: .75rem; border: none; border-radius: 8px;
+            font-size: .92rem; font-weight: 700; cursor: pointer;
+            background: #4CAF50; color: #fff;
+            display: inline-flex; align-items: center;
+            justify-content: center; gap: .45rem;
+            transition: all .2s; margin-top: .6rem;
+        }
+        .hol-btn-add:hover:not(:disabled) { background: #388E3C; transform: translateY(-1px); }
+        .hol-btn-add:disabled { opacity:.5; cursor:not-allowed; }
+
+        .hol-btn-working {
+            width: 100%; padding: .75rem; border: none; border-radius: 8px;
+            font-size: .92rem; font-weight: 700; cursor: pointer;
+            background: #2E75B6; color: #fff; transition: all .2s; margin-top: .6rem;
+        }
+        .hol-btn-working:hover { background: #1F5490; }
+
+        .hol-btn-remove {
+            width: 100%; padding: .65rem; border: none; border-radius: 8px;
+            font-size: .88rem; font-weight: 600; cursor: pointer;
+            background: #757575; color: #fff; transition: all .2s; margin-top: .5rem;
+        }
+        .hol-btn-remove:hover { background: #555; }
+
+        .hol-btn-list {
+            width: 100%; padding: .75rem 1.4rem;
+            border: none; border-radius: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff; font-size: .92rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: .5rem;
+        }
+        .hol-badge {
+            background: rgba(255,255,255,.25); border-radius: 10px;
+            padding: .1rem .55rem; font-size: .78rem;
+        }
+
+        /* ── Filter bar ──────────────────────────────────────────── */
+        .hol-filter-bar {
+            display: flex; flex-wrap: wrap; gap: .35rem;
+            margin-bottom: .8rem;
+        }
+        .hol-filter {
+            padding: .28rem .7rem; border: 1.5px solid #dde1f0;
+            border-radius: 14px; font-size: .77rem;
+            font-weight: 600; cursor: pointer;
+            background: #fafbff; color: #5a5f7a; transition: all .18s;
+        }
+        .hol-filter.active { background: #1F3864; color: #fff; border-color: #1F3864; }
+
+        /* ── List items ──────────────────────────────────────────── */
+        .hol-item {
+            display: flex; align-items: center; gap: .6rem;
+            padding: .6rem .85rem; border-radius: 8px;
+            margin-bottom: .4rem; border: 1px solid;
+            font-size: .84rem;
+        }
+        .hol-item.h  { background: #FFEBEE; border-color: #FFCDD2; }
+        .hol-item.w  { background: #E8F5E9; border-color: #C8E6C9; }
+        .hol-item.ov { background: #FFF3E0; border-color: #FFCC80; }
+        .hol-i-date  { font-weight: 700; color: #1F3864; min-width: 68px; font-size:.82rem; }
+        .hol-i-day   { color: #aaa; font-size: .72rem; min-width: 28px; }
+        .hol-i-rsn   { flex: 1; color: #444; }
+        .hol-i-cat   { font-size: .7rem; color: #999; }
+        .hol-i-del {
+            background: none; border: none; color: #F44336;
+            cursor: pointer; font-size: .95rem; padding: .15rem .35rem;
+            border-radius: 4px; flex-shrink: 0;
+        }
+        .hol-i-del:hover { background: #FFEBEE; }
+
+        /* ── Form row (2-col grid for Override/Range) ────────────── */
+        .hol-form-row {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-bottom: .8rem;
+        }
+        @media (max-width: 520px) { .hol-form-row { grid-template-columns: 1fr; } }
     </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -2578,28 +2732,124 @@
                     <div id="calendarSummaryTable"></div>
                 </div>
 
-                <!-- Mark Holidays -->
+                <!-- ══════════════════════════════════════════════════════
+                     ENHANCED MARK HOLIDAYS (3-Mode)
+                     ══════════════════════════════════════════════════════ -->
                 <hr style="margin: 25px 0; border: none; border-top: 1px solid #e0e0e0;">
-                <h4 style="color:#2a5298;margin-bottom:15px;">Mark Holidays</h4>
+                <h3 style="color:#1F3864; margin-bottom:1.2rem;">📅 Mark Holidays</h3>
 
-                <div class="form-grid">
+                <!-- ── Mode Selector ─────────────────────────────────── -->
+                <div class="hol-mode-bar">
+                    <button class="hol-mode-btn active" id="hmode_single"
+                            onclick="hol_setMode('single')">📅 Single Date</button>
+                    <button class="hol-mode-btn" id="hmode_range"
+                            onclick="hol_setMode('range')">📆 Date Range</button>
+                    <button class="hol-mode-btn" id="hmode_override"
+                            onclick="hol_setMode('override')">🔄 Override</button>
+                </div>
+
+                <!-- ════════════════════════════════════════════════════
+                     MODE 1: SINGLE DATE
+                     ════════════════════════════════════════════════════ -->
+                <div id="hol_single" class="hol-panel">
                     <div class="form-group">
                         <label>Holiday Date</label>
-                        <input type="date" id="holidayDate">
+                        <input type="date" id="hol_singleDate" />
+                    </div>
+                    <div class="form-group" style="margin-top:10px;">
+                        <label>Reason (Optional)</label>
+                        <input type="text" id="hol_singleReason"
+                               placeholder="e.g. National Holiday, Festival" />
+                    </div>
+                    <button class="hol-btn-add" onclick="hol_addSingle()">➕ Add Holiday</button>
+                </div>
+
+                <!-- ════════════════════════════════════════════════════
+                     MODE 2: DATE RANGE
+                     ════════════════════════════════════════════════════ -->
+                <div id="hol_range" class="hol-panel" style="display:none;">
+                    <div class="hol-info-box">
+                        💡 Use for multi-day holidays like Dusserah, Pongal,
+                        Summer Break. All dates in range will be marked as holidays.
                     </div>
                     <div class="form-group">
-                        <label>Holiday Reason (Optional)</label>
-                        <input type="text" id="holidayReason" placeholder="e.g., National Holiday, Festival">
+                        <label>Holiday Name *</label>
+                        <input type="text" id="hol_rangeName"
+                               placeholder="e.g. Dusserah, Pongal, Summer Break"
+                               oninput="hol_updateRangePreview()" />
+                    </div>
+                    <div class="hol-form-row" style="margin-top:10px;">
+                        <div class="form-group">
+                            <label>From Date *</label>
+                            <input type="date" id="hol_rangeFrom"
+                                   onchange="hol_updateRangePreview()" />
+                        </div>
+                        <div class="form-group">
+                            <label>To Date *</label>
+                            <input type="date" id="hol_rangeTo"
+                                   onchange="hol_updateRangePreview()" />
+                        </div>
+                    </div>
+                    <label class="hol-checkbox-label">
+                        <input type="checkbox" id="hol_skipExisting" checked
+                               onchange="hol_updateRangePreview()" />
+                        Skip dates already marked as holidays
+                    </label>
+                    <!-- Live preview chips -->
+                    <div id="hol_rangePreview" class="hol-preview-box" style="display:none;">
+                        <div class="hol-preview-title">📆 Dates to be added:</div>
+                        <div id="hol_rangeChips" class="hol-chips"></div>
+                        <div id="hol_rangeCount" class="hol-preview-note"></div>
+                    </div>
+                    <button class="hol-btn-add" onclick="hol_addRange()">➕ Add as Holidays</button>
+                </div>
+
+                <!-- ════════════════════════════════════════════════════
+                     MODE 3: OVERRIDE (Holiday ↔ Working Day)
+                     ════════════════════════════════════════════════════ -->
+                <div id="hol_override" class="hol-panel" style="display:none;">
+                    <div class="hol-info-box">
+                        🔄 Use when Govt. declares a <strong>holiday as working day</strong>
+                        (e.g. 2nd Saturday made working due to unexpected rain holiday),
+                        or declares a <strong>working day as holiday</strong>.
+                    </div>
+                    <div class="hol-form-row">
+                        <div class="form-group">
+                            <label>Select Date</label>
+                            <input type="date" id="hol_ovDate"
+                                   onchange="hol_checkDate()" />
+                        </div>
+                        <div class="form-group">
+                            <label>Reason *</label>
+                            <input type="text" id="hol_ovReason"
+                                   placeholder="e.g. Compensatory for rain on 05/07" />
+                        </div>
+                    </div>
+                    <!-- Current status of selected date -->
+                    <div id="hol_ovStatus" style="display:none;" class="hol-status-box"></div>
+                    <!-- Action buttons — shown based on current status -->
+                    <div id="hol_ovActions" style="display:none;">
+                        <button id="hol_btnMakeWorking"
+                                onclick="hol_convertToWorking()"
+                                class="hol-btn-working" style="display:none;">🟢 Mark as Working Day</button>
+                        <button id="hol_btnMakeHoliday"
+                                onclick="hol_convertToHoliday()"
+                                class="hol-btn-add" style="display:none;">🔴 Mark as Holiday</button>
+                        <button id="hol_btnRemoveOverride"
+                                onclick="hol_removeOverride()"
+                                class="hol-btn-remove" style="display:none;">↩️ Revert to Original</button>
                     </div>
                 </div>
-                <button class="btn btn-success" onclick="addHoliday()" style="margin-top: 10px;">Add Holiday</button>
-                <button class="btn btn-primary" onclick="toggleHolidaysList()" id="holidaysListBtn"
-                    style="margin-top: 10px; margin-left: 10px;">📋 Holidays List</button>
-                <div id="holidayMsg" class="success-message hidden" style="margin-top: 10px;"></div>
 
-                <div id="holidaysList" class="hidden" style="margin-top: 20px;">
-                    <h4 style="color:#2a5298;margin-bottom:10px;">Marked Holidays</h4>
-                    <div id="holidaysTable"></div>
+                <!-- ── Holidays List ──────────────────────────────── -->
+                <div style="margin-top:1.5rem; border-top:2px dashed #eee; padding-top:1.2rem;">
+                    <button class="hol-btn-list" onclick="hol_toggleList()">
+                        📋 Holidays List
+                        <span id="hol_badge" class="hol-badge"></span>
+                    </button>
+                </div>
+                <div id="hol_listWrap" style="display:none; margin-top:1rem;">
+                    <div id="hol_listContent"></div>
                 </div>
 
                 <hr style="margin:35px 0;border:none;border-top:2px solid #e0e0e0;">
@@ -3620,6 +3870,11 @@
         let ATTENDANCE_CACHE = {}; // key: 'att_YYYY-MM-DD'
         let CALENDAR_DATES = {};
         let HOLIDAYS = [];
+        let hol_cache     = [];    // holiday docs from Firestore holidays/ collection
+        let hol_curFilter = 'all'; // active filter in holiday list
+        const HOL_DAYS     = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+        const HOL_DAY_FULL = ['Sunday','Monday','Tuesday','Wednesday',
+                              'Thursday','Friday','Saturday'];
 
         // ── Helper: get/set attendance (cache + Firestore) ──
         function getAttData(date) {
@@ -3705,9 +3960,31 @@
                 const calDoc = await db.collection('settings').doc('calendarDates').get();
                 if (calDoc.exists) { CALENDAR_DATES = calDoc.data(); delete CALENDAR_DATES._v; }
 
-                // holidays
-                const holDoc = await db.collection('settings').doc('holidays').get();
-                if (holDoc.exists) HOLIDAYS = holDoc.data().list || [];
+                // holidays — load from new holidays/ collection (with legacy fallback)
+                const holSnap = await db.collection('holidays').orderBy('date').get();
+                if (!holSnap.empty) {
+                    // New collection-based system
+                    hol_cache = holSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    HOLIDAYS = hol_cache
+                        .filter(h => h.type !== 'working_day')
+                        .map(h => ({ date: h.date, reason: h.reason || '' }));
+                } else {
+                    // Legacy fallback: read from settings/holidays and populate hol_cache
+                    const holDoc = await db.collection('settings').doc('holidays').get();
+                    const legacyList = holDoc.exists ? (holDoc.data().list || []) : [];
+                    HOLIDAYS = legacyList;
+                    // Convert legacy entries into hol_cache format so the List UI works
+                    hol_cache = legacyList.map(h => ({
+                        id:       h.date,
+                        date:     h.date,
+                        reason:   h.reason || 'Holiday',
+                        type:     'holiday',
+                        category: 'single',
+                        addedBy:  'legacy'
+                    }));
+                }
+                const holBadge = document.getElementById('hol_badge');
+                if (holBadge) holBadge.textContent = hol_cache.length;
 
                 // Load faculty profiles from users collection (post-migration)
                 const usersSnap = await db.collection('users').get();
@@ -8001,96 +8278,491 @@
             document.getElementById('workingDaysInfo').style.display = 'block';
         }
 
-        function addHoliday() {
-            const dateInput = document.getElementById('holidayDate');
-            const reasonInput = document.getElementById('holidayReason');
-            const date = dateInput.value;
-            const reason = reasonInput.value.trim() || 'Holiday';
+        // ═══════════════════════════════════════════════════════════
+        //  HOLIDAY MANAGEMENT MODULE  (hol_ prefix — no conflicts)
+        //  (hol_cache and hol_curFilter declared at top with global vars)
+        // ═══════════════════════════════════════════════════════════
 
-            if (!date) {
-                alert('Please select a date');
-                return;
-            }
-
-            if (HOLIDAYS.some(h => h.date === date)) {
-                alert('This date is already marked as holiday');
-                return;
-            }
-
-            HOLIDAYS.push({ date: date, reason: reason });
-            HOLIDAYS.sort((a, b) => new Date(a.date) - new Date(b.date));
-            saveSettings('holidays', { list: HOLIDAYS });
-
-            document.getElementById('holidayMsg').textContent = '✓ Holiday added successfully!';
-            document.getElementById('holidayMsg').classList.remove('hidden');
-
-            dateInput.value = '';
-            reasonInput.value = '';
-
-            loadHolidaysList();
-            calculateWorkingDays();
-            // If list is already visible, keep it open (just refreshed above)
-            const list = document.getElementById('holidaysList');
-            if (list && !list.classList.contains('hidden')) {
-                // already visible — loadHolidaysList() already refreshed it
-            }
+        // ── Tiny toast helper (uses existing showMessage infra) ─────────
+        function hol_toast(msg, type) {
+            // Show a transient banner at top of settings tab
+            const existing = document.getElementById('hol_toastEl');
+            const el = existing || document.createElement('div');
+            el.id = 'hol_toastEl';
+            el.style.cssText = [
+                'position:fixed;top:70px;left:50%;transform:translateX(-50%)',
+                'z-index:99999;padding:11px 22px;border-radius:9px;font-size:14px',
+                'font-weight:600;box-shadow:0 4px 18px rgba(0,0,0,.18)',
+                type === 'error'
+                    ? 'background:#FFEBEE;color:#C62828;border:1.5px solid #EF9A9A'
+                    : type === 'info'
+                    ? 'background:#E3F2FD;color:#1565C0;border:1.5px solid #90CAF9'
+                    : 'background:#E8F5E9;color:#2E7D32;border:1.5px solid #A5D6A7'
+            ].join(';');
+            el.textContent = msg;
+            if (!existing) document.body.appendChild(el);
+            clearTimeout(el._hol_t);
+            el._hol_t = setTimeout(() => el.remove(), 3800);
         }
 
-        function toggleHolidaysList() {
-            const list = document.getElementById('holidaysList');
-            const btn = document.getElementById('holidaysListBtn');
-            if (list.classList.contains('hidden')) {
-                loadHolidaysList();
-                list.classList.remove('hidden');
-                btn.textContent = '🙈 Hide List';
-            } else {
-                list.classList.add('hidden');
-                btn.textContent = '📋 Holidays List';
-            }
+        // ── Mode switcher ───────────────────────────────────────────────
+        function hol_setMode(mode) {
+            ['single','range','override'].forEach(m => {
+                document.getElementById('hol_' + m).style.display =
+                    m === mode ? 'block' : 'none';
+                document.getElementById('hmode_' + m)
+                    .classList.toggle('active', m === mode);
+            });
         }
 
-        function loadHolidaysList() {
-            const tableDiv = document.getElementById('holidaysTable');
+        // ═══════════════════════════════════════════════════════════
+        //  AUTO-GENERATE DEFAULT HOLIDAYS (Sundays + 2nd Saturdays)
+        // ═══════════════════════════════════════════════════════════
 
-            if (HOLIDAYS.length === 0) {
-                tableDiv.innerHTML = '<p style="color:#666;font-style:italic;">No holidays marked yet</p>';
-                return;
+        /**
+         * Generate Sundays + 2nd Saturdays for an academic year.
+         * Academic year runs June 1 (startYear) → May 31 (startYear+1).
+         * @param {string} academicYear  e.g. "2026-27"
+         * @returns {Array} holiday objects ready for Firestore
+         */
+        function hol_generateDefaults(academicYear) {
+            const [startYr] = academicYear.split('-');
+            const startYear = parseInt(startYr);
+            const holidays  = [];
+
+            const cur   = new Date(startYear, 5, 1);      // June 1
+            const endDt = new Date(startYear + 1, 4, 31); // May 31
+
+            let lastMonth = -1;
+            let satCount  = 0;
+
+            while (cur <= endDt) {
+                const day     = cur.getDay();
+                const month   = cur.getMonth();
+                const dateStr = cur.toISOString().split('T')[0];
+
+                if (month !== lastMonth) { lastMonth = month; satCount = 0; }
+
+                if (day === 0) {
+                    holidays.push({
+                        date: dateStr, reason: 'Sunday', type: 'holiday',
+                        category: 'sunday', academicYear, addedBy: 'system'
+                    });
+                }
+                if (day === 6) {
+                    satCount++;
+                    if (satCount === 2) {
+                        holidays.push({
+                            date: dateStr, reason: 'Second Saturday', type: 'holiday',
+                            category: 'second_saturday', academicYear, addedBy: 'system'
+                        });
+                    }
+                }
+                cur.setDate(cur.getDate() + 1);
             }
+            return holidays;
+        }
 
-            let html = '<table style="width:100%;border-collapse:collapse;background:white;">';
-            html += '<thead><tr style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;">';
-            html += '<th style="padding:12px;text-align:left;border:1px solid #ddd;">Date</th>';
-            html += '<th style="padding:12px;text-align:left;border:1px solid #ddd;">Reason</th>';
-            html += '<th style="padding:12px;text-align:center;border:1px solid #ddd;">Action</th>';
-            html += '</tr></thead><tbody>';
+        /**
+         * Batch-write default holidays to Firestore (skips existing docs).
+         * Call when academic year is set up.
+         * Usage:  await hol_setupDefaults('2026-27');
+         */
+        async function hol_setupDefaults(academicYear) {
+            const defaults = hol_generateDefaults(academicYear);
+            const batch    = db.batch();
+            let   count    = 0;
 
-            HOLIDAYS.forEach((h, idx) => {
-                const dateObj = new Date(h.date);
-                const formattedDate = dateObj.toLocaleDateString('en-IN', {
-                    day: '2-digit', month: 'short', year: 'numeric'
-                });
-
-                html += '<tr style="border-bottom:1px solid #ddd;">';
-                html += `<td style="padding:10px;border:1px solid #ddd;">${formattedDate}</td>`;
-                html += `<td style="padding:10px;border:1px solid #ddd;">${h.reason}</td>`;
-                html += `<td style="padding:10px;border:1px solid #ddd;text-align:center;">`;
-                html += `<button onclick="deleteHoliday(${idx})" style="padding:5px 10px;background:#f44336;color:white;border:none;border-radius:4px;cursor:pointer;">Delete</button>`;
-                html += `</td></tr>`;
+            const existing = new Set(hol_cache.map(h => h.date));
+            defaults.forEach(h => {
+                if (!existing.has(h.date)) {
+                    batch.set(db.collection('holidays').doc(h.date), {
+                        ...h,
+                        addedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    count++;
+                }
             });
 
-            html += '</tbody></table>';
-            tableDiv.innerHTML = html;
+            if (count > 0) {
+                await batch.commit();
+                console.log(`[Holidays] Added ${count} default holidays for ${academicYear}`);
+                await hol_refresh();
+            }
+            return count;
         }
 
-        function deleteHoliday(index) {
-            if (!confirm('Delete this holiday?')) return;
-            HOLIDAYS.splice(index, 1);
-            saveSettings('holidays', { list: HOLIDAYS });
-            loadHolidaysList();
+        // ═══════════════════════════════════════════════════════════
+        //  MODE 1 — SINGLE DATE
+        // ═══════════════════════════════════════════════════════════
+
+        async function hol_addSingle() {
+            const date   = document.getElementById('hol_singleDate').value;
+            const reason = document.getElementById('hol_singleReason').value.trim();
+
+            if (!date) { hol_toast('Please select a date', 'error'); return; }
+
+            const dayName = HOL_DAY_FULL[new Date(date + 'T00:00:00').getDay()];
+            const user    = JSON.parse(sessionStorage.getItem('currentUser') || '{"username":"admin"}');
+
+            try {
+                await db.collection('holidays').doc(date).set({
+                    date,
+                    reason:   reason || dayName,
+                    type:     'holiday',
+                    category: 'single',
+                    addedBy:  user.username || currentUser || 'admin',
+                    addedAt:  firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('hol_singleDate').value   = '';
+                document.getElementById('hol_singleReason').value = '';
+                hol_toast('✅ Holiday added!', 'success');
+                await hol_refresh();
+                calculateWorkingDays();
+            } catch(e) {
+                hol_toast('Error: ' + e.message, 'error');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  MODE 2 — DATE RANGE
+        // ═══════════════════════════════════════════════════════════
+
+        function hol_updateRangePreview() {
+            const from    = document.getElementById('hol_rangeFrom').value;
+            const to      = document.getElementById('hol_rangeTo').value;
+            const skipEx  = document.getElementById('hol_skipExisting').checked;
+            const preview = document.getElementById('hol_rangePreview');
+            const chips   = document.getElementById('hol_rangeChips');
+            const note    = document.getElementById('hol_rangeCount');
+
+            if (!from || !to || from > to) { preview.style.display = 'none'; return; }
+
+            const dates    = hol_dateRange(from, to);
+            const existing = new Set(hol_cache.map(h => h.date));
+
+            chips.innerHTML = dates.map(d => {
+                const abbr    = HOL_DAYS[new Date(d + 'T00:00:00').getDay()];
+                const isExist = existing.has(d);
+                const cls     = isExist ? 'exist' : 'new';
+                const mark    = isExist ? ' ✓' : '';
+                return `<span class="hol-chip ${cls}">${d.slice(5)} ${abbr}${mark}</span>`;
+            }).join('');
+
+            const newCnt = skipEx ? dates.filter(d => !existing.has(d)).length : dates.length;
+            note.textContent =
+                `${dates.length} date(s) in range. ` +
+                `${newCnt} will be added${skipEx ? ' (skipping existing)' : ''}.`;
+
+            preview.style.display = 'block';
+        }
+
+        async function hol_addRange() {
+            const name   = document.getElementById('hol_rangeName').value.trim();
+            const from   = document.getElementById('hol_rangeFrom').value;
+            const to     = document.getElementById('hol_rangeTo').value;
+            const skipEx = document.getElementById('hol_skipExisting').checked;
+
+            if (!name) { hol_toast('Please enter holiday name', 'error'); return; }
+            if (!from || !to) { hol_toast('Select From and To dates', 'error'); return; }
+            if (from > to)    { hol_toast('From must be before To', 'error'); return; }
+
+            const dates    = hol_dateRange(from, to);
+            const existing = new Set(hol_cache.map(h => h.date));
+            const toAdd    = skipEx ? dates.filter(d => !existing.has(d)) : dates;
+
+            if (!toAdd.length) {
+                hol_toast('All dates already marked as holidays', 'info'); return;
+            }
+
+            if (!confirm(`Add ${toAdd.length} holiday(s) for "${name}"?\n${from} to ${to}`)) return;
+
+            try {
+                const user  = JSON.parse(sessionStorage.getItem('currentUser') || '{"username":"admin"}');
+                const batch = db.batch();
+                toAdd.forEach(date => {
+                    batch.set(db.collection('holidays').doc(date), {
+                        date, reason: name, type: 'holiday', category: 'range',
+                        rangeName: name, rangeFrom: from, rangeTo: to,
+                        addedBy: user.username || currentUser || 'admin',
+                        addedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                await batch.commit();
+                hol_toast(`✅ ${toAdd.length} holidays added for "${name}"!`, 'success');
+                ['hol_rangeName','hol_rangeFrom','hol_rangeTo'].forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+                document.getElementById('hol_rangePreview').style.display = 'none';
+                await hol_refresh();
+                calculateWorkingDays();
+            } catch(e) {
+                hol_toast('Error: ' + e.message, 'error');
+            }
+        }
+
+        // ── Get all dates between from and to (inclusive) ───────────────
+        function hol_dateRange(from, to) {
+            const dates = [], cur = new Date(from + 'T00:00:00'), end = new Date(to + 'T00:00:00');
+            while (cur <= end) {
+                dates.push(cur.toISOString().split('T')[0]);
+                cur.setDate(cur.getDate() + 1);
+            }
+            return dates;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  MODE 3 — OVERRIDE (Holiday ↔ Working Day)
+        // ═══════════════════════════════════════════════════════════
+
+        async function hol_checkDate() {
+            const date   = document.getElementById('hol_ovDate').value;
+            const status = document.getElementById('hol_ovStatus');
+            const actions= document.getElementById('hol_ovActions');
+
+            if (!date) { status.style.display = 'none'; return; }
+
+            const snap      = await db.collection('holidays').doc(date).get();
+            const dayName   = HOL_DAY_FULL[new Date(date + 'T00:00:00').getDay()];
+            const dayOfWeek = new Date(date + 'T00:00:00').getDay();
+
+            ['hol_btnMakeWorking','hol_btnMakeHoliday','hol_btnRemoveOverride']
+                .forEach(id => document.getElementById(id).style.display = 'none');
+
+            status.style.display  = 'block';
+            actions.style.display = 'block';
+
+            if (snap.exists) {
+                const d = snap.data();
+                if (d.category === 'working_day_override') {
+                    status.className = 'hol-status-box is-override';
+                    status.innerHTML = `<strong>🔄 Override Active — Currently Working Day</strong><br>
+                        ${date} (${dayName}) was a holiday but is now marked as working day.<br>
+                        Override reason: <em>${d.reason}</em><br>
+                        Original type: ${d.originalType || 'holiday'}`;
+                    document.getElementById('hol_btnRemoveOverride').style.display = 'block';
+                    document.getElementById('hol_btnMakeHoliday').style.display    = 'block';
+                } else if (d.type === 'working_day') {
+                    status.className = 'hol-status-box is-working';
+                    status.innerHTML = `<strong>🟢 Currently: Working Day (Declared)</strong><br>
+                        ${date} (${dayName})<br>Reason: ${d.reason}`;
+                    document.getElementById('hol_btnRemoveOverride').style.display = 'block';
+                } else {
+                    status.className = 'hol-status-box is-holiday';
+                    status.innerHTML = `<strong>🔴 Currently: Holiday</strong><br>
+                        ${date} (${dayName})<br>
+                        Reason: ${d.reason || '—'}<br>
+                        Category: ${hol_catLabel(d.category)}`;
+                    document.getElementById('hol_btnMakeWorking').style.display = 'block';
+                }
+            } else {
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                status.className = 'hol-status-box is-working';
+                status.innerHTML = `<strong>🟢 Currently: Working Day</strong><br>
+                    ${date} (${dayName}) is a normal working day.
+                    ${isWeekend ? '<br>⚠️ Note: This is a ' + dayName + '.' : ''}`;
+                document.getElementById('hol_btnMakeHoliday').style.display = 'block';
+            }
+        }
+
+        async function hol_convertToWorking() {
+            const date   = document.getElementById('hol_ovDate').value;
+            const reason = document.getElementById('hol_ovReason').value.trim();
+            if (!date)   { hol_toast('Select a date', 'error'); return; }
+            if (!reason) { hol_toast('Enter a reason for this change', 'error'); return; }
+
+            const snap = await db.collection('holidays').doc(date).get();
+            const orig = snap.exists ? (snap.data().category || 'holiday') : 'none';
+
+            if (!confirm(`Mark ${date} as WORKING DAY?\nReason: ${reason}\n\nFaculty will be able to mark attendance for this date.`)) return;
+
+            const user = JSON.parse(sessionStorage.getItem('currentUser') || '{"username":"admin"}');
+            await db.collection('holidays').doc(date).set({
+                date, reason, type: 'working_day',
+                category: 'working_day_override', originalType: orig,
+                addedBy: user.username || currentUser || 'admin',
+                addedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            hol_toast(`✅ ${date} marked as Working Day!`, 'success');
+            hol_checkDate(); hol_refresh();
+        }
+
+        async function hol_convertToHoliday() {
+            const date   = document.getElementById('hol_ovDate').value;
+            const reason = document.getElementById('hol_ovReason').value.trim();
+            if (!date)   { hol_toast('Select a date', 'error'); return; }
+            if (!reason) { hol_toast('Enter a reason', 'error'); return; }
+
+            if (!confirm(`Mark ${date} as HOLIDAY?\nReason: ${reason}\n\nFaculty will NOT be able to mark attendance for this date.`)) return;
+
+            const user = JSON.parse(sessionStorage.getItem('currentUser') || '{"username":"admin"}');
+            await db.collection('holidays').doc(date).set({
+                date, reason, type: 'holiday', category: 'single',
+                addedBy: user.username || currentUser || 'admin',
+                addedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            hol_toast(`✅ ${date} marked as Holiday!`, 'success');
+            hol_checkDate(); hol_refresh();
+        }
+
+        async function hol_removeOverride() {
+            const date = document.getElementById('hol_ovDate').value;
+            if (!date) return;
+
+            const snap = await db.collection('holidays').doc(date).get();
+            if (!snap.exists) return;
+            const orig = snap.data().originalType;
+
+            if (!confirm(`Revert ${date} to its original status?\nOriginal: ${orig || 'holiday'}\n\nThe override will be removed.`)) return;
+
+            if (orig === 'sunday' || orig === 'second_saturday') {
+                const user = JSON.parse(sessionStorage.getItem('currentUser') || '{"username":"admin"}');
+                await db.collection('holidays').doc(date).set({
+                    date,
+                    reason:   orig === 'sunday' ? 'Sunday' : 'Second Saturday',
+                    type:     'holiday',
+                    category: orig,
+                    addedBy:  user.username || currentUser || 'admin',
+                    addedAt:  firebase.firestore.FieldValue.serverTimestamp()
+                });
+                hol_toast(`✅ Reverted to ${orig === 'sunday' ? 'Sunday' : '2nd Saturday'} holiday`, 'success');
+            } else {
+                await db.collection('holidays').doc(date).delete();
+                hol_toast('✅ Override removed', 'success');
+            }
+
+            hol_checkDate(); hol_refresh();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  HOLIDAYS LIST + REFRESH
+        // ═══════════════════════════════════════════════════════════
+
+        async function hol_refresh() {
+            const snap = await db.collection('holidays').orderBy('date').get();
+
+            if (!snap.empty) {
+                // New collection — use directly
+                hol_cache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } else {
+                // Legacy fallback — convert settings/holidays into cache format
+                const legacyDoc = await db.collection('settings').doc('holidays').get();
+                const legacyList = legacyDoc.exists ? (legacyDoc.data().list || []) : [];
+                hol_cache = legacyList.map(h => ({
+                    id:       h.date,
+                    date:     h.date,
+                    reason:   h.reason || 'Holiday',
+                    type:     'holiday',
+                    category: 'single',
+                    addedBy:  'legacy'
+                }));
+            }
+
+            // Sync HOLIDAYS array so isHoliday() works everywhere
+            HOLIDAYS = hol_cache
+                .filter(h => h.type !== 'working_day')
+                .map(h => ({ date: h.date, reason: h.reason || '' }));
+
+            // Badge: count only manually-added holidays (exclude sunday/second_saturday)
+            const manualCount = hol_cache.filter(
+                h => h.category !== 'sunday' && h.category !== 'second_saturday'
+            ).length;
+            const badge = document.getElementById('hol_badge');
+            if (badge) badge.textContent = manualCount || '';
+            hol_renderList();
             calculateWorkingDays();
         }
 
+        // hol_filter kept as stub (filter bar removed from UI — no-op)
+        function hol_filter(f) { hol_renderList(); }
+
+        function hol_renderList() {
+            const el = document.getElementById('hol_listContent');
+            if (!el) return;
+
+            // Only show manually-added holidays — exclude auto-generated Sundays & 2nd Saturdays
+            const list = hol_cache.filter(
+                h => h.category !== 'sunday' && h.category !== 'second_saturday'
+            );
+
+            if (!list.length) {
+                el.innerHTML = `<div style="text-align:center;padding:1.5rem;color:#aaa;font-size:.9rem;">No holidays marked yet.</div>`;
+                return;
+            }
+
+            el.innerHTML = list.map(h => {
+                const isOv  = h.category === 'working_day_override';
+                const isW   = h.type === 'working_day';
+                const cls   = isOv ? 'ov' : isW ? 'w' : 'h';
+                const icon  = isOv ? '🔄' : isW ? '🟢' : '🔴';
+                const day   = HOL_DAYS[new Date(h.date + 'T00:00:00').getDay()];
+                // Show full date: DD-Mon-YYYY
+                const [yr, mo, dd] = h.date.split('-');
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const fmtDate = `${dd}-${months[parseInt(mo)-1]}-${yr}`;
+                const safeReason = (h.reason || '').replace(/'/g, "\\&#39;");
+                return `
+                  <div class="hol-item ${cls}">
+                    <span class="hol-i-date" style="min-width:90px;">${fmtDate}</span>
+                    <span class="hol-i-day">${day}</span>
+                    <span class="hol-i-rsn">${icon} ${h.reason || ''}</span>
+                    <button class="hol-i-del"
+                      onclick="hol_del('${h.date}','${safeReason}')"
+                      title="Delete">🗑</button>
+                  </div>`;
+            }).join('');
+        }
+
+        async function hol_del(date, reason) {
+            if (!confirm(`Delete holiday for ${date}?\n${reason}`)) return;
+            await db.collection('holidays').doc(date).delete();
+            hol_toast(`✅ ${date} removed`, 'success');
+            hol_refresh();
+        }
+
+        function hol_toggleList() {
+            const wrap = document.getElementById('hol_listWrap');
+            const open = wrap.style.display !== 'none';
+            wrap.style.display = open ? 'none' : 'block';
+            if (!open) hol_refresh();
+        }
+
+        function hol_catLabel(cat) {
+            return {
+                sunday:               '☀️ Sun',
+                second_saturday:      '🗓️ 2nd Sat',
+                range:                '📆 Range',
+                single:               '📅 Single',
+                working_day_override: '🔄 Override'
+            }[cat] || cat || '';
+        }
+
+        // ── Legacy stub — kept so any old backup/code references don't break ──
+        function addHoliday() { hol_addSingle(); }
+        function toggleHolidaysList() { hol_toggleList(); }
+        function loadHolidaysList() { hol_renderList(hol_curFilter); }
+        function deleteHoliday(idx) {
+            const h = HOLIDAYS[idx];
+            if (h) hol_del(h.date, h.reason || '');
+        }
+
+        /**
+         * isHoliday — checks both new holidays/ collection cache AND old HOLIDAYS array.
+         * Returns true if the date is a holiday (NOT a working_day_override).
+         */
         function isHoliday(date) {
+            // Check new collection cache first
+            if (hol_cache.length > 0) {
+                const doc = hol_cache.find(h => h.date === date);
+                if (doc) {
+                    // working_day_override means it's been explicitly converted to a working day
+                    return doc.type !== 'working_day';
+                }
+                return false;
+            }
+            // Fallback to legacy HOLIDAYS array
             return HOLIDAYS.some(h => h.date === date);
         }
 
