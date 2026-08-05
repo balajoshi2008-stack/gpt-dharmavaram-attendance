@@ -2163,7 +2163,7 @@
                     </div>
                     <div class="form-group">
                         <label>Select Semester</label>
-                        <select id="dlSem" disabled>
+                        <select id="dlSem" disabled onchange="updateCumulativeVisibility()">
                             <option value="">Select Year first</option>
                         </select>
                     </div>
@@ -2177,10 +2177,15 @@
                     </div>
                     <button class="btn btn-success" onclick="downloadAttendanceReport()">📥 Download Excel</button>
                 </div>
+                <!-- Cumulative Attendance button — visible when Year & Semester are selected -->
+                <div id="cumulativeSection" class="hidden" style="margin-top:16px;">
+                    <button class="btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:bold;padding:10px 22px;border:none;border-radius:8px;cursor:pointer;font-size:15px;" onclick="downloadCumulativeAttendance()">📊 Cumulative Attendance</button>
+                    <span style="margin-left:12px;color:#555;font-size:13px;">All months from semester start to yesterday</span>
+                </div>
                 <div class="info-box" style="margin-top:20px;">
                     <strong>Percentage Calculation:</strong> Day counted as Present if student attends ≥ <span
                         id="dlMinPeriodsInfo">3</span> periods<br>
-                    <strong>Reports:</strong> Full Month (all days) | First Half (1-15) | Second Half (16-End)
+                    <strong>Reports:</strong> Full Month (all days) | First Half (1-15) | Second Half (16-End) | Cumulative (academic year to yesterday)
                 </div>
 
                 <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
@@ -6840,6 +6845,236 @@
             XLSX.writeFile(wb, fileName);
         }
 
+        // ===================== CUMULATIVE ATTENDANCE =====================
+        /**
+         * Downloads a cumulative attendance summary from the semester start date
+         * to yesterday (inclusive).
+         *
+         * Columns: Sl.No | PIN | Name | MonthName(WorkingDays) per month … | Total(TotalWD) | Percentage
+         *
+         * "Days Present" for each month = days the student was marked ≥ MIN_PERIODS_FOR_PRESENT.
+         * "Working Days" for each month  = days attendance was posted for the class in that month
+         *   (same logic as Monthly Summary in Full Month Excel).
+         * For the current (partial) month: up to and including yesterday.
+         * Inactive students: days present counted only up to their inactiveDate.
+         */
+        function downloadCumulativeAttendance() {
+            const y = document.getElementById('dlYear').value;
+            const s = (y == 1) ? '1' : document.getElementById('dlSem').value;
+            if (!y || !s) { alert('Please select Year and Semester first'); return; }
+
+            const stu = STUDENTS[y]?.[s] || [];
+            if (!stu.length) { alert('No students found for this class'); return; }
+
+            // Academic start date
+            const yearSem = y == 1 ? '1-1' : `${y}-${s}`;
+            const acadStart = (typeof CALENDAR_DATES !== 'undefined' && CALENDAR_DATES[yearSem])
+                ? (CALENDAR_DATES[yearSem].start || '') : '';
+            if (!acadStart) { alert('Academic start date not set in Settings → Academic Calendar for this class'); return; }
+
+            // Yesterday (up to which we count)
+            const todayLocal = new Date();
+            const yesterday = new Date(todayLocal);
+            yesterday.setDate(todayLocal.getDate() - 1);
+            const yesterdayStr = localYMD(yesterday);
+
+            if (acadStart > yesterdayStr) {
+                alert('Academic year has not started yet (start date is in the future)');
+                return;
+            }
+
+            // Build list of calendar months from acadStart to yesterday
+            const [aY, aM] = acadStart.split('-').map(Number);
+            const [eY, eM] = yesterdayStr.split('-').map(Number);
+
+            const months = []; // { year, month (1-based) }
+            let cy = aY, cm = aM;
+            while (cy < eY || (cy === eY && cm <= eM)) {
+                months.push({ year: cy, month: cm });
+                cm++;
+                if (cm > 12) { cm = 1; cy++; }
+            }
+
+            if (!months.length) { alert('No months to process'); return; }
+
+            // For each month, compute dates in range (capped at yesterday for current month)
+            // A date is a working day for the class if attendance was posted for at least one student
+            const monthData = months.map(({ year, month }) => {
+                const monthStart = new Date(year, month - 1, 1);
+                const rawMonthEnd = new Date(year, month, 0);       // last calendar day of month
+                // Cap at yesterday
+                const monthEnd = rawMonthEnd < yesterday ? rawMonthEnd : yesterday;
+
+                const dates = [];
+                for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+                    const ds = localYMD(d);
+                    if (!isSunday(ds) && !isHoliday(ds) && ds >= acadStart && ds <= yesterdayStr) {
+                        dates.push(ds);
+                    }
+                }
+
+                // Working days = dates where attendance was posted for this class
+                let workingDays = 0;
+                dates.forEach(ds => {
+                    const att = getAttData(ds);
+                    const posted = stu.some(st => att[st.pin] && Object.keys(att[st.pin]).length > 0);
+                    if (posted) workingDays++;
+                });
+
+                const monthName = monthStart.toLocaleString('default', { month: 'long' });
+                return { year, month, monthName, dates, workingDays };
+            });
+
+            // Filter out months with no dates at all (e.g. before acadStart)
+            const validMonths = monthData.filter(m => m.dates.length > 0 || m.workingDays === 0);
+
+            // Total working days across all months
+            const totalWorkingDays = validMonths.reduce((sum, m) => sum + m.workingDays, 0);
+
+            const classLabel = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
+
+            // ── Build header rows ──
+            // Row 1: Title
+            const totalCols = 3 + validMonths.length + 2; // Sl.No + PIN + Name + months + Total + Percentage
+            const titleRow = [`${classLabel}  |  Cumulative Attendance Summary`];
+            for (let i = 1; i < totalCols; i++) titleRow.push('');
+
+            // Row 2: blank
+            const blankRow = new Array(totalCols).fill('');
+
+            // Row 3: "Days Present" spanning month columns, "" for fixed cols and Total/Percentage
+            const row3 = ['', '', '', 'Days Present'];
+            for (let i = 1; i < validMonths.length; i++) row3.push('');
+            row3.push('', ''); // Total, Percentage placeholders
+
+            // Row 4: column headers
+            const headerRow = ['Sl.No', 'PIN', 'Name'];
+            validMonths.forEach(m => headerRow.push(`${m.monthName}(${m.workingDays})`));
+            headerRow.push(`Total(${totalWorkingDays})`);
+            headerRow.push('Percentage');
+
+            const data = [titleRow, blankRow, row3, headerRow];
+
+            // ── Student rows ──
+            let rowNum = 1;
+            stu.forEach(st => {
+                const inactiveDate = st.inactiveDate || '';
+                const statusLabel  = st.status === 'transferred' ? '[Tr]' : (st.status === 'tc_issued' ? '[TC]' : '');
+                const nameCell = statusLabel ? `${st.name} ${statusLabel}` : st.name;
+
+                const row = [rowNum, st.pin, nameCell];
+                let totalPresent = 0;
+
+                validMonths.forEach(({ dates, workingDays }) => {
+                    let daysPresent = 0;
+                    dates.forEach(ds => {
+                        // For inactive students, don't count days on/after inactiveDate
+                        if (inactiveDate && ds >= inactiveDate) return;
+                        const att = getAttData(ds);
+                        const sa = att[st.pin] || {};
+                        let periodsPresent = 0, hasAtt = false;
+                        for (let p = 1; p <= 7; p++) {
+                            if (sa[p]) { hasAtt = true; if (sa[p].status === 'P') periodsPresent++; }
+                        }
+                        if (hasAtt && periodsPresent >= MIN_PERIODS_FOR_PRESENT) daysPresent++;
+                    });
+                    row.push(daysPresent);
+                    totalPresent += daysPresent;
+                });
+
+                row.push(totalPresent);
+                const pct = totalWorkingDays > 0
+                    ? ((totalPresent / totalWorkingDays) * 100).toFixed(2) + '%'
+                    : '0.00%';
+                row.push(pct);
+                data.push(row);
+                rowNum++;
+            });
+
+            // ── Build worksheet ──
+            const ws = XLSX.utils.aoa_to_sheet(data);
+
+            // Merges:
+            // Row 0 (title): full width
+            // Row 2 ("Days Present" label): spans month columns (col 3 to 3+validMonths.length-1)
+            const merges = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // Title
+                { s: { r: 2, c: 3 }, e: { r: 2, c: 3 + validMonths.length - 1 } } // "Days Present" label
+            ];
+            ws['!merges'] = merges;
+
+            // Column widths
+            const colWidths = [{ wch: 6 }, { wch: 18 }, { wch: 25 }];
+            validMonths.forEach(() => colWidths.push({ wch: 14 }));
+            colWidths.push({ wch: 14 }, { wch: 12 }); // Total, Percentage
+            ws['!cols'] = colWidths;
+
+            // Centre numeric columns
+            for (let c = 3; c < totalCols; c++) xlsCenterCol(ws, c);
+            xlsCenterCol(ws, 0); // Sl.No
+
+            // ── Apply borders & header styles to EVERY cell (including empty ones) ──
+            const borderStyle = {
+                top:    { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left:   { style: 'thin', color: { rgb: '000000' } },
+                right:  { style: 'thin', color: { rgb: '000000' } }
+            };
+            const totalRows = data.length;
+            for (let r = 0; r < totalRows; r++) {
+                for (let c = 0; c < totalCols; c++) {
+                    const ref = XLSX.utils.encode_cell({ r, c });
+                    // Force-create cell if it doesn't exist (empty/merged cells have no entry by default)
+                    if (!ws[ref]) ws[ref] = { t: 'z' };
+
+                    const isTitle     = r === 0;
+                    const isDPLabel   = r === 2; // "Days Present" sub-header row
+                    const isHeaderRow = r === 3; // column header row
+                    const isDataRow   = r > 3;
+
+                    if (isTitle) {
+                        ws[ref].s = {
+                            font:      { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+                            fill:      { fgColor: { rgb: '2A5298' } },
+                            alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
+                            border:    borderStyle
+                        };
+                    } else if (isDPLabel) {
+                        ws[ref].s = {
+                            font:      { bold: true, color: { rgb: 'FFFFFF' } },
+                            fill:      { fgColor: { rgb: '667EEA' } },
+                            alignment: { horizontal: 'center', vertical: 'center', wrapText: false },
+                            border:    borderStyle
+                        };
+                    } else if (isHeaderRow) {
+                        ws[ref].s = {
+                            font:      { bold: true, color: { rgb: 'FFFFFF' } },
+                            fill:      { fgColor: { rgb: '667EEA' } },
+                            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                            border:    borderStyle
+                        };
+                    } else if (isDataRow) {
+                        ws[ref].s = {
+                            font:      { color: { rgb: '000000' } },
+                            alignment: { horizontal: c < 3 ? 'left' : 'center', vertical: 'center', wrapText: false },
+                            border:    borderStyle
+                        };
+                    } else {
+                        // blank row (r === 1)
+                        ws[ref].s = { border: borderStyle };
+                    }
+                }
+            }
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Cumulative Summary');
+
+            const firstMonth = validMonths[0];
+            const lastMonth  = validMonths[validMonths.length - 1];
+            const fname = `Cumulative_Attendance_${firstMonth.monthName}${firstMonth.year}_to_${lastMonth.monthName}${lastMonth.year}_Year${y}_Sem${s}.xlsx`;
+            XLSX.writeFile(wb, fname);
+        }
+
         function downloadScholarship() {
             const y = document.getElementById('scholYear').value;
             const s = (y == 1) ? '1' : document.getElementById('scholSem').value;
@@ -7439,6 +7674,20 @@
 
         function updateDlSem() {
             populateSem(document.getElementById('dlSem'), document.getElementById('dlYear').value);
+            updateCumulativeVisibility();
+        }
+
+        function updateCumulativeVisibility() {
+            const y = document.getElementById('dlYear').value;
+            const s = (y == 1) ? '1' : document.getElementById('dlSem').value;
+            const section = document.getElementById('cumulativeSection');
+            if (section) {
+                if (y && s) {
+                    section.classList.remove('hidden');
+                } else {
+                    section.classList.add('hidden');
+                }
+            }
         }
 
         function updateScholSem() {
