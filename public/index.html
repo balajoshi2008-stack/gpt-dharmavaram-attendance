@@ -5928,7 +5928,8 @@
                 <th>Actions</th>
             </tr></thead><tbody></tbody>`;
 
-            stu.forEach((st, i) => {
+            stu.forEach((st) => {
+                const i = allStu.indexOf(st);   // real index in STUDENTS[y][s]
                 // Default scholarship = true if not explicitly set to false
                 const isScholar  = st.scholarship !== false;
                 const mobile     = st.parentMobile || '';
@@ -6015,13 +6016,22 @@
         }
 
         function editParentMobile(y, s, idx, oldMobile) {
-            const newMobile = prompt('Edit Parent Mobile Number:', oldMobile);
-            if (newMobile !== null && newMobile !== oldMobile) {
-                STUDENTS[y][s][idx].parentMobile = newMobile.trim();
-                saveStudents(y);
-                viewStudents();
+            const newMobile = prompt('Edit Parent Mobile Number:\n(Enter 10-digit number, or leave empty to remove)', oldMobile);
+            if (newMobile === null) return; // cancelled
+            const trimmed = newMobile.trim();
+            if (trimmed === oldMobile) return; // no change
+
+            // Validate: must be empty (to clear) OR exactly 10 digits
+            if (trimmed !== '' && !/^\d{10}$/.test(trimmed)) {
+                alert('❌ Invalid number!\nPlease enter a 10-digit mobile number (or leave empty to remove).');
+                return;
             }
+
+            STUDENTS[y][s][idx].parentMobile = trimmed;
+            saveStudents(y);
+            viewStudents();
         }
+
 
         function deleteStu(y, s, idx) {
             if (confirm('Delete?')) {
