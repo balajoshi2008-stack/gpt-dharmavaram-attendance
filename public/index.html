@@ -6754,6 +6754,14 @@
                 if (!isSunday(ds) && !isHoliday(ds) && (!acadStartH || ds >= acadStartH)) dates.push(ds);
             }
 
+            // Working days = dates where attendance was actually posted for this class
+            let halfWorkingDays = 0;
+            dates.forEach(ds => {
+                const att = getAttData(ds);
+                const posted = allStu.some(st => att[st.pin] && Object.keys(att[st.pin]).length > 0);
+                if (posted) halfWorkingDays++;
+            });
+
             // Build Excel data
             const monthName = monthStart.toLocaleString('default', { month: 'long' });
             const halfName = half === 'first' ? 'First Half (1-15)' : 'Second Half (16-End)';
@@ -6764,8 +6772,8 @@
             const titleRow = [`${classLabel}  |  ${monthName} ${mYear}  |  ${halfName}`];
             for (let i = 1; i < totalCols; i++) titleRow.push('');
 
-            // Header row: Sl.No, PIN, Name, Days Present, then each date
-            const header = ['Sl.No', 'PIN', 'Name', 'Days Present'];
+            // Header row: Sl.No, PIN, Name, Days Present(XX), then each date
+            const header = ['Sl.No', 'PIN', 'Name', `Days Present(${halfWorkingDays})`];
             dates.forEach(d => {
                 const date = new Date(d);
                 header.push(`${date.getDate()}/${mMonth}`);
