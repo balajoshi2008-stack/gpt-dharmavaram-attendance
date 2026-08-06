@@ -899,6 +899,72 @@
         .al-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
         /* ══════════════════════════════════════════════════ */
 
+        /* ══════════════ ATT.PERCENTAGE TAB ══════════════ */
+        .atp-header {
+            background: linear-gradient(135deg,#1e3c72 0%,#2a5298 55%,#667eea 100%);
+            border-radius: 16px;
+            padding: 24px 28px 20px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 32px rgba(30,60,114,0.20);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .atp-header-text h2 { color:#fff; margin:0; font-size:22px; font-weight:800; }
+        .atp-header-text p  { color:rgba(255,255,255,0.75); margin:4px 0 0; font-size:13px; }
+        .atp-controls {
+            background:#fff;
+            border-radius:12px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.10);
+            border:1px solid #e0e7ff;
+            padding:20px 22px;
+            margin-bottom:20px;
+        }
+        .atp-badge-row { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0 4px; }
+        .atp-badge {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:7px 16px; border-radius:20px; font-size:13px; font-weight:600; white-space:nowrap;
+        }
+        .atp-badge-blue   { background:#e3f0ff; color:#1565c0; border:1px solid #90caf9; }
+        .atp-badge-green  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+        .atp-badge-yellow { background:#fff8e1; color:#f57f17; border:1px solid #ffcc02; }
+        .atp-badge-red    { background:#ffeaea; color:#c62828; border:1px solid #ef9a9a; }
+        .atp-badge-purple { background:#ede7f6; color:#4527a0; border:1px solid #b39ddb; }
+        .atp-table-wrap { overflow-x:auto; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.10); margin-top:16px; }
+        .atp-table {
+            border-collapse:collapse; width:100%; font-size:13px; background:#fff;
+            min-width:600px;
+        }
+        .atp-table thead tr:first-child th {
+            background:linear-gradient(135deg,#1e3c72,#2a5298);
+            color:#fff; padding:11px 14px; text-align:center;
+            border:1px solid #3a5fad; font-size:12px; white-space:nowrap;
+        }
+        .atp-table thead tr.atp-subhead th {
+            background:linear-gradient(135deg,#283593,#3949ab);
+            color:#fff; padding:9px 12px; text-align:center;
+            border:1px solid #3d5afe; font-size:11px; white-space:nowrap;
+        }
+        .atp-table td {
+            padding:9px 12px; border:1px solid #dee2e6;
+            text-align:center; white-space:nowrap;
+        }
+        .atp-table td.atp-left  { text-align:left; }
+        .atp-table tr:nth-child(even) td { background:#f8f9ff; }
+        .atp-table tr:hover td { background:#eef2ff; transition:background 0.15s; }
+        .atp-pct-green  { color:#1b5e20; font-weight:800; background:#e8f5e9 !important; }
+        .atp-pct-yellow { color:#7c4d00; font-weight:800; background:#fff9c4 !important; }
+        .atp-pct-red    { color:#b71c1c; font-weight:800; background:#ffebee !important; }
+        .atp-total-col  { background:#fff3e0 !important; color:#e65100; font-weight:800; }
+        .atp-name-col   { text-align:left !important; color:#1e3c72; font-weight:600; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
+        .atp-pin-col    { font-weight:700; color:#2a5298; }
+        .atp-mobile-cell a { color:#1565c0; font-weight:700; text-decoration:none; font-size:12px; }
+        .atp-mobile-cell a:hover { text-decoration:underline; }
+        .atp-empty { color:#aaa; font-style:italic; font-size:12px; }
+        .atp-legend { display:flex; gap:14px; flex-wrap:wrap; margin:12px 0 4px; font-size:12px; align-items:center; }
+        .atp-legend-dot { width:12px; height:12px; border-radius:3px; display:inline-block; margin-right:4px; }
+        /* ══════════════════════════════════════════════════ */
+
         /* ── Student Filter Bar (TC/Transfer Management) ── */
         .student-filter-bar {
             display: flex;
@@ -3679,6 +3745,60 @@
             </div>
         </div>
 
+            <!-- ══════════════ ATT.PERCENTAGE TAB (Admin + Faculty) ══════════════ -->
+            <div id="attpercentage" class="tab-content">
+
+                <!-- Header banner -->
+                <div class="atp-header">
+                    <span style="font-size:36px;">📊</span>
+                    <div class="atp-header-text">
+                        <h2>Attendance Percentage</h2>
+                        <p>Month-wise cumulative attendance from semester start to yesterday — with parent contact</p>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="atp-controls">
+                    <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+                        <div class="form-group">
+                            <label>📚 Year / Semester</label>
+                            <select id="atp_yearSem">
+                                <option value="">-- Select --</option>
+                                <option value="1-1">1st Year (Sem 1)</option>
+                                <option value="2-3">2nd Year – Semester 3</option>
+                                <option value="2-4">2nd Year – Semester 4</option>
+                                <option value="3-5">3rd Year – Semester 5</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+                        <button class="btn btn-primary" onclick="attPct_load()" id="atp_viewBtn">📊 View Attendance %</button>
+                    </div>
+                    <div id="atp_msg" style="margin-top:10px;display:none;"></div>
+                </div>
+
+                <!-- Results -->
+                <div id="atp_results" style="display:none;">
+                    <!-- Summary badges -->
+                    <div id="atp_badges" class="atp-badge-row"></div>
+                    <!-- Legend -->
+                    <div class="atp-legend">
+                        <span><span class="atp-legend-dot" style="background:#c8e6c9;"></span>≥ 75% Good</span>
+                        <span><span class="atp-legend-dot" style="background:#fff9c4;"></span>65–74% Caution</span>
+                        <span><span class="atp-legend-dot" style="background:#ffcdd2;"></span>&lt; 65% Low</span>
+                    </div>
+                    <!-- Table -->
+                    <div class="atp-table-wrap">
+                        <table class="atp-table" id="atp_table">
+                            <thead id="atp_thead"></thead>
+                            <tbody id="atp_tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+            <!-- ══════════════════════════════════════════════════ -->
+
             <!-- ══════════════ FORM GENERATOR TAB (Faculty) ══════════════ -->
             <div id="formgen" class="tab-content">
                 <div style="max-width:920px;margin:0 auto;padding:10px 0 40px;">
@@ -4391,6 +4511,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'notifications\'); loadNotificationsList();">📢 Notifications</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attrecovery\'); initAttRecoveryTab();">🛠️ Att. Recovery</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'absentlist\'); absList_onTabOpen();">📋 Absent List</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logbook\'); initLogbookTab();">📔 Logbook</button>';
@@ -4402,6 +4523,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'pqpView\'); loadFacultyPQP();"> PQP</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'notifications\'); loadNotificationsList();">📢 Notifications</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'formgen\'); formGen_onTabOpen();">📋 Form Generator</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
             }
             navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logout\')">🚪 Logout</button>';
         }
@@ -16116,6 +16238,187 @@ function al_clearMsg() {
 function absList_onTabOpen() {
     // nothing to auto-load; just focus
 }
+
+// ══════════════════════════════════════════════════
+//  ATT.PERCENTAGE TAB — functions
+// ══════════════════════════════════════════════════
+function attPct_onTabOpen() {
+    // nothing to auto-load
+}
+
+async function attPct_load() {
+    const ysVal = document.getElementById('atp_yearSem').value;
+    const msgEl = document.getElementById('atp_msg');
+    const resEl = document.getElementById('atp_results');
+
+    if (!ysVal) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#c62828';
+        msgEl.textContent = '⚠️ Please select Year / Semester';
+        return;
+    }
+    msgEl.style.display = 'none';
+    resEl.style.display = 'none';
+
+    const [y, s] = ysVal.split('-');
+    const stu = (STUDENTS[y]?.[s] || []);
+    if (!stu.length) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#c62828';
+        msgEl.textContent = '⚠️ No students found for this class';
+        return;
+    }
+
+    // Academic start date
+    const yearSem   = y == 1 ? '1-1' : `${y}-${s}`;
+    const acadStart = (typeof CALENDAR_DATES !== 'undefined' && CALENDAR_DATES[yearSem])
+        ? (CALENDAR_DATES[yearSem].start || '') : '';
+    if (!acadStart) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#c62828';
+        msgEl.textContent = '⚠️ Academic start date not set in Settings → Academic Calendar for this class';
+        return;
+    }
+
+    // Yesterday
+    const todayLocal = new Date();
+    const yesterday  = new Date(todayLocal);
+    yesterday.setDate(todayLocal.getDate() - 1);
+    const yesterdayStr = localYMD(yesterday);
+
+    if (acadStart > yesterdayStr) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#e65100';
+        msgEl.textContent = '⚠️ Semester has not started yet';
+        return;
+    }
+
+    // Build month list from acadStart → yesterday
+    const [aY, aM] = acadStart.split('-').map(Number);
+    const [eY, eM] = yesterdayStr.split('-').map(Number);
+    const months = [];
+    let cy = aY, cm = aM;
+    while (cy < eY || (cy === eY && cm <= eM)) {
+        months.push({ year: cy, month: cm });
+        cm++; if (cm > 12) { cm = 1; cy++; }
+    }
+
+    // For each month compute working days + per-student days present
+    const monthData = months.map(({ year, month }) => {
+        const monthStart = new Date(year, month - 1, 1);
+        const rawEnd     = new Date(year, month, 0);
+        const monthEnd   = rawEnd < yesterday ? rawEnd : yesterday;
+
+        const dates = [];
+        for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+            const ds = localYMD(d);
+            if (!isSunday(ds) && !isHoliday(ds) && ds >= acadStart && ds <= yesterdayStr)
+                dates.push(ds);
+        }
+
+        let workingDays = 0;
+        dates.forEach(ds => {
+            const att = getAttData(ds);
+            if (stu.some(st => att[st.pin] && Object.keys(att[st.pin]).length > 0)) workingDays++;
+        });
+
+        const monthName = monthStart.toLocaleString('default', { month: 'long' });
+        return { monthName, dates, workingDays };
+    });
+
+    const validMonths      = monthData.filter(m => m.dates.length > 0);
+    const totalWorkingDays = validMonths.reduce((s, m) => s + m.workingDays, 0);
+
+    // Class label
+    const classLabels = { '1-1':'1st Year', '2-3':'2nd Year – Sem 3', '2-4':'2nd Year – Sem 4', '3-5':'3rd Year – Sem 5' };
+    const classLabel  = classLabels[ysVal] || ysVal;
+
+    // ── Build table header ──
+    let theadHtml = '<tr>';
+    theadHtml += '<th rowspan="2">Sl.No</th>';
+    theadHtml += '<th rowspan="2">PIN</th>';
+    theadHtml += '<th rowspan="2" style="text-align:left;min-width:160px;">Name</th>';
+    theadHtml += `<th colspan="${validMonths.length}" style="background:linear-gradient(135deg,#283593,#3949ab);">Days Present</th>`;
+    theadHtml += '<th rowspan="2" style="background:linear-gradient(135deg,#e65100,#ef6c00);min-width:90px;">Total<br><small style="font-weight:400;font-size:10px;">(${totalWorkingDays} days)</small></th>';
+    theadHtml += '<th rowspan="2" style="background:linear-gradient(135deg,#1b5e20,#2e7d32);min-width:90px;">Percentage</th>';
+    theadHtml += '<th rowspan="2" style="background:linear-gradient(135deg,#0d47a1,#1565c0);min-width:130px;">📱 Parent Mobile</th>';
+    theadHtml += '</tr><tr class="atp-subhead">';
+    validMonths.forEach(m => {
+        theadHtml += `<th>${m.monthName}<br><small style="font-weight:400;font-size:10px;">(${m.workingDays})</small></th>`;
+    });
+    theadHtml += '</tr>';
+    // Fix template literal inside string
+    theadHtml = theadHtml.replace('${totalWorkingDays}', totalWorkingDays);
+    document.getElementById('atp_thead').innerHTML = theadHtml;
+
+    // ── Build table rows ──
+    let tbodyHtml = '';
+    let cntGreen = 0, cntYellow = 0, cntRed = 0;
+    let rowNum = 1;
+
+    stu.forEach(st => {
+        const inactiveDate = st.inactiveDate || '';
+        const statusLabel  = st.status === 'transferred' ? ' [Tr]' : (st.status === 'tc_issued' ? ' [TC]' : '');
+        const displayName  = st.name + statusLabel;
+        const mobile       = st.parentMobile || '';
+
+        let totalPresent = 0;
+        const monthCells = validMonths.map(({ dates }) => {
+            let dp = 0;
+            dates.forEach(ds => {
+                if (inactiveDate && ds >= inactiveDate) return;
+                const att = getAttData(ds);
+                const sa  = att[st.pin] || {};
+                let pp = 0, hasAtt = false;
+                for (let p = 1; p <= 7; p++) {
+                    if (sa[p]) { hasAtt = true; if (sa[p].status === 'P') pp++; }
+                }
+                if (hasAtt && pp >= MIN_PERIODS_FOR_PRESENT) dp++;
+            });
+            totalPresent += dp;
+            return dp;
+        });
+
+        const pctVal = totalWorkingDays > 0 ? (totalPresent / totalWorkingDays) * 100 : 0;
+        const pctStr = pctVal.toFixed(2) + '%';
+        let pctClass = 'atp-pct-red';
+        if (pctVal >= 75)      { pctClass = 'atp-pct-green';  cntGreen++;  }
+        else if (pctVal >= 65) { pctClass = 'atp-pct-yellow'; cntYellow++; }
+        else                   { cntRed++; }
+
+        const mobileCell = mobile
+            ? `<a href="tel:${mobile}" title="Call ${mobile}">📞 ${mobile}</a>`
+            : `<span class="atp-empty">—</span>`;
+
+        tbodyHtml += `<tr>
+            <td>${rowNum}</td>
+            <td class="atp-pin-col">${st.pin}</td>
+            <td class="atp-name-col atp-left">${displayName}</td>
+            ${monthCells.map(v => `<td>${v}</td>`).join('')}
+            <td class="atp-total-col">${totalPresent}</td>
+            <td class="${pctClass}">${pctStr}</td>
+            <td class="atp-mobile-cell">${mobileCell}</td>
+        </tr>`;
+        rowNum++;
+    });
+
+    document.getElementById('atp_tbody').innerHTML = tbodyHtml;
+
+    // ── Summary badges ──
+    const yesterday_fmt = yesterday.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+    document.getElementById('atp_badges').innerHTML = `
+        <span class="atp-badge atp-badge-blue">📚 ${classLabel}</span>
+        <span class="atp-badge atp-badge-purple">📅 Up to ${yesterday_fmt}</span>
+        <span class="atp-badge atp-badge-blue">👥 ${stu.length} Students</span>
+        <span class="atp-badge atp-badge-blue">📆 ${validMonths.length} Months | ${totalWorkingDays} Working Days</span>
+        <span class="atp-badge atp-badge-green">✅ ≥75%: ${cntGreen}</span>
+        <span class="atp-badge atp-badge-yellow">⚠️ 65–74%: ${cntYellow}</span>
+        <span class="atp-badge atp-badge-red">🔴 &lt;65%: ${cntRed}</span>
+    `;
+
+    resEl.style.display = 'block';
+}
+// ══════════════════════════════════════════════════
 
 async function absList_onYearSemChange() { /* subject removed - no action needed */ }
 
