@@ -905,64 +905,111 @@
             border-radius: 16px;
             padding: 24px 28px 20px;
             margin-bottom: 22px;
-            box-shadow: 0 8px 32px rgba(30,60,114,0.20);
+            box-shadow: 0 8px 32px rgba(30,60,114,0.22);
             display: flex;
             align-items: center;
             gap: 16px;
         }
-        .atp-header-text h2 { color:#fff; margin:0; font-size:22px; font-weight:800; }
+        .atp-header-text h2 { color:#fff; margin:0; font-size:22px; font-weight:800; letter-spacing:.3px; }
         .atp-header-text p  { color:rgba(255,255,255,0.75); margin:4px 0 0; font-size:13px; }
         .atp-controls {
             background:#fff;
             border-radius:12px;
-            box-shadow:0 4px 20px rgba(0,0,0,0.10);
+            box-shadow:0 2px 12px rgba(0,0,0,0.09);
             border:1px solid #e0e7ff;
             padding:20px 22px;
-            margin-bottom:20px;
+            margin-bottom:18px;
         }
-        .atp-badge-row { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0 4px; }
+        /* ── Badges ── */
+        .atp-badge-row { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 6px; }
         .atp-badge {
             display:inline-flex; align-items:center; gap:6px;
-            padding:7px 16px; border-radius:20px; font-size:13px; font-weight:600; white-space:nowrap;
+            padding:6px 14px; border-radius:20px; font-size:12.5px; font-weight:600; white-space:nowrap;
+            box-shadow:0 1px 4px rgba(0,0,0,0.10);
         }
         .atp-badge-blue   { background:#e3f0ff; color:#1565c0; border:1px solid #90caf9; }
         .atp-badge-green  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
         .atp-badge-yellow { background:#fff8e1; color:#f57f17; border:1px solid #ffcc02; }
         .atp-badge-red    { background:#ffeaea; color:#c62828; border:1px solid #ef9a9a; }
         .atp-badge-purple { background:#ede7f6; color:#4527a0; border:1px solid #b39ddb; }
-        .atp-table-wrap { overflow-x:auto; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.10); margin-top:16px; }
+        /* ── Legend ── */
+        .atp-legend { display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 2px; font-size:12px; align-items:center; color:#555; font-weight:500; }
+        .atp-legend-dot { width:13px; height:13px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:middle; }
+        /* ── Table wrapper ── */
+        .atp-table-wrap {
+            overflow-x:auto;
+            border-radius:12px;
+            box-shadow:0 4px 24px rgba(0,0,0,0.13);
+            margin-top:14px;
+            border:1px solid #cdd7f0;
+        }
+        /* ── Table ── */
         .atp-table {
             border-collapse:collapse; width:100%; font-size:13px; background:#fff;
-            min-width:600px;
+            min-width:640px;
         }
+        /* Main header row — dark teal like Absent List */
         .atp-table thead tr:first-child th {
-            background:linear-gradient(135deg,#1e3c72,#2a5298);
-            color:#fff; padding:11px 14px; text-align:center;
-            border:1px solid #3a5fad; font-size:12px; white-space:nowrap;
+            background: linear-gradient(135deg,#006064,#00838f);
+            color:#fff; padding:12px 14px; text-align:center;
+            border:1px solid #00acc1; font-size:12px; font-weight:700;
+            white-space:nowrap; letter-spacing:.3px;
+            position:sticky; top:0; z-index:2;
         }
+        /* Sub-header row for month names */
         .atp-table thead tr.atp-subhead th {
-            background:linear-gradient(135deg,#283593,#3949ab);
+            background: linear-gradient(135deg,#00838f,#0097a7);
             color:#fff; padding:9px 12px; text-align:center;
-            border:1px solid #3d5afe; font-size:11px; white-space:nowrap;
+            border:1px solid #00acc1; font-size:11px; font-weight:600;
+            white-space:nowrap;
+            position:sticky; top:0; z-index:2;
         }
+        /* Special header cells — override colour for Total/Pct/Mobile */
+        .atp-th-total    { background:linear-gradient(135deg,#bf360c,#e64a19) !important; border-color:#ff7043 !important; }
+        .atp-th-pct      { background:linear-gradient(135deg,#1b5e20,#2e7d32) !important; border-color:#43a047 !important; }
+        .atp-th-mobile   { background:linear-gradient(135deg,#0d47a1,#1565c0) !important; border-color:#42a5f5 !important; }
+        /* Data cells */
         .atp-table td {
-            padding:9px 12px; border:1px solid #dee2e6;
-            text-align:center; white-space:nowrap;
+            padding:9px 12px; border:1px solid #dde4f0;
+            text-align:center; white-space:nowrap; font-size:13px;
         }
-        .atp-table td.atp-left  { text-align:left; }
-        .atp-table tr:nth-child(even) td { background:#f8f9ff; }
-        .atp-table tr:hover td { background:#eef2ff; transition:background 0.15s; }
-        .atp-pct-green  { color:#1b5e20; font-weight:800; background:#e8f5e9 !important; }
-        .atp-pct-yellow { color:#7c4d00; font-weight:800; background:#fff9c4 !important; }
-        .atp-pct-red    { color:#b71c1c; font-weight:800; background:#ffebee !important; }
-        .atp-total-col  { background:#fff3e0 !important; color:#e65100; font-weight:800; }
-        .atp-name-col   { text-align:left !important; color:#1e3c72; font-weight:600; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
-        .atp-pin-col    { font-weight:700; color:#2a5298; }
-        .atp-mobile-cell a { color:#1565c0; font-weight:700; text-decoration:none; font-size:12px; }
-        .atp-mobile-cell a:hover { text-decoration:underline; }
-        .atp-empty { color:#aaa; font-style:italic; font-size:12px; }
-        .atp-legend { display:flex; gap:14px; flex-wrap:wrap; margin:12px 0 4px; font-size:12px; align-items:center; }
-        .atp-legend-dot { width:12px; height:12px; border-radius:3px; display:inline-block; margin-right:4px; }
+        .atp-table td.atp-left { text-align:left; }
+        /* Alternating rows */
+        .atp-table tbody tr:nth-child(even) td { background:#f0f7ff; }
+        .atp-table tbody tr:nth-child(odd)  td { background:#ffffff; }
+        /* Hover */
+        .atp-table tbody tr:hover td {
+            background:#dbeafe !important;
+            transition:background 0.15s ease;
+        }
+        /* Sl.No column */
+        .atp-slno { color:#555; font-size:12px; }
+        /* PIN column */
+        .atp-pin-col { font-weight:700; color:#1e3c72; font-size:12.5px; }
+        /* Name column */
+        .atp-name-col {
+            text-align:left !important; font-weight:600; color:#1a237e;
+            font-size:13px; max-width:200px; overflow:hidden; text-overflow:ellipsis;
+        }
+        /* Month day count cells */
+        .atp-day-cell { color:#333; font-weight:500; }
+        /* Total column — orange highlight */
+        .atp-total-col {
+            background:#fff3e0 !important;
+            color:#bf360c; font-weight:800; font-size:14px;
+        }
+        /* Percentage cells — colour coded */
+        .atp-pct-green  { background:#e8f5e9 !important; color:#1b5e20; font-weight:800; font-size:13px; }
+        .atp-pct-yellow { background:#fffde7 !important; color:#827717; font-weight:800; font-size:13px; }
+        .atp-pct-red    { background:#ffebee !important; color:#b71c1c; font-weight:800; font-size:13px; }
+        /* Mobile cell */
+        .atp-mobile-cell { background:#e8f4fd !important; padding:6px 10px !important; }
+        .atp-mobile-cell a {
+            display:inline-flex; align-items:center; gap:5px;
+            color:#1565c0; font-weight:700; text-decoration:none; font-size:12.5px;
+        }
+        .atp-mobile-cell a:hover { color:#0d47a1; text-decoration:underline; }
+        .atp-no-mobile { color:#bbb; font-style:italic; font-size:12px; }
         /* ══════════════════════════════════════════════════ */
 
         /* ── Student Filter Bar (TC/Transfer Management) ── */
@@ -16335,20 +16382,18 @@ async function attPct_load() {
 
     // ── Build table header ──
     let theadHtml = '<tr>';
-    theadHtml += '<th rowspan="2">Sl.No</th>';
-    theadHtml += '<th rowspan="2">PIN</th>';
-    theadHtml += '<th rowspan="2" style="text-align:left;min-width:160px;">Name</th>';
-    theadHtml += `<th colspan="${validMonths.length}" style="background:linear-gradient(135deg,#283593,#3949ab);">Days Present</th>`;
-    theadHtml += '<th rowspan="2" style="background:linear-gradient(135deg,#e65100,#ef6c00);min-width:90px;">Total<br><small style="font-weight:400;font-size:10px;">(${totalWorkingDays} days)</small></th>';
-    theadHtml += '<th rowspan="2" style="background:linear-gradient(135deg,#1b5e20,#2e7d32);min-width:90px;">Percentage</th>';
-    theadHtml += '<th rowspan="2" style="background:linear-gradient(135deg,#0d47a1,#1565c0);min-width:130px;">📱 Parent Mobile</th>';
+    theadHtml += '<th rowspan="2" style="min-width:46px;">Sl.No</th>';
+    theadHtml += '<th rowspan="2" style="min-width:120px;">PIN</th>';
+    theadHtml += '<th rowspan="2" style="text-align:left;min-width:180px;">Name</th>';
+    theadHtml += `<th colspan="${validMonths.length}">Days Present</th>`;
+    theadHtml += `<th rowspan="2" class="atp-th-total">Total<br><small style="font-weight:500;font-size:10px;">(${totalWorkingDays} days)</small></th>`;
+    theadHtml += '<th rowspan="2" class="atp-th-pct" style="min-width:90px;">Percentage</th>';
+    theadHtml += '<th rowspan="2" class="atp-th-mobile" style="min-width:140px;">📱 Parent Mobile</th>';
     theadHtml += '</tr><tr class="atp-subhead">';
     validMonths.forEach(m => {
-        theadHtml += `<th>${m.monthName}<br><small style="font-weight:400;font-size:10px;">(${m.workingDays})</small></th>`;
+        theadHtml += `<th>${m.monthName}<br><small style="font-weight:400;opacity:0.85;">(${m.workingDays})</small></th>`;
     });
     theadHtml += '</tr>';
-    // Fix template literal inside string
-    theadHtml = theadHtml.replace('${totalWorkingDays}', totalWorkingDays);
     document.getElementById('atp_thead').innerHTML = theadHtml;
 
     // ── Build table rows ──
@@ -16358,7 +16403,8 @@ async function attPct_load() {
 
     stu.forEach(st => {
         const inactiveDate = st.inactiveDate || '';
-        const statusLabel  = st.status === 'transferred' ? ' [Tr]' : (st.status === 'tc_issued' ? ' [TC]' : '');
+        const statusLabel  = st.status === 'transferred' ? ' <span style="color:#e65100;font-size:11px;">[Tr]</span>'
+                           : st.status === 'tc_issued'   ? ' <span style="color:#c62828;font-size:11px;">[TC]</span>' : '';
         const displayName  = st.name + statusLabel;
         const mobile       = st.parentMobile || '';
 
@@ -16388,13 +16434,13 @@ async function attPct_load() {
 
         const mobileCell = mobile
             ? `<a href="tel:${mobile}" title="Call ${mobile}">📞 ${mobile}</a>`
-            : `<span class="atp-empty">—</span>`;
+            : `<span class="atp-no-mobile">—</span>`;
 
         tbodyHtml += `<tr>
-            <td>${rowNum}</td>
+            <td class="atp-slno">${rowNum}</td>
             <td class="atp-pin-col">${st.pin}</td>
             <td class="atp-name-col atp-left">${displayName}</td>
-            ${monthCells.map(v => `<td>${v}</td>`).join('')}
+            ${monthCells.map(v => `<td class="atp-day-cell">${v}</td>`).join('')}
             <td class="atp-total-col">${totalPresent}</td>
             <td class="${pctClass}">${pctStr}</td>
             <td class="atp-mobile-cell">${mobileCell}</td>
