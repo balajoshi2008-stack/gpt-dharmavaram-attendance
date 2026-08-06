@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gpt-student-v8';
+const CACHE_NAME = 'gpt-student-v9';
 const urlsToCache = [
   '/student/',
   '/student/manifest.json',
@@ -16,6 +16,14 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Always fetch manifest fresh from network (so orientation changes take effect)
+  if (url.pathname.endsWith('manifest.json')) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => response || fetch(event.request))
