@@ -106,7 +106,7 @@ service cloud.firestore {
     // ── Notifications ─────────────────────────────────────────────────────────
     match /notifications/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdminOrFaculty();
     }
 
     // ── Academic Calendar ─────────────────────────────────────────────────────

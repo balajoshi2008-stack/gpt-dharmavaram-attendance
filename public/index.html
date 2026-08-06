@@ -899,6 +899,109 @@
         .al-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
         /* ══════════════════════════════════════════════════ */
 
+        /* ══════════════ CLASS TIMETABLE VIEW TAB ══════════════ */
+        .ftt-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            box-shadow: 0 4px 18px rgba(102,126,234,0.13);
+            margin-bottom: 6px;
+        }
+        .ftt-table {
+            border-collapse: separate;
+            border-spacing: 3px;
+            min-width: 560px;
+            width: 100%;
+            background: #f0f2ff;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .ftt-head-cell {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            color: #fff;
+            font-weight: 700;
+            font-size: 12px;
+            text-align: center;
+            padding: 9px 4px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        .ftt-day-cell {
+            background: linear-gradient(135deg,#1e3c72,#2a5298);
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            text-align: center;
+            padding: 10px 6px;
+            border-radius: 6px;
+            white-space: nowrap;
+            min-width: 38px;
+        }
+        .ftt-day-cell.ftt-today {
+            background: linear-gradient(135deg,#e53935,#b71c1c) !important;
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e53935;
+        }
+        .ftt-lunch {
+            background: linear-gradient(180deg,#78909c,#546e7a);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-align: center;
+            padding: 4px 3px;
+            border-radius: 6px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            min-width: 22px;
+            line-height: 1;
+        }
+        .ftt-cell {
+            text-align: center;
+            padding: 8px 5px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            vertical-align: middle;
+            line-height: 1.35;
+            min-width: 58px;
+            transition: transform 0.15s;
+        }
+        .ftt-cell:active { transform: scale(0.96); }
+        .ftt-empty {
+            background: #f8f9ff;
+            border: 1.5px dashed #d0d5f5;
+            border-radius: 6px;
+            min-width: 58px;
+        }
+        .ftt-theory-1  { background: linear-gradient(135deg,#e3f0ff,#cfe2ff); color: #1a3a6b; border: 1.5px solid #90b8f8; }
+        .ftt-theory-2  { background: linear-gradient(135deg,#f3e5ff,#e9d5ff); color: #4a1472; border: 1.5px solid #c08af5; }
+        .ftt-theory-3  { background: linear-gradient(135deg,#e5fff0,#d0f5e0); color: #1b5e38; border: 1.5px solid #6dd5a0; }
+        .ftt-theory-4  { background: linear-gradient(135deg,#fff8e1,#ffecb3); color: #7a4f00; border: 1.5px solid #ffc93c; }
+        .ftt-theory-5  { background: linear-gradient(135deg,#fce4ec,#f8bbd0); color: #7b1034; border: 1.5px solid #f48fb1; }
+        .ftt-theory-6  { background: linear-gradient(135deg,#e0f7fa,#b2ebf2); color: #006064; border: 1.5px solid #4dd0e1; }
+        .ftt-theory-7  { background: linear-gradient(135deg,#fff3e0,#ffe0b2); color: #7a3200; border: 1.5px solid #ffb74d; }
+        .ftt-theory-8  { background: linear-gradient(135deg,#f9fbe7,#f0f4c3); color: #5d6600; border: 1.5px solid #dce775; }
+        .ftt-lab       { background: linear-gradient(135deg,#e8f5e9,#c8e6c9); color: #1b5e20; border: 1.5px solid #66bb6a; }
+        .ftt-activity  { background: linear-gradient(135deg,#fff8e1,#ffe082); color: #6d4c00; border: 1.5px solid #ffd54f; }
+        .ftt-today-row .ftt-day-cell { background: linear-gradient(135deg,#e53935,#b71c1c) !important; }
+        .ftt-today-row td, .ftt-today-row .ftt-empty {
+            background-color: #fffde7 !important;
+            outline: 1.5px solid #f9a825;
+        }
+        .ftt-today-row .ftt-cell {
+            filter: brightness(1.04);
+            box-shadow: 0 2px 8px rgba(249,168,37,0.25);
+        }
+        .ftt-legend {
+            margin: 12px 0 4px;
+            background: #f8f9ff;
+            border: 1px solid #e0e5f7;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #555;
+            overflow: hidden;
+        }
         /* ══════════════ ATT.PERCENTAGE TAB ══════════════ */
         .atp-header {
             background: linear-gradient(135deg,#1e3c72 0%,#2a5298 55%,#667eea 100%);
@@ -1305,13 +1408,13 @@
         </div>
         <div class="form-group" style="margin-top: 15px;">
             <label>Username</label>
-            <input type="text" id="username" placeholder="Enter username">
+            <input type="text" id="username" placeholder="Enter username" onkeydown="if(event.key==='Enter')document.getElementById('loginSubmitBtn').click()">
         </div>
         <div class="form-group" style="margin-top: 15px;">
             <label>Password</label>
-            <input type="password" id="password" placeholder="Enter password">
+            <input type="password" id="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')document.getElementById('loginSubmitBtn').click()">
         </div>
-        <button class="btn btn-primary" onclick="login(this)" style="width: 100%; margin-top: 20px;">Login</button>
+        <button id="loginSubmitBtn" class="btn btn-primary" onclick="login(this)" style="width: 100%; margin-top: 20px;">Login</button>
         <div id="loginError" style="color: red; margin-top: 10px; display: none;"></div>
     </div>
 
@@ -3792,6 +3895,48 @@
             </div>
         </div>
 
+            <!-- ══════════════ CLASS TIMETABLE VIEW TAB (Admin + Faculty) ══════════════ -->
+            <div id="facTimetable" class="tab-content">
+                <!-- Header -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <h2 style="color:#2a5298;margin:0;font-size:20px;font-weight:800;">🗓️ Class Time Table</h2>
+                        <div style="font-size:13px;color:#888;margin-top:3px;">Select a class to view the timetable</div>
+                    </div>
+                    <div id="fttTodayBadge" style="display:none;background:linear-gradient(135deg,#e53935,#b71c1c);
+                        color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;"></div>
+                </div>
+
+                <!-- Year/Sem selector -->
+                <div style="background:#fff;border-radius:12px;border:1px solid #e0e7ff;padding:16px 20px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,0.07);">
+                    <label style="font-weight:700;color:#2a5298;font-size:14px;">📚 Year / Semester</label>
+                    <select id="fttYearSem" onchange="renderFacTimetable()" style="display:block;width:100%;max-width:320px;margin-top:8px;
+                        padding:10px 14px;border:1.5px solid #c5cae9;border-radius:8px;font-size:14px;color:#333;background:#fafbff;">
+                        <option value="">— Select Class —</option>
+                        <option value="1-1">1st Year</option>
+                        <option value="2-3">2nd Year – Semester 3</option>
+                        <option value="2-4">2nd Year – Semester 4</option>
+                        <option value="3-5">3rd Year – Semester 5</option>
+                    </select>
+                </div>
+
+                <!-- Timetable grid -->
+                <div id="fttContent" class="hidden">
+                    <div class="ftt-wrap">
+                        <table class="ftt-table" id="fttGrid"></table>
+                    </div>
+                    <p style="font-size:11px;color:#aaa;margin-top:8px;text-align:center;">Scroll horizontally to see all periods ➡️</p>
+                    <div class="ftt-legend" id="fttLegend" style="margin-top:12px;"></div>
+                </div>
+
+                <!-- Empty state -->
+                <div id="fttEmpty" class="hidden" style="text-align:center;padding:40px 20px;">
+                    <div style="font-size:56px;margin-bottom:14px;">🗓️</div>
+                    <div style="font-size:16px;font-weight:700;color:#2a5298;">No Timetable Entries</div>
+                    <div style="font-size:13px;color:#999;margin-top:8px;">No timetable has been set up for this class yet. Go to the Timetable (admin) tab to add entries.</div>
+                </div>
+            </div>
+
             <!-- ══════════════ ATT.PERCENTAGE TAB (Admin + Faculty) ══════════════ -->
             <div id="attpercentage" class="tab-content">
 
@@ -4543,6 +4688,7 @@
             if (currentUserType === 'admin') {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'dashboard\')">📊 Dashboard</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'timetable\')">📅 Timetable</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'facTimetable\'); renderFacTimetable();">🗓️ View Timetable</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'students\')">👥 Students</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'usermanage\')">👤 Users</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'facultymap\')">🔗 Mapping</button>';
@@ -4561,6 +4707,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'facTimetable\'); renderFacTimetable();">🗓️ Time Table</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logbook\'); initLogbookTab();">📔 Logbook</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'extraclass\'); initExtraClassTab();">📚 Extra Class</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'unittests\')">📝 Unit Marks</button>';
@@ -16287,10 +16434,215 @@ function absList_onTabOpen() {
 }
 
 // ══════════════════════════════════════════════════
+//  CLASS TIMETABLE VIEW TAB — functions
+// ══════════════════════════════════════════════════
+
+const FTT_THEORY_COLOURS = [
+    'ftt-theory-1','ftt-theory-2','ftt-theory-3','ftt-theory-4',
+    'ftt-theory-5','ftt-theory-6','ftt-theory-7','ftt-theory-8'
+];
+const FTT_LEGEND_COLOURS = [
+    '#90b8f8','#c08af5','#6dd5a0','#ffc93c',
+    '#f48fb1','#4dd0e1','#ffb74d','#dce775'
+];
+
+function fttIsLab(name)      { return /lab|practical|prac\b/i.test(name || ''); }
+function fttIsActivity(name) { return /activity|sport|nss|yoga|library|mentor|project/i.test(name || ''); }
+
+function renderFacTimetable() {
+    const ysVal   = document.getElementById('fttYearSem').value;
+    const content = document.getElementById('fttContent');
+    const empty   = document.getElementById('fttEmpty');
+    const gridEl  = document.getElementById('fttGrid');
+    const legendEl= document.getElementById('fttLegend');
+    const badge   = document.getElementById('fttTodayBadge');
+
+    content.classList.add('hidden');
+    empty.classList.add('hidden');
+    legendEl.innerHTML = '';
+    gridEl.innerHTML   = '';
+
+    if (!ysVal) return;
+
+    const [y, s] = ysVal.split('-');
+    const DAY_ORDER = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+    const todayShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
+    const todayFull  = {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
+
+    // Update today badge
+    if (todayFull[todayShort]) {
+        badge.textContent   = '📌 Today: ' + todayFull[todayShort];
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+
+    // Collect entries from TIMETABLE for this year-sem
+    const dayEntries = {};
+    let hasAny = false;
+    DAY_ORDER.forEach(day => {
+        const key = `${y}-${s}-${day}`;
+        const entries = TIMETABLE[key];
+        if (entries && entries.length) { dayEntries[day] = entries; hasAny = true; }
+        else dayEntries[day] = [];
+    });
+
+    if (!hasAny) { empty.classList.remove('hidden'); return; }
+
+    // Assign stable colour index per subject code
+    const subColourMap = {};
+    let colourIdx = 0;
+    Object.values(dayEntries).forEach(entries => {
+        entries.forEach(e => {
+            if (!fttIsLab(e.subject) && !fttIsActivity(e.subject)) {
+                if (subColourMap[e.code] === undefined) {
+                    subColourMap[e.code] = colourIdx % FTT_THEORY_COLOURS.length;
+                    colourIdx++;
+                }
+            }
+        });
+    });
+
+    function fttCellClass(entry) {
+        if (fttIsActivity(entry.subject)) return 'ftt-activity';
+        if (fttIsLab(entry.subject))      return 'ftt-lab';
+        return FTT_THEORY_COLOURS[subColourMap[entry.code] ?? 0];
+    }
+
+    function parsePeriods(pStr) {
+        const ps = String(pStr);
+        if (ps.includes('-')) {
+            const [a, b] = ps.split('-').map(Number);
+            const arr = [];
+            for (let i = a; i <= b; i++) arr.push(i);
+            return arr;
+        }
+        return ps.split(',').map(Number).filter(n => !isNaN(n));
+    }
+
+    // Build legend
+    const legendSubjects = {};
+    Object.values(dayEntries).forEach(entries => entries.forEach(e => {
+        const k = e.code || e.subject;
+        if (!legendSubjects[k]) legendSubjects[k] = e;
+    }));
+    const legendEntries = Object.values(legendSubjects).sort((a, b) => {
+        const aA = fttIsActivity(a.subject), bA = fttIsActivity(b.subject);
+        const aL = fttIsLab(a.subject),      bL = fttIsLab(b.subject);
+        if (aA !== bA) return aA ? 1 : -1;
+        if (aL !== bL) return aL ? 1 : -1;
+        return (a.code || '').localeCompare(b.code || '');
+    });
+
+    if (legendEntries.length > 0) {
+        let legHtml = `<div style="margin-top:4px;">
+            <div style="font-size:12px;font-weight:700;color:#2a5298;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #e8eaf6;">
+                📋 Subject Legend
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead>
+                    <tr style="background:#f0f4ff;">
+                        <th style="padding:5px 8px;text-align:left;color:#667eea;font-weight:700;border-bottom:1px solid #dde3f5;width:16px;"></th>
+                        <th style="padding:5px 8px;text-align:left;color:#667eea;font-weight:700;border-bottom:1px solid #dde3f5;">Code</th>
+                        <th style="padding:5px 8px;text-align:left;color:#667eea;font-weight:700;border-bottom:1px solid #dde3f5;">Subject Name</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        legendEntries.forEach(e => {
+            let dot;
+            if (fttIsActivity(e.subject))   dot = '#ffd54f';
+            else if (fttIsLab(e.subject))   dot = '#66bb6a';
+            else dot = FTT_LEGEND_COLOURS[subColourMap[e.code] ?? 0];
+            const displayCode = fttIsActivity(e.subject) ? '—' : (e.code || '—');
+            const liveSubjName = e.code && SUBJECTS[e.code] ? (SUBJECTS[e.code].name || SUBJECTS[e.code]) : null;
+            const displayName  = liveSubjName || e.fullName || e.subject || e.code || '—';
+            legHtml += `<tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:5px 8px;">
+                    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${dot};"></span>
+                </td>
+                <td style="padding:5px 8px;font-weight:700;color:#333;">${displayCode}</td>
+                <td style="padding:5px 8px;color:#555;">${displayName}</td>
+            </tr>`;
+        });
+        legHtml += `</tbody></table></div>`;
+        legendEl.innerHTML = legHtml;
+    }
+
+    // Build grid HTML
+    let html = '<thead><tr>';
+    html += '<th class="ftt-head-cell" style="min-width:38px;">Day</th>';
+    for (let p = 1; p <= 4; p++) html += `<th class="ftt-head-cell">P${p}</th>`;
+    html += '<th class="ftt-head-cell" style="background:linear-gradient(135deg,#78909c,#546e7a);min-width:22px;">🍽</th>';
+    for (let p = 5; p <= 7; p++) html += `<th class="ftt-head-cell">P${p}</th>`;
+    html += '</tr></thead><tbody>';
+
+    DAY_ORDER.forEach(day => {
+        const entries = dayEntries[day];
+        const isToday = day === todayShort;
+        const rowClass = isToday ? ' class="ftt-today-row"' : '';
+
+        const slot = {}, spanOf = {}, skip = {};
+        entries.forEach(entry => {
+            const periods = parsePeriods(entry.periods);
+            periods.forEach(p => { slot[p] = entry; });
+            const sorted = [...periods].sort((a, b) => a - b);
+            const isConsec = sorted.every((p, i) => i === 0 || p === sorted[i-1]+1);
+            if (isConsec && sorted.length > 1) {
+                spanOf[sorted[0]] = sorted.length;
+                sorted.slice(1).forEach(p => { skip[p] = true; });
+            } else {
+                sorted.forEach(p => { spanOf[p] = 1; });
+            }
+        });
+
+        html += `<tr${rowClass}>`;
+        html += `<td class="ftt-day-cell${isToday ? ' ftt-today' : ''}">${isToday ? '📌 '+day : day}</td>`;
+
+        for (let p = 1; p <= 4; p++) {
+            if (skip[p]) continue;
+            const entry = slot[p];
+            if (!entry) { html += '<td class="ftt-empty"></td>'; }
+            else {
+                const span = spanOf[p] || 1;
+                const cls  = fttCellClass(entry);
+                const liveLabel = entry.code && SUBJECTS[entry.code] ? (SUBJECTS[entry.code].name || SUBJECTS[entry.code]) : null;
+                const label = liveLabel || entry.subject || entry.code || '—';
+                const code  = fttIsActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                html += `<td colspan="${span}" class="ftt-cell ${cls}">📖 ${label}${code}</td>`;
+            }
+        }
+
+        html += '<td class="ftt-lunch">L&nbsp;U&nbsp;N&nbsp;C&nbsp;H</td>';
+
+        for (let p = 5; p <= 7; p++) {
+            if (skip[p]) continue;
+            const entry = slot[p];
+            if (!entry) { html += '<td class="ftt-empty"></td>'; }
+            else {
+                const span = spanOf[p] || 1;
+                const cls  = fttCellClass(entry);
+                const liveLabel = entry.code && SUBJECTS[entry.code] ? (SUBJECTS[entry.code].name || SUBJECTS[entry.code]) : null;
+                const label = liveLabel || entry.subject || entry.code || '—';
+                const code  = fttIsActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                const icon  = fttIsActivity(entry.subject) ? '⭐' : fttIsLab(entry.subject) ? '🔬' : '📖';
+                html += `<td colspan="${span}" class="ftt-cell ${cls}">${icon} ${label}${code}</td>`;
+            }
+        }
+
+        html += '</tr>';
+    });
+
+    html += '</tbody>';
+    gridEl.innerHTML = html;
+    content.classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════════════
 //  ATT.PERCENTAGE TAB — functions
 // ══════════════════════════════════════════════════
-function attPct_onTabOpen() {
-    // nothing to auto-load
+async function attPct_onTabOpen() {
+    // Eagerly refresh calendar dates so the first "View Attendance %" click works
+    await reloadCalendarFromFirestore();
 }
 
 async function attPct_load() {
@@ -16316,7 +16668,8 @@ async function attPct_load() {
         return;
     }
 
-    // Academic start date
+    // Academic start date — always reload fresh to avoid stale/empty CALENDAR_DATES
+    await reloadCalendarFromFirestore();
     const yearSem   = y == 1 ? '1-1' : `${y}-${s}`;
     const acadStart = (typeof CALENDAR_DATES !== 'undefined' && CALENDAR_DATES[yearSem])
         ? (CALENDAR_DATES[yearSem].start || '') : '';
