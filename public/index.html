@@ -5095,6 +5095,30 @@
             if (adminUnitNumber) { adminUnitNumber.innerHTML = '<option value="">Select Semester first</option>'; adminUnitNumber.disabled = true; }
             const adminUnitReportSection = document.getElementById('adminUnitReportSection');
             if (adminUnitReportSection) adminUnitReportSection.classList.add('hidden');
+
+            // ── Reset "Edit My Posted Extra Classes" section ──
+            // Prevent next user from seeing previous user's data
+            const eeBody = document.getElementById('eeBody');
+            if (eeBody) eeBody.style.display = 'none';
+            const eeChevron = document.getElementById('eeChevron');
+            if (eeChevron) eeChevron.style.transform = '';
+            const eeList = document.getElementById('eeList');
+            if (eeList) eeList.innerHTML = '';
+            const eeMsg = document.getElementById('eeMsg');
+            if (eeMsg) { eeMsg.style.display = 'none'; eeMsg.textContent = ''; }
+            const eeYearEl = document.getElementById('eeYear');
+            if (eeYearEl) eeYearEl.value = '';
+            const eeSemEl = document.getElementById('eeSem');
+            if (eeSemEl) { eeSemEl.innerHTML = '<option value="">Select Year first</option>'; eeSemEl.disabled = true; }
+
+            // ── Also reset ecEditDocId and edit-mode UI ──
+            ecEditDocId = null;
+            const ecEditBanner = document.getElementById('ecEditBanner');
+            if (ecEditBanner) ecEditBanner.style.display = 'none';
+            const ecSaveBtnEl = document.getElementById('ecSaveBtn');
+            if (ecSaveBtnEl) ecSaveBtnEl.textContent = '💾 Save Extra Class';
+            const ecCancelBtnEl = document.getElementById('ecCancelEditBtn');
+            if (ecCancelBtnEl) ecCancelBtnEl.style.display = 'none';
         }
 
         // ✅ Helper: show the main app UI (used by both fresh login and auto-restore)
