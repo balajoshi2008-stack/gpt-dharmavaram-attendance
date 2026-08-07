@@ -41,6 +41,15 @@
         { "fieldPath": "yearSem", "order": "ASCENDING" },
         { "fieldPath": "isWorkingDay", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "extraClasses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "yearSem", "order": "ASCENDING" },
+        { "fieldPath": "faculty", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

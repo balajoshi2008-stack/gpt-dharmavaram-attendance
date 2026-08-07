@@ -1970,42 +1970,43 @@
                             <span style="font-size:22px;">✏️</span>
                             <div>
                                 <div style="font-weight:700;font-size:15px;color:#2a5298;">Edit My Posted Extra Classes</div>
-                                <div style="font-size:12px;color:#666;margin-top:2px;">View and edit timings & topic of your earlier entries</div>
+                                <div style="font-size:12px;color:#666;margin-top:2px;">Browse all your entries semester-wise and edit any entry</div>
                             </div>
                         </div>
                         <span id="eeChevron" style="font-size:20px;color:#2a5298;transition:transform 0.25s;">▼</span>
                     </div>
+
                     <div id="eeBody" style="display:none;margin-top:18px;">
-                        <!-- Lookup controls -->
-                        <div class="form-grid" style="margin-bottom:14px;">
-                            <div class="form-group">
-                                <label>Year</label>
+                        <!-- Year + Sem only — no date needed -->
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+                            <div style="flex:1;min-width:140px;">
+                                <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px;">Year</label>
                                 <select id="eeYear" onchange="eeUpdateSem()"
-                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                                    style="width:100%;padding:10px;border:2px solid #c5cae9;border-radius:8px;font-size:14px;background:#fff;">
                                     <option value="">Select Year</option>
                                     <option value="1">1st Year</option>
                                     <option value="2">2nd Year</option>
                                     <option value="3">3rd Year</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>Semester</label>
-                                <select id="eeSem" disabled onchange="eeOnSemChange()"
-                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                            <div style="flex:1;min-width:140px;">
+                                <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px;">Semester</label>
+                                <select id="eeSem" disabled
+                                    style="width:100%;padding:10px;border:2px solid #c5cae9;border-radius:8px;font-size:14px;background:#fff;">
                                     <option value="">Select Year first</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>Date</label>
-                                <input type="date" id="eeDate"
-                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;">
+                            <div style="flex-shrink:0;">
+                                <button onclick="eeLoadRecords()"
+                                    style="padding:10px 22px;background:linear-gradient(135deg,#2a5298,#3f7ecf);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;">
+                                    🔍 Load All Records
+                                </button>
                             </div>
                         </div>
-                        <button onclick="eeLoadRecords()"
-                            style="padding:10px 22px;background:linear-gradient(135deg,#2a5298,#3f7ecf);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:16px;">
-                            🔍 Load My Records
-                        </button>
+
                         <div id="eeMsg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;"></div>
+
+                        <!-- Timeline list — grouped by date -->
                         <div id="eeList"></div>
                     </div>
                 </div>
@@ -12649,73 +12650,141 @@
         function eeOnSemChange() { /* nothing — user clicks Load */ }
 
         async function eeLoadRecords() {
-            const msgEl = document.getElementById('eeMsg');
+            const msgEl  = document.getElementById('eeMsg');
             const listEl = document.getElementById('eeList');
             const showMsg = (text, ok) => {
-                msgEl.style.display = 'block';
+                msgEl.style.display    = 'block';
                 msgEl.style.background = ok ? '#d4edda' : '#f8d7da';
-                msgEl.style.color = ok ? '#155724' : '#721c24';
-                msgEl.textContent = text;
+                msgEl.style.color      = ok ? '#155724' : '#721c24';
+                msgEl.textContent      = text;
             };
             msgEl.style.display = 'none';
-            listEl.innerHTML = '';
+            listEl.innerHTML    = '';
 
             const y = document.getElementById('eeYear').value;
             const s = document.getElementById('eeSem').value;
-            const date = document.getElementById('eeDate').value;
 
             if (!y || !s) { showMsg('❗ Please select Year and Semester.', false); return; }
-            if (!date)    { showMsg('❗ Please select a date.', false); return; }
 
             const yearSem = (y == 1) ? '1-1' : `${y}-${s}`;
-            listEl.innerHTML = '<p style="color:#667eea;font-size:13px;">⏳ Loading...</p>';
+            listEl.innerHTML = '<p style="color:#667eea;font-size:13px;padding:10px 0;">⏳ Loading all records…</p>';
 
             try {
                 const snap = await db.collection('extraClasses')
-                    .where('date', '==', date)
                     .where('yearSem', '==', yearSem)
                     .where('faculty', '==', currentUser)
+                    .orderBy('date', 'asc')
                     .get();
 
                 listEl.innerHTML = '';
                 if (snap.empty) {
-                    showMsg(`ℹ️ No extra classes found for you on ${_fmt(date)} in ${yearSem}.`, true);
+                    showMsg(`ℹ️ No extra classes found for you in ${yearSem}.`, true);
                     return;
                 }
                 const docs = [];
                 snap.forEach(doc => docs.push({ id: doc.id, data: doc.data() }));
-                eeRenderCards(docs, listEl);
+                // Show count banner
+                showMsg(`✅ ${docs.length} entr${docs.length === 1 ? 'y' : 'ies'} found in ${yearSem} — click ✏️ Edit to modify any entry.`, true);
+                eeRenderTimeline(docs, listEl);
             } catch (e) {
                 listEl.innerHTML = '';
                 showMsg('❌ ' + e.message, false);
             }
         }
 
-        function eeRenderCards(docs, listEl) {
+        // ── Render all docs grouped by date as a vertical timeline ──
+        function eeRenderTimeline(docs, listEl) {
             listEl.innerHTML = '';
+            const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const MONTHS    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+            // Group docs by date
+            const grouped = {};
             docs.forEach(({ id, data: d }) => {
-                const isWD = d.isWorkingDay;
-                const timingStr = isWD
-                    ? `${d.session} &nbsp;|&nbsp; ${d.timeFrom} – ${d.timeTo}`
-                    : `Holiday &nbsp;|&nbsp; Periods: P${(d.periodsChecked || []).join(', P')}`;
-                const subLabel = d.subjectName ? `${d.subject}: ${d.subjectName}` : d.subject;
-                const card = document.createElement('div');
-                card.style.cssText = 'background:#fff;border:1.5px solid #c5cae9;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.07);';
-                card.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-                        <div>
-                            <div style="font-weight:700;font-size:14px;color:#2a5298;">${subLabel}</div>
-                            <div style="font-size:12px;color:#666;margin-top:3px;">${_fmt(d.date)} &nbsp;•&nbsp; ${timingStr}</div>
-                            <div style="font-size:13px;color:#333;margin-top:8px;line-height:1.5;"><em>${d.topicsCovered || '—'}</em></div>
+                if (!grouped[d.date]) grouped[d.date] = [];
+                grouped[d.date].push({ id, data: d });
+            });
+
+            // Sort dates ascending
+            const sortedDates = Object.keys(grouped).sort();
+
+            sortedDates.forEach(date => {
+                const dt      = new Date(date + 'T00:00:00');
+                const dayName = DAY_NAMES[dt.getDay()];
+                const isWeekend = dt.getDay() === 0;
+                // e.g.  "05 Aug 2026  •  Tuesday"
+                const fmtDate = `${String(dt.getDate()).padStart(2,'0')} ${MONTHS[dt.getMonth()]} ${dt.getFullYear()}`;
+
+                // Detect if any entry on this date is an extra on a holiday/sunday
+                const hasHoliday = grouped[date].some(({ data: d }) => !d.isWorkingDay);
+
+                // Date group header
+                const header = document.createElement('div');
+                header.style.cssText = `
+                    display:flex;align-items:center;gap:10px;
+                    margin:18px 0 8px;padding:8px 14px;
+                    background:linear-gradient(135deg,#2a5298,#3f7ecf);
+                    border-radius:10px;color:#fff;font-weight:700;font-size:13px;
+                    box-shadow:0 2px 8px rgba(42,82,152,0.2);`;
+                header.innerHTML = `
+                    <span style="font-size:18px;">${isWeekend || hasHoliday ? '🏖️' : '📅'}</span>
+                    <span>${fmtDate}</span>
+                    <span style="opacity:0.8;font-weight:400;">— ${dayName}</span>
+                    <span style="margin-left:auto;background:rgba(255,255,255,0.2);
+                        border-radius:20px;padding:2px 10px;font-size:12px;">
+                        ${grouped[date].length} class${grouped[date].length > 1 ? 'es' : ''}
+                    </span>`;
+                listEl.appendChild(header);
+
+                // Cards for each entry on this date
+                grouped[date].forEach(({ id, data: d }) => {
+                    const isWD      = d.isWorkingDay;
+                    const subLabel  = d.subjectName ? `${d.subject}: ${d.subjectName}` : d.subject;
+                    const sessionBadge = isWD
+                        ? `<span style="display:inline-block;padding:2px 8px;border-radius:12px;
+                               font-size:11px;font-weight:700;
+                               background:${d.session === 'FN' ? '#e3f2fd' : '#fff3e0'};
+                               color:${d.session === 'FN' ? '#1565c0' : '#e65100'};">
+                               ${d.session}</span>`
+                        : `<span style="display:inline-block;padding:2px 8px;border-radius:12px;
+                               font-size:11px;font-weight:700;background:#f3e5f5;color:#6a1b9a;">
+                               Holiday</span>`;
+                    const timingStr = isWD
+                        ? `${d.timeFrom} – ${d.timeTo}`
+                        : `P${(d.periodsChecked || []).join(', P')} (${d.numberOfPeriods} period${d.numberOfPeriods > 1 ? 's' : ''})`;
+
+                    const card = document.createElement('div');
+                    card.style.cssText = `
+                        background:#fff;border:1.5px solid #e3e8f7;border-radius:10px;
+                        padding:12px 16px;margin-bottom:8px;margin-left:12px;
+                        box-shadow:0 1px 5px rgba(0,0,0,0.06);
+                        border-left:4px solid ${isWD ? '#2a5298' : '#8e24aa'};
+                        display:flex;justify-content:space-between;align-items:center;
+                        flex-wrap:wrap;gap:10px;`;
+                    card.innerHTML = `
+                        <div style="flex:1;min-width:0;">
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+                                ${sessionBadge}
+                                <span style="font-weight:700;font-size:13px;color:#2a5298;">${subLabel}</span>
+                            </div>
+                            <div style="font-size:12px;color:#888;">🕐 ${timingStr}</div>
+                            <div style="font-size:12px;color:#555;margin-top:4px;font-style:italic;
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px;"
+                                title="${(d.topicsCovered || '').replace(/"/g,'&quot;')}">
+                                📝 ${d.topicsCovered || '—'}
+                            </div>
                         </div>
                         <button onclick="eeStartEdit('${id}')"
-                            style="padding:8px 18px;background:linear-gradient(135deg,#f57c00,#ef6c00);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap;flex-shrink:0;">
+                            style="padding:7px 16px;background:linear-gradient(135deg,#f57c00,#ef6c00);
+                                   color:#fff;border:none;border-radius:8px;cursor:pointer;
+                                   font-weight:700;font-size:13px;white-space:nowrap;flex-shrink:0;">
                             ✏️ Edit
-                        </button>
-                    </div>`;
-                listEl.appendChild(card);
+                        </button>`;
+                    listEl.appendChild(card);
+                });
             });
         }
+
 
         async function eeStartEdit(docId) {
             // Fetch the doc
