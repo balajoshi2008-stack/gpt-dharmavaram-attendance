@@ -1680,8 +1680,8 @@
 
             <!-- LOGBOOK TAB (Faculty only) -->
             <div id="logbook" class="tab-content">
-                <h2 style="color:#2a5298;margin-bottom:6px;">📋 Topic Logbook</h2>
-                <p style="color:#888;font-size:13px;margin-bottom:20px;">Generate and download your topic logbook for
+                <h2 style="color:#2a5298;margin-bottom:6px;">📒 Subject Logbook</h2>
+                <p style="color:#888;font-size:13px;margin-bottom:20px;">Generate and download your subject-wise logbook for
                     any subject and date range.</p>
 
                 <div
@@ -1775,6 +1775,12 @@
                         </div>
 
                         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+                            <button onclick="viewDatewiseLogbook()"
+                                    style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;
+                                           padding:.75rem 1.4rem;border:none;border-radius:8px;
+                                           font-size:.9rem;font-weight:700;cursor:pointer;flex:1;min-width:200px;">
+                                👁️ View Date-wise Logbook
+                            </button>
                             <button onclick="generateDatewisePDF()"
                                     style="background:linear-gradient(135deg,#1F3864,#2E75B6);color:white;
                                            padding:.75rem 1.4rem;border:none;border-radius:8px;
@@ -1783,6 +1789,19 @@
                             </button>
                         </div>
                         <div id="dwLogbookMsg" style="display:none;margin-top:10px;font-size:13px;"></div>
+
+                        <!-- Date-wise preview banner -->
+                        <div id="dwPreview"
+                            style="display:none;background:linear-gradient(135deg,#e0f2fe,#f0fdf4);border-radius:8px;padding:14px;margin-top:14px;border:1px solid #bae6fd;">
+                            <div style="font-weight:700;color:#0369a1;margin-bottom:6px;">📊 Preview</div>
+                            <div style="font-size:13px;color:#555;" id="dwPreviewText"></div>
+                        </div>
+                    </div>
+
+                    <!-- Date-wise table preview area -->
+                    <div id="dwTableArea" style="display:none;margin-top:18px;">
+                        <h3 style="color:#1F3864;margin-bottom:12px;">📋 Date-wise Logbook Preview</h3>
+                        <div id="dwTableContainer" style="overflow-x:auto;"></div>
                     </div>
                 </div>
                 <!-- ── END: Date-wise Merged Logbook section ── -->
@@ -1927,12 +1946,68 @@
                                 id="ecTopicCount">0</span>/300</div>
                     </div>
 
+                    <!-- Edit mode banner (hidden by default) -->
+                    <div id="ecEditBanner" style="display:none;margin-top:14px;padding:10px 14px;background:#fff3cd;border-left:4px solid #f57c00;border-radius:8px;font-size:13px;color:#7f4600;font-weight:600;">
+                        ✏️ <strong>Edit Mode</strong> — Updating an existing entry. Only timings and topic will change.
+                    </div>
+
                     <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                        <button class="btn btn-success" onclick="saveExtraClass()">💾 Save Extra Class</button>
+                        <button id="ecSaveBtn" class="btn btn-success" onclick="saveExtraClass()">💾 Save Extra Class</button>
                         <button class="btn btn-secondary" onclick="initExtraClassTab()">↺ Reset</button>
+                        <button id="ecCancelEditBtn" onclick="cancelECEdit()" style="display:none;padding:10px 20px;background:#e53935;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">✖ Cancel Edit</button>
                     </div>
                     <div id="ecMsg"
                         style="display:none;margin-top:14px;padding:12px;border-radius:8px;font-weight:600;"></div>
+
+                </div>
+
+                <!-- ===== EDIT MY POSTED EXTRA CLASSES SECTION ===== -->
+                <div id="eeSection"
+                    style="margin-top:24px;background:#f0f4ff;border-radius:14px;padding:20px;border:1.5px solid #c5cae9;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
+                        onclick="eeToggle()">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:22px;">✏️</span>
+                            <div>
+                                <div style="font-weight:700;font-size:15px;color:#2a5298;">Edit My Posted Extra Classes</div>
+                                <div style="font-size:12px;color:#666;margin-top:2px;">View and edit timings & topic of your earlier entries</div>
+                            </div>
+                        </div>
+                        <span id="eeChevron" style="font-size:20px;color:#2a5298;transition:transform 0.25s;">▼</span>
+                    </div>
+                    <div id="eeBody" style="display:none;margin-top:18px;">
+                        <!-- Lookup controls -->
+                        <div class="form-grid" style="margin-bottom:14px;">
+                            <div class="form-group">
+                                <label>Year</label>
+                                <select id="eeYear" onchange="eeUpdateSem()"
+                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                                    <option value="">Select Year</option>
+                                    <option value="1">1st Year</option>
+                                    <option value="2">2nd Year</option>
+                                    <option value="3">3rd Year</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Semester</label>
+                                <select id="eeSem" disabled onchange="eeOnSemChange()"
+                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;">
+                                    <option value="">Select Year first</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="date" id="eeDate"
+                                    style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;">
+                            </div>
+                        </div>
+                        <button onclick="eeLoadRecords()"
+                            style="padding:10px 22px;background:linear-gradient(135deg,#2a5298,#3f7ecf);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:16px;">
+                            🔍 Load My Records
+                        </button>
+                        <div id="eeMsg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;"></div>
+                        <div id="eeList"></div>
+                    </div>
                 </div>
 
                 <!-- ===== 12-HR TIME PICKER MODAL ===== -->
@@ -3893,7 +3968,48 @@
                         <div id="fc_resultMsg" style="display:none;margin-top:14px;padding:12px 16px;background:#e8f5e9;border-left:4px solid #4caf50;border-radius:8px;color:#2e7d32;font-weight:600;"></div>
                     </div>
                 </div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- SECTION 3: Clear Extra Class Entry (Admin)                 -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div style="margin-top:36px;border-top:2px dashed #1565c0;padding-top:28px;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+                        <span style="font-size:26px;">📚</span>
+                        <div>
+                            <h3 style="margin:0;color:#1565c0;font-size:17px;font-weight:700;">Clear Extra Class Entry</h3>
+                            <p style="margin:4px 0 0;color:#888;font-size:12px;">Delete a specific extra class record posted by any faculty for a given date.</p>
+                        </div>
+                    </div>
+                    <div style="background:#e3f2fd;border-left:4px solid #1e88e5;border-radius:8px;padding:10px 16px;margin-bottom:18px;font-size:13px;color:#0d47a1;">
+                        ⚠️ <strong>Admin-only action.</strong> This permanently removes the extra class entry from logbook records. It does <em>not</em> affect regular attendance.
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Year / Semester</label>
+                            <select id="ecClr_yearSem" onchange="ecClrOnYearSemChange()" class="form-control">
+                                <option value="">-- Select --</option>
+                                <option value="1-1">1st Year</option>
+                                <option value="2-3">2nd Year – Sem 3</option>
+                                <option value="2-4">2nd Year – Sem 4</option>
+                                <option value="3-5">3rd Year – Sem 5</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="ecClr_date" class="form-control" onchange="ecClrOnDateChange()">
+                        </div>
+                    </div>
+                    <button onclick="ecClrLoadRecords()"
+                        style="margin-top:6px;padding:10px 22px;background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">
+                        🔍 Load Extra Class Records
+                    </button>
+
+                    <div id="ecClrMsg" style="display:none;margin-top:14px;padding:12px 16px;border-radius:8px;font-size:13px;font-weight:600;"></div>
+                    <div id="ecClrList" style="margin-top:16px;"></div>
+                </div>
             </div>
+
         </div>
 
             <!-- ══════════════ CLASS TIMETABLE VIEW TAB (Admin + Faculty) ══════════════ -->
@@ -4354,7 +4470,9 @@
         let currentUserName = null;
         let currentAdminPass = '';   // ── Stored in-memory to re-auth admin after createUser ──
         let currentFirebaseUser = null; // ── Stored Firebase user object for password-change flow ──
+        let ecEditDocId = null;  // ── null = save new; string = edit existing extra class doc ──
         let todayAttendance = {};
+
 
         document.getElementById('date').valueAsDate = new Date();
 
@@ -12026,6 +12144,15 @@
 
             const msgEl = document.getElementById('ecMsg');
             if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+
+            // ── Also reset edit mode if active ──
+            ecEditDocId = null;
+            const editBanner = document.getElementById('ecEditBanner');
+            if (editBanner) editBanner.style.display = 'none';
+            const saveBtn = document.getElementById('ecSaveBtn');
+            if (saveBtn) saveBtn.textContent = '💾 Save Extra Class';
+            const cancelBtn = document.getElementById('ecCancelEditBtn');
+            if (cancelBtn) cancelBtn.style.display = 'none';
         }
 
         // Called when date changes — clears sections below date then detects day type
@@ -12354,6 +12481,12 @@
                 msgEl.textContent = text;
             };
 
+            // ── If editing an existing record, branch to update ──
+            if (ecEditDocId) {
+                await updateExtraClass(ecEditDocId, showMsg);
+                return;
+            }
+
             // ── Gather values ──
             const date = document.getElementById('ecDate').value;
             const year = document.getElementById('ecYear').value;
@@ -12428,9 +12561,364 @@
             }
         }
 
+        // ── Update an existing extra class document (edit mode) ──
+        async function updateExtraClass(docId, showMsg) {
+            const topic = document.getElementById('ecTopic').value.trim();
+            if (!topic) { showMsg('❗ Please enter the topic covered.', false); return; }
+
+            // Determine if working day (sections already shown/hidden correctly from eeStartEdit)
+            const wdVisible = document.getElementById('ecWorkingDaySection').style.display !== 'none';
+
+            let updateData = { topicsCovered: topic };
+
+            if (wdVisible) {
+                const timeFrom = document.getElementById('ecTimeFrom').value;
+                const timeTo   = document.getElementById('ecTimeTo').value;
+                if (!timeFrom || !timeTo) { showMsg('❗ Please enter From and To times.', false); return; }
+                updateData.timeFrom = timeFrom;
+                updateData.timeTo   = timeTo;
+                updateData.session  = document.querySelector('input[name="ecSession"]:checked')?.value || 'FN';
+            } else {
+                // Holiday — update periods checked
+                const checked = [];
+                for (let i = 1; i <= 7; i++) {
+                    if (document.getElementById('echP' + i)?.checked) checked.push(i);
+                }
+                if (checked.length === 0) { showMsg('❗ Please select at least one period.', false); return; }
+                updateData.periodsChecked  = checked;
+                updateData.numberOfPeriods = checked.length;
+            }
+
+            try {
+                await db.collection('extraClasses').doc(docId).update(updateData);
+                showMsg('✅ Extra class updated successfully.', true);
+                // Exit edit mode
+                ecEditDocId = null;
+                document.getElementById('ecEditBanner').style.display    = 'none';
+                document.getElementById('ecSaveBtn').textContent          = '💾 Save Extra Class';
+                document.getElementById('ecCancelEditBtn').style.display = 'none';
+                // Refresh the edit list so updated data shows
+                eeLoadRecords();
+            } catch (e) {
+                showMsg('❌ ' + e.message, false);
+            }
+        }
+
+        // ── Cancel edit mode and restore default form state ──
+        function cancelECEdit() {
+            ecEditDocId = null;
+            document.getElementById('ecEditBanner').style.display    = 'none';
+            document.getElementById('ecSaveBtn').textContent          = '💾 Save Extra Class';
+            document.getElementById('ecCancelEditBtn').style.display = 'none';
+            initExtraClassTab();
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // EDIT MY POSTED EXTRA CLASSES — helper functions
+        // ────────────────────────────────────────────────────────────────
+
+        function eeToggle() {
+            const body = document.getElementById('eeBody');
+            const chev = document.getElementById('eeChevron');
+            const open = body.style.display !== 'none';
+            body.style.display = open ? 'none' : 'block';
+            chev.style.transform = open ? '' : 'rotate(180deg)';
+        }
+
+        function eeUpdateSem() {
+            const y = document.getElementById('eeYear').value;
+            const semSel = document.getElementById('eeSem');
+            semSel.innerHTML = '';
+            if (!y) {
+                semSel.innerHTML = '<option value="">Select Year first</option>';
+                semSel.disabled = true;
+                return;
+            }
+            if (y == 1) {
+                semSel.innerHTML = '<option value="1">Year-wise Course</option>';
+                semSel.disabled = true;
+            } else if (y == 2) {
+                semSel.disabled = false;
+                semSel.innerHTML = '<option value="">Select Sem</option><option value="3">Sem 3</option><option value="4">Sem 4</option>';
+            } else {
+                semSel.disabled = false;
+                semSel.innerHTML = '<option value="">Select Sem</option><option value="5">Sem 5</option>';
+            }
+        }
+
+        function eeOnSemChange() { /* nothing — user clicks Load */ }
+
+        async function eeLoadRecords() {
+            const msgEl = document.getElementById('eeMsg');
+            const listEl = document.getElementById('eeList');
+            const showMsg = (text, ok) => {
+                msgEl.style.display = 'block';
+                msgEl.style.background = ok ? '#d4edda' : '#f8d7da';
+                msgEl.style.color = ok ? '#155724' : '#721c24';
+                msgEl.textContent = text;
+            };
+            msgEl.style.display = 'none';
+            listEl.innerHTML = '';
+
+            const y = document.getElementById('eeYear').value;
+            const s = document.getElementById('eeSem').value;
+            const date = document.getElementById('eeDate').value;
+
+            if (!y || !s) { showMsg('❗ Please select Year and Semester.', false); return; }
+            if (!date)    { showMsg('❗ Please select a date.', false); return; }
+
+            const yearSem = (y == 1) ? '1-1' : `${y}-${s}`;
+            listEl.innerHTML = '<p style="color:#667eea;font-size:13px;">⏳ Loading...</p>';
+
+            try {
+                const snap = await db.collection('extraClasses')
+                    .where('date', '==', date)
+                    .where('yearSem', '==', yearSem)
+                    .where('faculty', '==', currentUser)
+                    .get();
+
+                listEl.innerHTML = '';
+                if (snap.empty) {
+                    showMsg(`ℹ️ No extra classes found for you on ${_fmt(date)} in ${yearSem}.`, true);
+                    return;
+                }
+                const docs = [];
+                snap.forEach(doc => docs.push({ id: doc.id, data: doc.data() }));
+                eeRenderCards(docs, listEl);
+            } catch (e) {
+                listEl.innerHTML = '';
+                showMsg('❌ ' + e.message, false);
+            }
+        }
+
+        function eeRenderCards(docs, listEl) {
+            listEl.innerHTML = '';
+            docs.forEach(({ id, data: d }) => {
+                const isWD = d.isWorkingDay;
+                const timingStr = isWD
+                    ? `${d.session} &nbsp;|&nbsp; ${d.timeFrom} – ${d.timeTo}`
+                    : `Holiday &nbsp;|&nbsp; Periods: P${(d.periodsChecked || []).join(', P')}`;
+                const subLabel = d.subjectName ? `${d.subject}: ${d.subjectName}` : d.subject;
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#fff;border:1.5px solid #c5cae9;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.07);';
+                card.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <div style="font-weight:700;font-size:14px;color:#2a5298;">${subLabel}</div>
+                            <div style="font-size:12px;color:#666;margin-top:3px;">${_fmt(d.date)} &nbsp;•&nbsp; ${timingStr}</div>
+                            <div style="font-size:13px;color:#333;margin-top:8px;line-height:1.5;"><em>${d.topicsCovered || '—'}</em></div>
+                        </div>
+                        <button onclick="eeStartEdit('${id}')"
+                            style="padding:8px 18px;background:linear-gradient(135deg,#f57c00,#ef6c00);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap;flex-shrink:0;">
+                            ✏️ Edit
+                        </button>
+                    </div>`;
+                listEl.appendChild(card);
+            });
+        }
+
+        async function eeStartEdit(docId) {
+            // Fetch the doc
+            let docData;
+            try {
+                const snap = await db.collection('extraClasses').doc(docId).get();
+                if (!snap.exists) { alert('Record not found.'); return; }
+                docData = snap.data();
+                // Security: only the posting faculty can edit
+                if (docData.faculty !== currentUser) { alert('⛔ You can only edit your own extra class entries.'); return; }
+            } catch (e) { alert('❌ ' + e.message); return; }
+
+            // Set edit mode
+            ecEditDocId = docId;
+
+            // ── Populate the main form ──
+            // Date
+            document.getElementById('ecDate').value = docData.date;
+            ecDetectDayType();   // show/hide working-day vs holiday sections
+
+            // Year / Sem
+            const [yearPart] = docData.yearSem.split('-');
+            document.getElementById('ecYear').value = yearPart == '1' ? '1' : yearPart;
+            ecUpdateSem();
+
+            // Sem (after ecUpdateSem rebuilds the dropdown)
+            const semPart = docData.yearSem.split('-')[1];
+            if (yearPart != '1') document.getElementById('ecSem').value = semPart;
+
+            // Subject
+            ecPopulateSubjects();
+            // Small delay to let ecPopulateSubjects render options
+            setTimeout(() => {
+                document.getElementById('ecSubject').value = docData.subject;
+            }, 150);
+
+            // Session / times / periods
+            if (docData.isWorkingDay) {
+                const radios = document.querySelectorAll('input[name="ecSession"]');
+                radios.forEach(r => { r.checked = r.value === docData.session; });
+                document.getElementById('ecTimeFrom').value = docData.timeFrom || '';
+                document.getElementById('ecTimeTo').value   = docData.timeTo   || '';
+            } else {
+                // Restore period checkboxes
+                for (let i = 1; i <= 7; i++) {
+                    const cb = document.getElementById('echP' + i);
+                    if (cb) cb.checked = (docData.periodsChecked || []).includes(i);
+                }
+            }
+
+            // Topic
+            document.getElementById('ecTopic').value = docData.topicsCovered || '';
+            document.getElementById('ecTopicCount').textContent = (docData.topicsCovered || '').length;
+
+            // Show edit mode UI
+            document.getElementById('ecEditBanner').style.display    = 'block';
+            document.getElementById('ecSaveBtn').textContent          = '💾 Update Extra Class';
+            document.getElementById('ecCancelEditBtn').style.display = 'inline-block';
+            document.getElementById('ecMsg').style.display           = 'none';
+
+            // Scroll the main form into view smoothly
+            document.getElementById('ecDate').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // ADMIN — CLEAR EXTRA CLASS ENTRY (Att. Recovery Tab Section 3)
+        // ────────────────────────────────────────────────────────────────
+
+        function ecClrOnYearSemChange() {
+            // Clear date when year/sem changes
+            document.getElementById('ecClr_date').value = '';
+            document.getElementById('ecClrList').innerHTML = '';
+            const msgEl = document.getElementById('ecClrMsg');
+            msgEl.style.display = 'none';
+        }
+
+        function ecClrOnDateChange() {
+            document.getElementById('ecClrList').innerHTML = '';
+            const msgEl = document.getElementById('ecClrMsg');
+            msgEl.style.display = 'none';
+        }
+
+        async function ecClrLoadRecords() {
+            const yearSem = document.getElementById('ecClr_yearSem').value;
+            const date    = document.getElementById('ecClr_date').value;
+            const msgEl   = document.getElementById('ecClrMsg');
+            const listEl  = document.getElementById('ecClrList');
+
+            const showMsg = (text, ok) => {
+                msgEl.style.display = 'block';
+                msgEl.style.background = ok ? '#d4edda' : '#f8d7da';
+                msgEl.style.color = ok ? '#155724' : '#721c24';
+                msgEl.textContent = text;
+            };
+
+            msgEl.style.display = 'none';
+            listEl.innerHTML = '';
+
+            if (!yearSem) { showMsg('❗ Please select Year / Semester.', false); return; }
+            if (!date)    { showMsg('❗ Please select a date.', false); return; }
+
+            listEl.innerHTML = '<p style="color:#667eea;font-size:13px;">⏳ Loading records...</p>';
+
+            try {
+                const snap = await db.collection('extraClasses')
+                    .where('date', '==', date)
+                    .where('yearSem', '==', yearSem)
+                    .get();
+
+                listEl.innerHTML = '';
+                if (snap.empty) {
+                    showMsg(`ℹ️ No extra class records found for ${yearSem} on ${_fmt(date)}.`, true);
+                    return;
+                }
+                const docs = [];
+                snap.forEach(doc => docs.push({ id: doc.id, data: doc.data() }));
+                ecClrRenderList(docs, listEl);
+            } catch (e) {
+                listEl.innerHTML = '';
+                showMsg('❌ ' + e.message, false);
+            }
+        }
+
+        function ecClrRenderList(docs, listEl) {
+            listEl.innerHTML = '';
+            docs.forEach(({ id, data: d }) => {
+                const isWD = d.isWorkingDay;
+                const timingStr = isWD
+                    ? `${d.session} | ${d.timeFrom} – ${d.timeTo}`
+                    : `Holiday | Periods: P${(d.periodsChecked || []).join(', P')} (${d.numberOfPeriods} period${d.numberOfPeriods > 1 ? 's' : ''})`;
+                const subLabel = d.subjectName ? `${d.subject}: ${d.subjectName}` : d.subject;
+                const facultyLabel = d.facultyName || d.faculty;
+                const summary = `${subLabel} | ${facultyLabel} | ${timingStr}`;
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#fff;border:1.5px solid #bbdefb;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.07);';
+                card.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:700;font-size:14px;color:#1565c0;">${subLabel}</div>
+                            <div style="font-size:12px;color:#555;margin-top:3px;">👤 ${facultyLabel}</div>
+                            <div style="font-size:12px;color:#666;margin-top:2px;">🕐 ${timingStr}</div>
+                            <div style="font-size:13px;color:#333;margin-top:8px;line-height:1.5;word-break:break-word;">
+                                📝 <em>${d.topicsCovered || '—'}</em>
+                            </div>
+                        </div>
+                        <button onclick="ecClrDeleteRecord('${id}', \`${summary.replace(/`/g,"'")}\`)"
+                            style="padding:8px 18px;background:linear-gradient(135deg,#c62828,#b71c1c);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap;flex-shrink:0;">
+                            🗑️ Delete
+                        </button>
+                    </div>`;
+                listEl.appendChild(card);
+            });
+        }
+
+        async function ecClrDeleteRecord(docId, summary) {
+            const msgEl = document.getElementById('ecClrMsg');
+            const showMsg = (text, ok) => {
+                msgEl.style.display = 'block';
+                msgEl.style.background = ok ? '#d4edda' : '#f8d7da';
+                msgEl.style.color = ok ? '#155724' : '#721c24';
+                msgEl.textContent = text;
+            };
+
+            if (!confirm(`⚠️ Permanently delete this extra class entry?\n\n${summary}\n\nThis cannot be undone.`)) return;
+
+            try {
+                // Fetch doc to log details before deleting
+                const docSnap = await db.collection('extraClasses').doc(docId).get();
+                const d = docSnap.exists ? docSnap.data() : {};
+
+                await db.collection('extraClasses').doc(docId).delete();
+
+                // Log to adminLogs
+                await db.collection('adminLogs').add({
+                    action:      'CLEAR_EXTRA_CLASS_SINGLE',
+                    docId,
+                    date:        d.date        || '',
+                    yearSem:     d.yearSem     || '',
+                    subject:     d.subject     || '',
+                    faculty:     d.faculty     || '',
+                    facultyName: d.facultyName || '',
+                    performedBy: currentUser,
+                    performedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showMsg('✅ Extra class entry deleted successfully.', true);
+
+                // Remove the deleted card from the list without reloading
+                const listEl = document.getElementById('ecClrList');
+                const remaining = listEl.querySelectorAll('div[style*="bbdefb"]');
+                // Reload the full list so counts are fresh
+                ecClrLoadRecords();
+            } catch (e) {
+                showMsg('❌ ' + e.message, false);
+            }
+        }
+
+
+
         // ────────────────────────────────────────────────────────────────
         // LOGBOOK TAB
         // ────────────────────────────────────────────────────────────────
+
 
         function initLogbookTab() {
             const sel = document.getElementById('logbookSubject');
@@ -13240,10 +13728,166 @@
         }
 
         /**
+         * View the Date-wise Logbook on-screen (preview table).
+         * Mirrors viewLogbook() but uses all subjects sorted by date.
+         */
+        async function viewDatewiseLogbook() {
+            const fromDate     = (document.getElementById('dw_fromDate').value || '').trim();
+            const toDate       = (document.getElementById('dw_toDate').value || '').trim();
+            const academicYear = (document.getElementById('dw_academicYear').value || '').trim();
+            const msgEl        = document.getElementById('dwLogbookMsg');
+            const previewEl    = document.getElementById('dwPreview');
+            const previewText  = document.getElementById('dwPreviewText');
+            const tableArea    = document.getElementById('dwTableArea');
+
+            // Hide previous results
+            previewEl.style.display = 'none';
+            tableArea.style.display = 'none';
+            document.getElementById('dwTableContainer').innerHTML = '';
+
+            if (!fromDate || !toDate || !academicYear) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '⚠️ Please select Academic Year, From Date and To Date.';
+                return;
+            }
+            if (fromDate > toDate) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '⚠️ From Date must be before To Date.';
+                return;
+            }
+
+            msgEl.style.display = 'block';
+            msgEl.style.color   = '#1565c0';
+            msgEl.textContent   = '⏳ Loading date-wise logbook…';
+
+            try {
+                const rows = await generateDatewiseLogbook(fromDate, toDate);
+
+                msgEl.style.display = 'none';
+
+                if (!rows || rows.length === 0) {
+                    previewEl.style.display = 'block';
+                    previewText.innerHTML   = '<strong>No logbook entries found</strong> for the selected date range.';
+                    return;
+                }
+
+                // Count unique subjects in result
+                const subjSet = new Set(rows.map(r => r.subject));
+
+                previewEl.style.display = 'block';
+                previewText.innerHTML =
+                    `<strong>Total Rows:</strong> ${rows.length} &nbsp;|&nbsp;
+                     <strong>Subjects:</strong> ${subjSet.size} &nbsp;|&nbsp;
+                     <strong>Range:</strong> ${fromDate} → ${toDate}`;
+
+                displayDWTable(rows);
+            } catch (e) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '❌ ' + e.message;
+            }
+        }
+
+        /**
+         * Render the date-wise combined logbook rows as an on-screen table.
+         * Uses same colour-coding as the PDF: amber for working-day extra, grey for holiday extra.
+         */
+        function displayDWTable(rows) {
+            const area      = document.getElementById('dwTableArea');
+            const container = document.getElementById('dwTableContainer');
+            area.style.display = 'block';
+
+            const DAY3 = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+            // ── Pass 1: compute rowspan for each row index ──
+            // rowspanMap[i] = N  → this row is the FIRST of a date group spanning N rows
+            // rowspanMap[i] = 0  → this row is a continuation (skip Date/Day cell)
+            const rowspanMap = new Array(rows.length).fill(0);
+            let i = 0;
+            while (i < rows.length) {
+                let j = i + 1;
+                while (j < rows.length && rows[j].date === rows[i].date) j++;
+                rowspanMap[i] = j - i;   // span count for group leader
+                // continuation rows stay 0
+                i = j;
+            }
+
+            let html = `<table style="width:100%;border-collapse:collapse;font-size:13px;background:white;">
+                <thead>
+                    <tr style="background:linear-gradient(135deg,#1F3864,#2E75B6);color:white;">
+                        <th style="padding:10px 8px;border:1px solid #ccc;min-width:72px;">Date/Day</th>
+                        <th style="padding:10px 8px;border:1px solid #ccc;min-width:60px;">Period Nos.</th>
+                        <th style="padding:10px 8px;border:1px solid #ccc;min-width:100px;">Sub. Code<br>Sub. Name</th>
+                        <th style="padding:10px 8px;border:1px solid #ccc;min-width:200px;">Topic Covered</th>
+                        <th style="padding:10px 8px;border:1px solid #ccc;min-width:70px;">Cumulative Periods</th>
+                        <th style="padding:10px 8px;border:1px solid #ccc;min-width:60px;">Staff Sign</th>
+                    </tr>
+                </thead><tbody>`;
+
+            rows.forEach((r, idx) => {
+                const d     = new Date(r.date + 'T00:00:00');
+                const dd    = String(d.getDate()).padStart(2, '0');
+                const mm    = String(d.getMonth() + 1).padStart(2, '0');
+                const yy    = String(d.getFullYear()).slice(-2);
+                const day3  = DAY3[d.getDay()];
+                const sName = (r.subjectName || getSubjectName(r.subject) || '').substring(0, 22);
+
+                // Row background: amber for working-day extra, grey for holiday extra
+                const rowBg = r.isExtraClass
+                    ? (r._isWorkingDay ? 'background:#fffbeb;' : 'background:#f5f5f5;')
+                    : '';
+
+                // Period cell
+                let periodCell;
+                if (r.isExtraClass && r._isWorkingDay) {
+                    const sz = t => t ? t.replace(/^0(\d:)/, '$1') : (t || '');
+                    periodCell = `<strong style="color:#b45309;">${r._session}*</strong><br><span style="font-size:11px;">${sz(r._timeFrom)}-${sz(r._timeTo)}</span>`;
+                } else {
+                    periodCell = r.periods || '—';
+                }
+
+                // ── Date/Day cell: emit only for group leader, with rowspan ──
+                let dateCellHtml = '';
+                const span = rowspanMap[idx];
+                if (span > 0) {
+                    // Group leader — merged cell spanning `span` rows, centred vertically
+                    dateCellHtml = `<td rowspan="${span}"
+                        style="padding:8px;border:1px solid #ddd;text-align:center;
+                               vertical-align:middle;font-weight:700;">
+                        ${dd}/${mm}/${yy}<br>
+                        <span style="color:#2E75B6;font-weight:600;">${day3}</span>
+                    </td>`;
+                }
+                // span === 0 → continuation row: no Date/Day td at all
+
+                html += `<tr style="border-bottom:1px solid #e0e0e0;${rowBg}">
+                    ${dateCellHtml}
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;">${periodCell}</td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;font-size:12px;">
+                        <strong>${r.subject}</strong><br>${sName}</td>
+                    <td style="padding:8px;border:1px solid #ddd;">${r.topic || '<em style="color:#999">—</em>'}</td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;color:#1F3864;">${r.cumulativePeriod || 0}</td>
+                    <td style="padding:8px;border:1px solid #ddd;"></td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>
+                <div style="margin-top:8px;font-size:11px;color:#666;">
+                    <span style="display:inline-block;width:14px;height:14px;background:#fffbeb;border:1px solid #d97706;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Working-day extra class &nbsp;
+                    <span style="display:inline-block;width:14px;height:14px;background:#f5f5f5;border:1px solid #bbb;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>Holiday extra class
+                </div>`;
+            container.innerHTML = html;
+        }
+
+
+        /**
          * Generate and download the Date-wise Merged Logbook PDF.
          * Called by the new button in the Logbook tab.
          */
         async function generateDatewisePDF() {
+
             const fromDate     = (document.getElementById('dw_fromDate').value || '').trim();
             const toDate       = (document.getElementById('dw_toDate').value || '').trim();
             const academicYear = (document.getElementById('dw_academicYear').value || '').trim();
