@@ -1491,7 +1491,21 @@
         let studentTimetable = {}; // Cache: timetable from settings/timetable
         let studentSubjects = {}; // Cache: { code: { name, type } } from settings/subjects
         let studentCalendarDates = {}; // Cache: { '2-3': {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ... }
+        let allHolidays = []; // Cache: holiday docs from Firestore holidays/ collection
         const MIN_PERIODS_FOR_PRESENT = 3;
+
+        // Returns true if a date string (YYYY-MM-DD) is a holiday (not a working_day override)
+        function isStudentHoliday(dateStr) {
+            const doc = allHolidays.find(h => h.date === dateStr);
+            if (doc) return doc.type !== 'working_day';
+            return false;
+        }
+
+        // Returns true if dateStr falls on a Sunday
+        function isStudentSunday(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            return new Date(y, m - 1, d).getDay() === 0;
+        }
 
         // Helper: find attendance data for the current student in a day's record.
         // PINs are always strings in Firestore, but type/whitespace inconsistencies
@@ -1525,12 +1539,13 @@
                     currentStudent = restoredStudent;
                     showStudentApp();
                     // Fetch attendance data in background
-                    const [attSnap, marksSnap, ttDoc, calDoc, subjDoc] = await Promise.all([
+                    const [attSnap, marksSnap, ttDoc, calDoc, subjDoc, holSnap] = await Promise.all([
                         db.collection('attendance').get(),
                         db.collection('unitMarks').get(),
                         db.collection('settings').doc('timetable').get(),
                         db.collection('settings').doc('calendarDates').get(),
-                        db.collection('settings').doc('subjects').get()
+                        db.collection('settings').doc('subjects').get(),
+                        db.collection('holidays').orderBy('date').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
@@ -1539,6 +1554,7 @@
                     if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
                     if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
                     if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
+                    allHolidays = holSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                     loadMonthlyReport();
                     loadTodayAttendance();
                     loadStudentNotifications(false); // auto-restore: no popup
@@ -1650,13 +1666,14 @@
                         localStorage.setItem('studentSession', JSON.stringify(currentStudent));
                         showStudentApp();
 
-                        // Batch-fetch ALL attendance, unit marks, timetable and academic calendar in parallel
-                        const [attSnap, marksSnap, ttDoc, calDoc, subjDoc] = await Promise.all([
+                        // Batch-fetch ALL attendance, unit marks, timetable, academic calendar and holidays in parallel
+                        const [attSnap, marksSnap, ttDoc, calDoc, subjDoc, holSnap] = await Promise.all([
                             db.collection('attendance').get(),
                             db.collection('unitMarks').get(),
                             db.collection('settings').doc('timetable').get(),
                             db.collection('settings').doc('calendarDates').get(),
-                            db.collection('settings').doc('subjects').get()
+                            db.collection('settings').doc('subjects').get(),
+                            db.collection('holidays').orderBy('date').get()
                         ]);
                         allAttendance = {};
                         attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
@@ -1665,6 +1682,7 @@
                         if (ttDoc.exists) { studentTimetable = ttDoc.data(); delete studentTimetable._v; }
                         if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
                         if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
+                        allHolidays = holSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
                         loadMonthlyReport();
                         loadTodayAttendance();
@@ -1795,9 +1813,19 @@
                 const afterCutoffMR = nowMR.getHours() > 16 ||
                     (nowMR.getHours() === 16 && nowMR.getMinutes() >= 30);
 
+                // Build a Set of holiday dates for fast lookup
+                const holidaySet = new Set(
+                    allHolidays
+                        .filter(h => h.type !== 'working_day')
+                        .map(h => h.date)
+                );
+
                 for (const date of dates) {
                     // Skip today if we are still within college hours (before 4:30 PM)
                     if (date === todayStrMR && !afterCutoffMR) continue;
+
+                    // Skip Sundays and holidays — they are not working days
+                    if (isStudentSunday(date) || holidaySet.has(date)) continue;
 
                     // Use in-memory cache (loaded at login) — no extra Firestore reads
                     const attData = allAttendance[date] || {};
@@ -1832,8 +1860,8 @@
                 const percentage = Math.round((presentDays / workingDays) * 100);
                 document.getElementById('percentage').textContent = percentage + '%';
 
-                // Build calendar
-                buildCalendar(year, mon, dayStatus);
+                // Build calendar — pass holidaySet so holidays show '-' not 'A'
+                buildCalendar(year, mon, dayStatus, holidaySet);
 
                 document.getElementById('monthlyLoading').classList.add('hidden');
                 document.getElementById('monthlyContent').classList.remove('hidden');
@@ -1844,7 +1872,7 @@
             }
         }
 
-        function buildCalendar(year, month, dayStatus) {
+        function buildCalendar(year, month, dayStatus, holidaySet) {
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
 
@@ -1881,7 +1909,13 @@
                 const afterCutoff = now.getHours() > 16 || (now.getHours() === 16 && now.getMinutes() >= 30);
                 const showToday = (dateStr !== todayStr) || afterCutoff;
 
-                if (dayStatus[dateStr] === 'P' && showToday) {
+                // Treat Sundays and holidays as '-'
+                const isHol = isStudentSunday(dateStr) || (holidaySet && holidaySet.has(dateStr));
+
+                if (isHol) {
+                    cell.classList.add('holiday');
+                    statusDiv.textContent = '-';
+                } else if (dayStatus[dateStr] === 'P' && showToday) {
                     cell.classList.add('present');
                     statusDiv.textContent = 'P';
                 } else if (dayStatus[dateStr] === 'A' && showToday) {
@@ -1937,10 +1971,8 @@
             }
 
             try {
-                // ── 2. Holiday check (settings/holidays doc) ────────────────────
-                const holDoc = await db.collection('settings').doc('holidays').get();
-                const holidayList = holDoc.exists ? (holDoc.data().list || []) : [];
-                const todayHoliday = holidayList.find(h => h.date === dateStr);
+                // ── 2. Holiday check (new holidays/ collection) ────────────────────
+                const todayHoliday = allHolidays.find(h => h.date === dateStr && h.type !== 'working_day');
 
                 if (todayHoliday) {
                     const name = todayHoliday.reason || 'Holiday';

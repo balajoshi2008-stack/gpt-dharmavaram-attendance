@@ -2057,24 +2057,75 @@
             <!-- TIMETABLE TAB (Admin only) -->
             <div id="timetable" class="tab-content">
                 <h2 style="color: #2a5298; margin-bottom: 20px;">Step 1: Add Subjects</h2>
-                <div class="form-grid">
+
+                <!-- Scheme / Admission Year selector -->
+                <div class="form-grid" style="margin-bottom:1rem;">
                     <div class="form-group">
-                        <label>Subject Code</label>
-                        <select id="subCode"></select>
-                    </div>
-                    <div class="form-group">
-                        <label>Subject Name</label>
-                        <input type="text" id="subName" placeholder="Enter subject name">
-                    </div>
-                    <div class="form-group">
-                        <label>Subject Type</label>
-                        <select id="subType">
-                            <option value="Theory">Theory</option>
-                            <option value="Practical">Practical</option>
+                        <label>Scheme / Admission Year</label>
+                        <select id="sub_year" onchange="sub_onYearChange()">
+                            <option value="2025">2025 (C23 — old format: CM-101)</option>
+                            <option value="2026" selected>2026 (C26 — new format: 26CM101T)</option>
+                            <option value="2027">2027 (C26)</option>
+                            <option value="2028">2028 (C26)</option>
                         </select>
                     </div>
                 </div>
-                <button class="btn btn-success" onclick="addSubject()">Add Subject</button>
+
+                <!-- C25 block: manual code dropdown (existing behaviour) -->
+                <div id="sub_c25Block" style="display:none;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Subject Code (C25)</label>
+                            <select id="subCode"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Subject Type</label>
+                            <select id="subType">
+                                <option value="Theory">Theory</option>
+                                <option value="Practical">Practical</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- C26 block: auto-generated code -->
+                <div id="sub_c26Block">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Subject Number (3 digits) *</label>
+                            <input type="number" id="sub_num" min="101" max="599"
+                                   placeholder="e.g. 101" oninput="sub_preview()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;"/>
+                        </div>
+                        <div class="form-group">
+                            <label>Subject Type *</label>
+                            <select id="sub_type" onchange="sub_preview()" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                                <option value="T">T — Theory (Unit Marks)</option>
+                                <option value="E">E — Elective Theory (Unit Marks)</option>
+                                <option value="L">L — Lab / Practical (Lab Assessment)</option>
+                                <option value="A">A — Audit (Attendance only)</option>
+                                <option value="P">P — Project (Attendance only)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Live code preview -->
+                    <div id="sub_codePreview" style="background:#1F3864;color:#FCD34D;font-family:monospace;font-size:1.15rem;font-weight:700;text-align:center;letter-spacing:.12rem;padding:.7rem 1rem;border-radius:8px;margin-bottom:.7rem;">— enter number &amp; type —</div>
+                    <!-- Tab routing info -->
+                    <div id="sub_typeInfo" style="background:#EFF6FF;border-left:3px solid #2E75B6;border-radius:0 8px 8px 0;padding:.6rem 1rem;font-size:.82rem;color:#1E40AF;margin-bottom:.6rem;"></div>
+                    <!-- Audit warning -->
+                    <div id="sub_auditWarn" style="display:none;background:#FFF3E0;border-left:3px solid #FF9800;border-radius:0 8px 8px 0;padding:.6rem 1rem;font-size:.82rem;color:#E65100;margin-bottom:.6rem;">
+                        ⚠️ Audit subject: Attendance only. Will NOT appear in Unit Marks or Lab Assessment tabs.
+                    </div>
+                </div>
+
+                <!-- Common fields -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Subject Name *</label>
+                        <input type="text" id="subName" placeholder="e.g. English Communication">
+                    </div>
+                </div>
+
+                <button class="btn btn-success" onclick="addSubject()">➕ Add Subject</button>
                 <div id="subMsg" class="success-message hidden"></div>
                 <div id="subjectsList" class="subject-list"></div>
 
@@ -2176,13 +2227,20 @@
                     </div>
                     <div class="form-group">
                         <label>Admission Year</label>
-                        <select id="admYear">
-                            <option value="26">2026 (26)</option>
-                            <option value="25">2025 (25)</option>
-                            <option value="24">2024 (24)</option>
-                            <option value="23">2023 (23)</option>
+                        <select id="admYear" onchange="admYear_onChange()">
+                            <option value="28">2028 (C26 — 28170CM001)</option>
+                            <option value="27">2027 (C26 — 27170CM001)</option>
+                            <option value="26" selected>2026 (C26 — 26170CM001)</option>
+                            <option value="25">2025 (C23 — 25170-CM-001)</option>
+                            <option value="24">2024 (C23 — 24170-CM-001)</option>
                         </select>
                     </div>
+                </div>
+                <!-- PIN format info bar -->
+                <div id="pinFormatInfo" style="background:#EFF6FF;border-left:4px solid #2E75B6;border-radius:0 8px 8px 0;padding:.6rem 1rem;font-size:.85rem;color:#1E40AF;margin-bottom:.8rem;">
+                    🎫 PIN format: <strong id="pinFormatSample">26170CM<strong>XXX</strong></strong>
+                    &nbsp;&nbsp;<span id="pinSchemeBadge" style="background:#E8F5E9;color:#2E7D32;border-radius:8px;padding:.1rem .5rem;font-size:.75rem;font-weight:700;">C26</span>
+                    &nbsp;&nbsp;<span id="pinBranchLabel" style="color:#555;">Computer Science &amp; Engineering</span>
                 </div>
                 <p style="margin-bottom: 10px; color: #666;">Format: PIN,Name (one per line). Or leave empty to
                     auto-generate.</p>
@@ -2206,7 +2264,7 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>PIN</label>
-                        <input type="text" id="singlePin" placeholder="e.g. 24170-CM-067"
+                        <input type="text" id="singlePin" placeholder="e.g. 26170CM067 or 24170-CM-067"
                             style="text-transform:uppercase;">
                     </div>
                     <div class="form-group">
@@ -4197,6 +4255,7 @@
     </div>
 
 
+    <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -4232,8 +4291,30 @@
             return '';
         }
 
+        // Build yearSem key (e.g. y=2,s=3 → "2-3") matching SUBJECTS[code].yearSem for C26
+        function makeYearSemKey(y, s) {
+            if (y == 1) return '1';
+            return `${y}-${s}`;
+        }
+
         // Check if a subject code belongs to a given year/sem
         function isSubjectForYearSem(code, y, s) {
+            // ── C26 subject codes (e.g. "26CM101T") ─────────────────────────
+            if (/^\d{2}[A-Z]/.test(code)) {
+                const ysKey = makeYearSemKey(y, s);
+                const sub   = SUBJECTS[code];
+                // Use stored yearSem if available (set when admin adds the subject)
+                if (sub && typeof sub === 'object' && sub.yearSem) {
+                    return sub.yearSem === ysKey;
+                }
+                // Fallback: derive from 3-digit number in code (positions 4–6)
+                const num       = parseInt(code.slice(4, 7)) || 0;
+                const numPrefix = Math.floor(num / 100);
+                const prefixToYS = { 1: '1', 3: '2-3', 4: '2-4', 5: '3-5' };
+                return prefixToYS[numPrefix] === ysKey;
+            }
+
+            // ── C25 subject codes (CM-xxx) — existing logic unchanged ────────
             const prefix = getYearSemPrefix(y, s);
             if (!prefix) return false;
             // Activity codes: CM-100 for yr1, CM-300 for sem3, CM-400 for sem4, CM-500 for sem5
@@ -4248,7 +4329,7 @@
             if (code === PROJECT_WORK_CODE) {
                 return s == 5;
             }
-            // Regular subjects: code starts with CM-{prefix}
+            // Regular C25 subjects: code starts with CM-{prefix}
             const num = parseInt(code.replace('CM-', ''));
             return Math.floor(num / 100) === parseInt(prefix);
         }
@@ -4391,29 +4472,43 @@
                 const calDoc = await db.collection('settings').doc('calendarDates').get();
                 if (calDoc.exists) { CALENDAR_DATES = calDoc.data(); delete CALENDAR_DATES._v; }
 
-                // holidays — load from new holidays/ collection (with legacy fallback)
+                // holidays — load from new holidays/ collection, always merging legacy entries
                 const holSnap = await db.collection('holidays').orderBy('date').get();
-                if (!holSnap.empty) {
-                    // New collection-based system
-                    hol_cache = holSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    HOLIDAYS = hol_cache
-                        .filter(h => h.type !== 'working_day')
-                        .map(h => ({ date: h.date, reason: h.reason || '' }));
-                } else {
-                    // Legacy fallback: read from settings/holidays and populate hol_cache
+                hol_cache = holSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // Always check legacy settings/holidays and migrate any entries missing from new collection
+                try {
                     const holDoc = await db.collection('settings').doc('holidays').get();
-                    const legacyList = holDoc.exists ? (holDoc.data().list || []) : [];
-                    HOLIDAYS = legacyList;
-                    // Convert legacy entries into hol_cache format so the List UI works
-                    hol_cache = legacyList.map(h => ({
-                        id:       h.date,
-                        date:     h.date,
-                        reason:   h.reason || 'Holiday',
-                        type:     'holiday',
-                        category: 'single',
-                        addedBy:  'legacy'
-                    }));
+                    if (holDoc.exists) {
+                        const legacyList = holDoc.data().list || [];
+                        const existingDates = new Set(hol_cache.map(h => h.date));
+                        const toMigrate = legacyList.filter(h => h.date && !existingDates.has(h.date));
+                        if (toMigrate.length > 0) {
+                            console.log(`[Holidays] Startup: migrating ${toMigrate.length} legacy holiday(s)...`);
+                            const batch = db.batch();
+                            toMigrate.forEach(h => {
+                                batch.set(db.collection('holidays').doc(h.date), {
+                                    date:     h.date,
+                                    reason:   h.reason || 'Holiday',
+                                    type:     'holiday',
+                                    category: 'single',
+                                    addedBy:  'legacy_migration',
+                                    addedAt:  firebase.firestore.FieldValue.serverTimestamp()
+                                });
+                            });
+                            await batch.commit();
+                            // Re-fetch so hol_cache is up to date
+                            const snap2 = await db.collection('holidays').orderBy('date').get();
+                            hol_cache = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+                        }
+                    }
+                } catch(e) {
+                    console.warn('[Holidays] Startup migration failed:', e);
                 }
+
+                HOLIDAYS = hol_cache
+                    .filter(h => h.type !== 'working_day')
+                    .map(h => ({ date: h.date, reason: h.reason || '' }));
                 const holBadge = document.getElementById('hol_badge');
                 if (holBadge) holBadge.textContent = hol_cache.length;
 
@@ -4463,6 +4558,12 @@
         }
 
         function isTheorySubject(code) {
+            // C26: Theory (T) and Elective (E) both appear in Unit Marks
+            const sub = SUBJECTS[code];
+            if (sub && typeof sub === 'object' && sub.scheme === 'C26') {
+                return sub.type === 'T' || sub.type === 'E';
+            }
+            // C25: existing logic unchanged
             return getSubjectType(code) === 'Theory';
         }
 
@@ -5598,17 +5699,47 @@
 
         // SUBJECT MANAGEMENT
         function addSubject() {
-            const code = document.getElementById('subCode').value;
-            const name = document.getElementById('subName').value.trim();
-            const type = document.getElementById('subType').value;
+            const schemeYear = parseInt(document.getElementById('sub_year')?.value || 2025);
+            const isC26      = schemeYear >= 2026;
+            const name       = document.getElementById('subName').value.trim();
 
-            if (!code || !name) {
-                alert('Fill all fields');
-                return;
+            if (!name) { alert('Enter subject name'); return; }
+
+            let code, subjectData;
+
+            if (isC26) {
+                // ── C26: auto-generate code from number + type ───────────────
+                const num  = document.getElementById('sub_num')?.value;
+                const type = document.getElementById('sub_type')?.value || 'T';
+                if (!num || parseInt(num) < 100 || parseInt(num) > 599) {
+                    alert('Enter a valid 3-digit subject number (e.g. 101, 301, 501)'); return;
+                }
+                code = APP_CONFIG.generateSubjectCode(schemeYear, num, type);
+                if (SUBJECTS[code]) {
+                    if (!confirm(`Subject ${code} already exists. Overwrite?`)) return;
+                }
+                const td = APP_CONFIG.subjectTypes[type] || APP_CONFIG.subjectTypes['T'];
+                subjectData = {
+                    name,
+                    type,                              // 'T','E','L','A','P'
+                    typeLabel:       td.label,
+                    scheme:          'C26',
+                    admissionYear:   schemeYear,
+                    yearSem:         APP_CONFIG.c26NumberToYearSem(num),
+                    showInUnitMarks: td.showInUnitMarks,
+                    showInLabAssess: td.showInLabAssess,
+                    attendanceOnly:  td.attendanceOnly
+                };
+            } else {
+                // ── C25: manual code from dropdown (existing behaviour) ───────
+                code = document.getElementById('subCode')?.value;
+                const type = document.getElementById('subType')?.value || 'Theory';
+                if (!code) { alert('Select a subject code'); return; }
+                subjectData = { name, type };   // C25: keep simple {name, type} format
             }
 
-            // Store as object with name and type
-            SUBJECTS[code] = { name: name, type: type };
+            // Save to in-memory SUBJECTS and Firestore
+            SUBJECTS[code] = subjectData;
             saveSettings('subjects', SUBJECTS);
 
             // Update any existing timetable entries for this code with the new name
@@ -5625,14 +5756,55 @@
             });
             if (ttChanged) saveSettings('timetable', TIMETABLE);
 
-            document.getElementById('subMsg').textContent = `✓ Added: ${code} - ${name} (${type})`;
+            const typeLabel = isC26
+                ? (APP_CONFIG.subjectTypes[subjectData.type]?.label || subjectData.type)
+                : subjectData.type;
+            document.getElementById('subMsg').textContent = `✓ Added: ${code} — ${name} [${typeLabel}]`;
             document.getElementById('subMsg').classList.remove('hidden');
             document.getElementById('subName').value = '';
-            setTimeout(() => document.getElementById('subMsg').classList.add('hidden'), 2000);
+            if (isC26) {
+                document.getElementById('sub_num').value = '';
+                document.getElementById('sub_codePreview').textContent = '— enter number & type —';
+                document.getElementById('sub_typeInfo').textContent = '';
+                document.getElementById('sub_auditWarn').style.display = 'none';
+            }
+            setTimeout(() => document.getElementById('subMsg').classList.add('hidden'), 3000);
             displaySubjects();
             updateTTSubjectList();
             updateMapDropdowns();
-            viewTimetable(); // refresh timetable view if open
+            viewTimetable();
+        }
+
+        // ── C26 subject form helpers ──────────────────────────────────────────
+
+        function sub_onYearChange() {
+            const yr    = parseInt(document.getElementById('sub_year').value);
+            const isC26 = yr >= 2026;
+            document.getElementById('sub_c25Block').style.display = isC26 ? 'none'  : 'block';
+            document.getElementById('sub_c26Block').style.display = isC26 ? 'block' : 'none';
+            sub_preview();
+        }
+
+        function sub_preview() {
+            const yr   = parseInt(document.getElementById('sub_year').value || 2026);
+            if (yr < 2026) return;   // C25 — no preview
+            const num  = document.getElementById('sub_num')?.value;
+            const type = document.getElementById('sub_type')?.value || 'T';
+            const prev = document.getElementById('sub_codePreview');
+            const info = document.getElementById('sub_typeInfo');
+            const warn = document.getElementById('sub_auditWarn');
+            if (!num || parseInt(num) < 100) {
+                prev.textContent = '— enter number & type —';
+                info.textContent = '';
+                if (warn) warn.style.display = 'none';
+                return;
+            }
+            const code   = APP_CONFIG.generateSubjectCode(yr, num, type);
+            const ysLbl  = APP_CONFIG.c26NumberToYearSemLabel(num);
+            const td     = APP_CONFIG.subjectTypes[type];
+            prev.textContent = `${code}   (${ysLbl})`;
+            info.textContent  = td ? td.tabInfo : '';
+            if (warn) warn.style.display = type === 'A' ? 'block' : 'none';
         }
 
         function displaySubjects() {
@@ -5640,11 +5812,25 @@
             list.innerHTML = '<h3 style="margin-bottom: 15px;">Subjects:</h3>';
 
             Object.keys(SUBJECTS).sort().forEach(code => {
-                const div = document.createElement('div');
+                const div  = document.createElement('div');
                 div.className = 'subject-item';
-                const typeBadge = getSubjectType(code) === 'Theory'
-                    ? '<span style="background:#4CAF50;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">Theory</span>'
-                    : '<span style="background:#FF9800;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">Practical</span>';
+                const sub  = SUBJECTS[code];
+                let typeBadge = '';
+
+                if (sub && typeof sub === 'object' && sub.scheme === 'C26') {
+                    // C26: show type letter badge with colour from APP_CONFIG
+                    const td  = APP_CONFIG.subjectTypes[sub.type] || {};
+                    const lbl = td.label ? `${sub.type} — ${td.label}` : (sub.type || '?');
+                    typeBadge = `<span style="${td.badgeStyle || 'background:#1F3864;color:#fff;'}padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">${lbl}</span>`;
+                    const ysLabel = sub.yearSem ? ` <span style="background:#E3E8FF;color:#1F3864;padding:2px 6px;border-radius:3px;font-size:10px;margin-left:4px;">${sub.yearSem}</span>` : '';
+                    typeBadge += ysLabel;
+                } else {
+                    // C25: existing Theory/Practical badge
+                    typeBadge = getSubjectType(code) === 'Theory'
+                        ? '<span style="background:#4CAF50;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">Theory</span>'
+                        : '<span style="background:#FF9800;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">Practical</span>';
+                }
+
                 div.innerHTML = `
                     <span><strong>${code}</strong>: ${getSubjectName(code)} ${typeBadge}</span>
                     <button class="btn btn-danger" onclick="deleteSubject('${code}')" style="padding: 6px 12px;">Delete</button>
@@ -5882,8 +6068,35 @@
             }
         }
 
+        // Scheme-aware PIN generator — delegates to APP_CONFIG
+        // admYear is the 2-digit value from the dropdown (e.g. "26" for 2026)
         function generatePIN(admYear, rollNo) {
-            return `${admYear}170-CM-${String(rollNo).padStart(3, '0')}`;
+            // Convert 2-digit year ("26") to 4-digit (2026) for scheme detection
+            const fullYear = 2000 + parseInt(admYear);
+            return APP_CONFIG.generatePIN(fullYear, rollNo);
+            // C25 (≤2025): returns "25170-CM-001"  (with dashes, unchanged)
+            // C26 (≥2026): returns "26170CM001"     (no dashes, new format)
+        }
+
+        // Update PIN format info bar when admission year changes
+        function admYear_onChange() {
+            const yr      = parseInt(document.getElementById('admYear').value || '26');
+            const fullYr  = 2000 + yr;
+            const isC26   = fullYr >= 2026;
+            const sample  = APP_CONFIG.generatePIN(fullYr, 1).replace(/\d{3}$/, 'XXX');
+            const branch  = APP_CONFIG.getBranchName(fullYr);
+            const scheme  = isC26 ? 'C26' : 'C23';
+            const badgeBg = isC26 ? '#E8F5E9' : '#EFF6FF';
+            const badgeFg = isC26 ? '#2E7D32' : '#1565C0';
+            const infoEl  = document.getElementById('pinFormatInfo');
+            if (infoEl) {
+                document.getElementById('pinFormatSample').innerHTML = sample;
+                const badge = document.getElementById('pinSchemeBadge');
+                badge.textContent = scheme;
+                badge.style.background = badgeBg;
+                badge.style.color      = badgeFg;
+                document.getElementById('pinBranchLabel').textContent = branch;
+            }
         }
 
         function addStudents() {
@@ -6112,7 +6325,12 @@
 
                 row.innerHTML = `
                     <td style="text-align:center;">${i + 1}</td>
-                    <td><span class="editable" onclick="editPIN('${y}','${s}',${i},'${st.pin}')">${st.pin}</span></td>
+                    <td>
+                        <span class="editable" onclick="editPIN('${y}','${s}',${i},'${st.pin}')">${st.pin}</span>
+                        ${APP_CONFIG.detectSchemeFromPIN(st.pin) === 'C26'
+                            ? '<span style="background:#E8F5E9;color:#2E7D32;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C26</span>'
+                            : '<span style="background:#EFF6FF;color:#1565C0;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C23</span>'}
+                    </td>
                     <td>
                         <span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span>
                         ${badge}${inactiveNote}
@@ -6344,9 +6562,15 @@
             if (y != 1 && !s) { alert('Please select Semester'); return; }
             if (!date) { alert('Please select Date'); return; }
 
-            // Block attendance on Sundays only (default holiday)
+            // Block attendance on Sundays and all marked holidays (2nd Saturdays, gazetted, etc.)
             if (isSunday(date)) {
                 alert('⛔ Sunday is a holiday! Attendance cannot be marked on Sundays.');
+                return;
+            }
+            if (isHoliday(date)) {
+                const holEntry = hol_cache.find(h => h.date === date);
+                const reason = holEntry?.reason || 'Holiday';
+                alert(`⛔ "${reason}" is marked as a holiday! Attendance cannot be marked.`);
                 return;
             }
 
@@ -6398,7 +6622,7 @@
                         } catch(e) { console.warn('[loadStudents] Firestore fetch failed:', e); }
                     }
                     const firstStudent = (STUDENTS[y]?.[s] || [])[0];
-                    const attExists = firstStudent && alreadyPosted.some(p => attDoc?.[firstStudent.pin]?.[p]);
+                    const attExists = firstStudent && alreadyPosted.some(p => attDoc?.[firstStudent.pin]?.[String(p)]);
 
                     const postedSubjects = [...new Set(alreadyPosted.map(p => postedData[p]?.subject || ''))].join(', ');
                     const postedBy = [...new Set(alreadyPosted.map(p => postedData[p]?.faculty || ''))].join(', ');
@@ -6608,7 +6832,7 @@
             try {
                 const batch = db.batch();
                 // Write 1: attendance document
-                batch.set(db.collection('attendance').doc(date), todayAttendance);
+                batch.set(db.collection('attendance').doc(date), todayAttendance, { merge: true });
                 // Write 2: periodFaculty lock
                 batch.set(db.collection('settings').doc('periodFaculty'), PERIOD_FACULTY, { merge: true });
                 await batch.commit();
@@ -8363,18 +8587,19 @@
                 return;
             }
 
-            // Get Theory subjects only that faculty handles
+            // Get Unit Marks subjects that faculty handles
+            // C25: Theory subjects (unchanged). C26: T (Theory) and E (Elective) types.
             let theorySubjects = [];
 
             if (currentUserType === 'admin') {
-                // Admin sees all theory subjects for this year/sem
+                // Admin sees all Unit Marks subjects for this year/sem
                 Object.keys(SUBJECTS).forEach(code => {
                     if (isTheorySubject(code) && isSubjectForYearSem(code, y, s)) {
                         theorySubjects.push(code);
                     }
                 });
             } else {
-                // Faculty sees only their theory subjects
+                // Faculty sees only their assigned Unit Marks subjects
                 Object.keys(FACULTY_MAP).forEach(code => {
                     if (FACULTY_MAP[code] === currentUser && isTheorySubject(code) && isSubjectForYearSem(code, y, s)) {
                         theorySubjects.push(code);
@@ -8383,15 +8608,18 @@
             }
 
             if (theorySubjects.length === 0) {
-                subjectSelect.innerHTML = '<option value="">No Theory subjects assigned</option>';
+                subjectSelect.innerHTML = '<option value="">No Unit Marks subjects assigned</option>';
                 subjectSelect.disabled = true;
                 return;
             }
 
             theorySubjects.sort().forEach(code => {
-                const opt = document.createElement('option');
+                const opt  = document.createElement('option');
+                const sub  = SUBJECTS[code];
+                const badge = (sub && sub.scheme === 'C26' && sub.type)
+                    ? ` [${sub.type}]` : '';
                 opt.value = code;
-                opt.textContent = `${code} - ${getSubjectName(code)}`;
+                opt.textContent = `${code}${badge} — ${getSubjectName(code)}`;
                 subjectSelect.appendChild(opt);
             });
 
@@ -9064,7 +9292,7 @@
             while (cur <= endDt) {
                 const day     = cur.getDay();
                 const month   = cur.getMonth();
-                const dateStr = cur.toISOString().split('T')[0];
+                const dateStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
 
                 if (month !== lastMonth) { lastMonth = month; satCount = 0; }
 
@@ -9367,22 +9595,38 @@
 
         async function hol_refresh() {
             const snap = await db.collection('holidays').orderBy('date').get();
+            hol_cache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-            if (!snap.empty) {
-                // New collection — use directly
-                hol_cache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            } else {
-                // Legacy fallback — convert settings/holidays into cache format
+            // ── Always check legacy settings/holidays doc and migrate any missing entries ──
+            // This handles the case where holidays were added before the new collection existed.
+            try {
                 const legacyDoc = await db.collection('settings').doc('holidays').get();
-                const legacyList = legacyDoc.exists ? (legacyDoc.data().list || []) : [];
-                hol_cache = legacyList.map(h => ({
-                    id:       h.date,
-                    date:     h.date,
-                    reason:   h.reason || 'Holiday',
-                    type:     'holiday',
-                    category: 'single',
-                    addedBy:  'legacy'
-                }));
+                if (legacyDoc.exists) {
+                    const legacyList = legacyDoc.data().list || [];
+                    const existingDates = new Set(hol_cache.map(h => h.date));
+                    const toMigrate = legacyList.filter(h => h.date && !existingDates.has(h.date));
+                    if (toMigrate.length > 0) {
+                        console.log(`[Holidays] Migrating ${toMigrate.length} legacy holiday(s) to new collection...`);
+                        const batch = db.batch();
+                        toMigrate.forEach(h => {
+                            batch.set(db.collection('holidays').doc(h.date), {
+                                date:     h.date,
+                                reason:   h.reason || 'Holiday',
+                                type:     'holiday',
+                                category: 'single',
+                                addedBy:  'legacy_migration',
+                                addedAt:  firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        });
+                        await batch.commit();
+                        // Re-fetch after migration so hol_cache includes migrated entries
+                        const snap2 = await db.collection('holidays').orderBy('date').get();
+                        hol_cache = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
+                        console.log(`[Holidays] Migration complete.`);
+                    }
+                }
+            } catch(e) {
+                console.warn('[Holidays] Legacy migration check failed:', e);
             }
 
             // Sync HOLIDAYS array so isHoliday() works everywhere
@@ -9399,6 +9643,7 @@
             hol_renderList();
             calculateWorkingDays();
         }
+
 
         // hol_filter kept as stub (filter bar removed from UI — no-op)
         function hol_filter(f) { hol_renderList(); }
@@ -13388,6 +13633,9 @@
             const container = document.getElementById('logbookTableContainer');
             area.style.display = 'block';
 
+            // Store rows globally so edit functions can reference them
+            window._lbRows = rows;
+
             const DAY3 = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const totalCumulative = rows.length ? (rows[rows.length - 1].cumulativePeriod || 0) : 0;
             let html = `<table style="width:100%;border-collapse:collapse;font-size:13px;background:white;">
@@ -13402,7 +13650,7 @@
                     </tr>
                 </thead><tbody>`;
 
-            rows.forEach(r => {
+            rows.forEach((r, idx) => {
                 const cumPeriod = r.cumulativePeriod || 0;
                 const d = new Date(r.date + 'T00:00:00');
                 const dd = String(d.getDate()).padStart(2, '0');
@@ -13425,19 +13673,181 @@
                     periodCell = r.periods;
                 }
 
+                // Escape topic for use in HTML attribute
+                const topicDisplay = r.topic
+                    ? `<span id="lbTopicText_${idx}">${r.topic}</span>`
+                    : `<em id="lbTopicText_${idx}" style="color:#999">—</em>`;
+
+                // Edit button — same style as Extra Class tab Edit button
+                const editBtn = `<button onclick="logbookEditTopic(${idx})"
+                    id="lbEditBtn_${idx}"
+                    style="margin-top:6px;padding:4px 10px;background:linear-gradient(135deg,#f97316,#ea580c);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;"
+                    title="Edit topic for this period">&#9998; Edit</button>`;
+
+                // Inline edit panel — hidden by default, same style as topicEditArea in Attendance tab
+                const inlinePanel = `
+                <tr id="lbEditRow_${idx}" style="display:none;">
+                    <td colspan="6" style="padding:0;border:none;">
+                        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:18px 20px;margin:4px 8px 10px 8px;">
+                            <div style="font-size:12px;color:#1e40af;background:#EFF6FF;border-left:3px solid #2E75B6;border-radius:0 8px 8px 0;padding:.5rem .9rem;margin-bottom:12px;" id="lbEditInfo_${idx}"></div>
+                            <div id="lbEditCurrentBlock_${idx}" style="display:none;margin-bottom:12px;">
+                                <div style="font-weight:600;color:#166534;margin-bottom:4px;">&#9989; Current Topic:</div>
+                                <div id="lbEditCurrent_${idx}" style="background:white;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:14px;color:#333;"></div>
+                            </div>
+                            <label style="font-weight:600;color:#166534;display:block;margin-bottom:6px;">&#9998; Edit Topic:</label>
+                            <div style="display:flex;gap:8px;align-items:flex-start;">
+                                <textarea id="lbEditInput_${idx}" maxlength="120" rows="3"
+                                    style="flex:1;padding:10px;border:2px solid #86efac;border-radius:8px;font-size:14px;font-family:inherit;resize:none;"
+                                    placeholder="Enter topic covered in this class…"
+                                    oninput="updateCharCount('lbEditInput_${idx}','lbEditCount_${idx}')"></textarea>
+                                <button id="lbVoiceBtn_${idx}" onclick="startVoiceInput('lbEditInput_${idx}','lbVoiceBtn_${idx}')"
+                                    style="padding:10px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;"
+                                    title="Voice Input">&#127908;</button>
+                            </div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:4px;"><span id="lbEditCount_${idx}">0</span> / 120 characters</div>
+                            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+                                <button class="btn btn-success" onclick="saveLogbookTopic(${idx})" style="padding:8px 18px;">&#128190; Save Topic</button>
+                                <button class="btn btn-secondary" onclick="cancelLogbookTopic(${idx})" style="padding:8px 18px;">Cancel</button>
+                            </div>
+                            <div id="lbEditMsg_${idx}" style="display:none;margin-top:10px;font-size:13px;"></div>
+                        </div>
+                    </td>
+                </tr>`;
+
                 html += `<tr style="border-bottom:1px solid #e0e0e0;${rowBg}">
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:600;">
                         ${dd}/${mm}/${yy}<br><span style="color:#667eea;">${day3}</span></td>
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;">${periodCell}</td>
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;font-size:12px;">
                         <strong>${r.subject}</strong><br>${sName}</td>
-                    <td style="padding:8px;border:1px solid #ddd;">${r.topic || '<em style="color:#999">—</em>'}</td>
+                    <td style="padding:8px;border:1px solid #ddd;">
+                        ${topicDisplay}
+                        ${editBtn}
+                    </td>
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;color:#2a5298;">${cumPeriod}</td>
                     <td style="padding:8px;border:1px solid #ddd;"></td>
-                </tr>`;
+                </tr>
+                ${inlinePanel}`;
             });
             html += `</tbody></table>`;
             container.innerHTML = html;
+        }
+
+        // ── Logbook inline topic edit helpers ────────────────────────────
+
+        async function logbookEditTopic(idx) {
+            // Close any other open inline editor
+            document.querySelectorAll('[id^="lbEditRow_"]').forEach(el => {
+                if (el.id !== `lbEditRow_${idx}`) el.style.display = 'none';
+            });
+
+            const r   = (window._lbRows || [])[idx];
+            if (!r) return;
+
+            const row = document.getElementById(`lbEditRow_${idx}`);
+            if (!row) return;
+
+            // Toggle: if already open, close it
+            if (row.style.display !== 'none') {
+                row.style.display = 'none';
+                return;
+            }
+
+            row.style.display = '';
+
+            // Populate info line
+            const d = new Date(r.date + 'T00:00:00');
+            const dateLabel = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', weekday:'long' });
+            const infoEl = document.getElementById(`lbEditInfo_${idx}`);
+            if (infoEl) {
+                infoEl.innerHTML = `<strong>Date:</strong> ${dateLabel} &nbsp;|&nbsp; <strong>Periods:</strong> ${r.periods} &nbsp;|&nbsp; <strong>Subject:</strong> ${r.subject} – ${r.subjectName || getSubjectName(r.subject)}`;
+            }
+
+            // Pre-fill textarea with existing topic
+            const inputEl = document.getElementById(`lbEditInput_${idx}`);
+            const countEl = document.getElementById(`lbEditCount_${idx}`);
+            const curBlock = document.getElementById(`lbEditCurrentBlock_${idx}`);
+            const curEl    = document.getElementById(`lbEditCurrent_${idx}`);
+
+            if (inputEl) {
+                inputEl.value = r.topic || '';
+                if (countEl) countEl.textContent = (r.topic || '').length;
+            }
+            if (curEl && r.topic) {
+                curEl.textContent = r.topic;
+                if (curBlock) curBlock.style.display = 'block';
+            } else {
+                if (curBlock) curBlock.style.display = 'none';
+            }
+
+            inputEl && inputEl.focus();
+
+            // Scroll into view
+            row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function saveLogbookTopic(idx) {
+            const r = (window._lbRows || [])[idx];
+            if (!r) return;
+
+            const inputEl = document.getElementById(`lbEditInput_${idx}`);
+            const msgEl   = document.getElementById(`lbEditMsg_${idx}`);
+            const topic   = (inputEl?.value || '').trim();
+
+            if (msgEl) { msgEl.style.display = 'block'; msgEl.style.color = '#1565c0'; msgEl.textContent = '⏳ Saving…'; }
+
+            try {
+                // Build _topicKey-compatible key: yearSem_P{periods}
+                const ys  = r.yearSem || '1-1';
+                const key = `${ys}_P${r.periods.replace(/,/g, '_')}`;
+
+                const entry = {
+                    subject:     r.subject,
+                    subjectName: r.subjectName || getSubjectName(r.subject),
+                    periods:     r.periods,
+                    faculty:     currentUser,
+                    facultyName: currentUserName,
+                    yearSem:     ys,
+                    topic:       topic,
+                    timestamp:   new Date().toISOString()
+                };
+
+                await db.collection('dailyTopics').doc(r.date)
+                    .set({ [key]: entry }, { merge: true });
+
+                // Update in-memory row so display stays consistent
+                r.topic = topic;
+
+                // Update displayed text in the main table cell
+                const textEl = document.getElementById(`lbTopicText_${idx}`);
+                if (textEl) {
+                    if (topic) {
+                        textEl.removeAttribute('style');
+                        textEl.textContent = topic;
+                        textEl.tagName === 'EM' && textEl.replaceWith(Object.assign(document.createElement('span'), { id: `lbTopicText_${idx}`, textContent: topic }));
+                    }
+                }
+
+                // Update current-topic block inside panel
+                const curEl    = document.getElementById(`lbEditCurrent_${idx}`);
+                const curBlock = document.getElementById(`lbEditCurrentBlock_${idx}`);
+                if (curEl) curEl.textContent = topic;
+                if (curBlock) curBlock.style.display = topic ? 'block' : 'none';
+
+                if (msgEl) { msgEl.style.color = '#2e7d32'; msgEl.textContent = '✅ Topic saved!'; }
+                setTimeout(() => {
+                    if (msgEl) msgEl.style.display = 'none';
+                    cancelLogbookTopic(idx);
+                }, 1800);
+
+            } catch (e) {
+                if (msgEl) { msgEl.style.color = '#c62828'; msgEl.textContent = '❌ Error: ' + e.message; }
+            }
+        }
+
+        function cancelLogbookTopic(idx) {
+            const row = document.getElementById(`lbEditRow_${idx}`);
+            if (row) row.style.display = 'none';
         }
 
         async function downloadLogbookPDF() {
@@ -15087,6 +15497,12 @@
 
         /** Return a helper: is this code a lab/practical subject? */
         function isLabSubject(code) {
+            // C26: only type L (Lab) appears in Lab Assessment
+            const sub = SUBJECTS[code];
+            if (sub && typeof sub === 'object' && sub.scheme === 'C26') {
+                return sub.type === 'L';
+            }
+            // C25: existing logic unchanged
             const t = getSubjectType(code).toLowerCase();
             return t === 'practical' || t === 'lab';
         }
