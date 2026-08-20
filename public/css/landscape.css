@@ -1,0 +1,199 @@
+/* ═══════════════════════════════════════════════════
+   landscape.css
+   GPT Dharmavaram Attendance System
+   Handles layout when phone is rotated to landscape.
+
+   HOW IT WORKS:
+   - Portrait mode: zero effect (existing styles unchanged)
+   - Landscape on mobile: compact layout, better use of width
+   ═══════════════════════════════════════════════════ */
+
+/* ── Smooth scrolling for all orientations ────────── */
+html {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Safe area for phones with notch (iPhone/Android cutout) */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Safe area for header (notch protection) ──────── */
+header,
+.header,
+[class*="header"],
+[class*="page-hdr"],
+[class*="app-hdr"] {
+  padding-left:  max(1rem, env(safe-area-inset-left,  0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+/* ═══════════════════════════════════════════════════
+   MOBILE LANDSCAPE
+   Triggers when phone is rotated horizontally.
+   max-height: 500px = typical landscape phone screen height
+   ═══════════════════════════════════════════════════ */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+
+  /* ── Header: compact to save vertical space ─────── */
+  header,
+  .header,
+  [class*="header"],
+  [class*="page-hdr"],
+  [class*="app-hdr"] {
+    padding-top:    0.4rem !important;
+    padding-bottom: 0.4rem !important;
+  }
+
+  /* Hide header subtitle text (college name subtitle etc) */
+  header p,
+  .header p,
+  [class*="header"] p,
+  [class*="subtitle"],
+  [class*="developed-by"] {
+    display: none !important;
+  }
+
+  /* Smaller header title */
+  header h1,
+  .header h1,
+  [class*="header"] h1 {
+    font-size: 1rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* ── Tab navigation: scroll horizontally ────────── */
+  [class*="tab-nav"],
+  [class*="tab-bar"],
+  [class*="tabs"] {
+    overflow-x:                auto !important;
+    white-space:               nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    display:                   flex !important;
+    flex-wrap:                 nowrap !important;
+  }
+
+  [class*="tab-btn"],
+  [class*="tab-button"],
+  [class*="nav-btn"] {
+    flex-shrink:    0 !important;
+    padding:        0.4rem 0.75rem !important;
+    font-size:      0.78rem !important;
+    white-space:    nowrap !important;
+  }
+
+  /* ── Cards / Sections: less padding ─────────────── */
+  .card,
+  [class*="card"],
+  [class*="section"],
+  [class*="panel"] {
+    padding:       0.75rem 1rem !important;
+    margin-bottom: 0.6rem !important;
+  }
+
+  /* ── Forms: 2-column grid in landscape ──────────── */
+  /* Makes better use of wider screen */
+  .form-row,
+  [class*="form-row"] {
+    display:               grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap:                   0.6rem !important;
+  }
+
+  /* Single form groups get 2-col when side by side */
+  .form-group,
+  [class*="form-group"],
+  [class*="form-grp"] {
+    min-width: 0 !important;
+  }
+
+  /* ── Student attendance cards: 2-column ─────────── */
+  /* When marking attendance, show 2 students per row */
+  [class*="student-list"],
+  [class*="students-list"],
+  [class*="student-grid"],
+  [class*="students-grid"] {
+    display:               grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap:                   0.5rem !important;
+  }
+
+  /* ── Modals: scrollable, not too tall ────────────── */
+  [class*="modal"] > div,
+  [class*="modal-content"],
+  [class*="modal-box"],
+  [class*="modal-card"] {
+    max-height:  85vh !important;
+    overflow-y:  auto !important;
+    margin:      0.5rem auto !important;
+  }
+
+  /* ── Buttons: slightly more compact ─────────────── */
+  button,
+  [class*="btn"] {
+    padding:   0.55rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* ── Login card: centered and compact ────────────── */
+  [class*="login"],
+  [class*="login-card"],
+  [class*="login-box"],
+  [class*="auth-card"] {
+    max-width: 440px !important;
+    padding:   1rem 1.2rem !important;
+    margin:    0.5rem auto !important;
+  }
+
+  /* ── Tables: smaller font, still readable ────────── */
+  table {
+    font-size: 0.78rem !important;
+  }
+
+  th, td {
+    padding: 0.3rem 0.5rem !important;
+  }
+
+  /* ── Reduce general font size slightly ───────────── */
+  body {
+    font-size: 14px !important;
+  }
+
+  /* ── Wrap / container: use full width ────────────── */
+  .wrap,
+  .container,
+  [class*="wrap"],
+  [class*="container"] {
+    padding-left:  max(0.75rem, env(safe-area-inset-left,  0px)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  /* ── Notification / toast banners ───────────────── */
+  [id*="toast"],
+  [class*="toast"],
+  [class*="notification-banner"] {
+    font-size: 0.8rem !important;
+    padding:   0.5rem 1rem !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLET LANDSCAPE (wider screens, more room)
+   min-height 501px = tablet landscape screens
+   Less aggressive adjustments needed
+   ═══════════════════════════════════════════════════ */
+@media screen and (orientation: landscape) and (min-height: 501px) {
+
+  /* 3-column student grid on tablet landscape */
+  [class*="student-list"],
+  [class*="students-grid"] {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+
+  /* 3-column forms on tablet landscape */
+  .form-row,
+  [class*="form-row"] {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+}
