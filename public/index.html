@@ -1503,6 +1503,19 @@
                         </div>
                     </div>
 
+                    <!-- [POWER USER ONLY] Select Faculty — shown after Day (Auto), before Attendance Mode -->
+                    <div id="puFacultyGroup" class="form-grid hidden">
+                        <div class="form-group">
+                            <label>
+                                Select Faculty
+                                <span style="color:#667eea;font-size:12px;font-weight:normal;"> ⚡ Power User</span>
+                            </label>
+                            <select id="puFaculty" onchange="onPowerUserFacultyChange()"
+                                style="padding:12px;border:2px solid #667eea;border-radius:8px;font-size:14px;">
+                                <option value="">-- Select Faculty --</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label>Attendance Mode</label>
@@ -1609,7 +1622,7 @@
                         <tbody id="tbody"></tbody>
                     </table>
                     <div style="margin-top: 20px;">
-                        <button class="btn btn-success" onclick="submitAttendance()">Submit Attendance</button>
+                        <button id="btnSubmitAtt" class="btn btn-success" onclick="submitAttendance()">Submit Attendance</button>
                         <button class="btn btn-secondary" onclick="cancelMarkAttendance()">Cancel</button>
                     </div>
                     <div id="msg" class="success-message hidden"></div>
@@ -2063,7 +2076,7 @@
                     <div class="form-group">
                         <label>Scheme / Admission Year</label>
                         <select id="sub_year" onchange="sub_onYearChange()">
-                            <option value="2025">2025 (C23 — old format: CM-101)</option>
+                            <option value="2025">2025 (C25 — old format: CM-101)</option>
                             <option value="2026" selected>2026 (C26 — new format: 26CM101T)</option>
                             <option value="2027">2027 (C26)</option>
                             <option value="2028">2028 (C26)</option>
@@ -2228,11 +2241,10 @@
                     <div class="form-group">
                         <label>Admission Year</label>
                         <select id="admYear" onchange="admYear_onChange()">
-                            <option value="28">2028 (C26 — 28170CM001)</option>
-                            <option value="27">2027 (C26 — 27170CM001)</option>
                             <option value="26" selected>2026 (C26 — 26170CM001)</option>
-                            <option value="25">2025 (C23 — 25170-CM-001)</option>
-                            <option value="24">2024 (C23 — 24170-CM-001)</option>
+                            <option value="25">2025 (C25 — 25170-CM-001)</option>
+                            <option value="24">2024 (C25 — 24170-CM-001)</option>
+                            <option value="23">2023 (C25 — 23170-CM-001)</option>
                         </select>
                     </div>
                 </div>
@@ -2707,16 +2719,19 @@
                 </div>
             </div>
 
-            <!-- PROFILE TAB (Faculty) -->
+            <!-- PROFILE TAB (Faculty / Power User) -->
             <div id="profile" class="tab-content">
                 <h2 style="color: #2a5298; margin-bottom: 20px;">👤 My Profile</h2>
-                <div class="info-box">
-                    <strong>Name:</strong> <span id="profileName"></span><br>
-                    <strong>Username:</strong> <span id="profileUsername"></span><br>
-                    <strong>Role:</strong> Faculty
+                <!-- Hidden by default — shown only for faculty login via loadProfile() -->
+                <div id="profileInfoSection" style="display:none;">
+                    <div class="info-box">
+                        <strong>Name:</strong> <span id="profileName"></span><br>
+                        <strong>Username:</strong> <span id="profileUsername"></span><br>
+                        <strong>Role:</strong> Faculty
+                    </div>
+                    <h3 style="color:#2a5298;margin:25px 0 15px;">My Assigned Subjects</h3>
+                    <div id="profileSubjects" class="subject-list"></div>
                 </div>
-                <h3 style="color:#2a5298;margin:25px 0 15px;">My Assigned Subjects</h3>
-                <div id="profileSubjects" class="subject-list"></div>
                 <h3 style="color:#2a5298;margin:25px 0 15px;">Change Password</h3>
                 <div class="password-section">
                     <div class="form-group">
@@ -3830,7 +3845,7 @@
                                 <label>📚 Year / Semester</label>
                                 <select id="al_yearSem">
                                     <option value="">-- Select --</option>
-                                    <option value="1-1">Year 1  (Sem 1)</option>
+                                    <option value="1-1">Year 1</option>
                                     <option value="2-3">2nd Year – Semester 3</option>
                                     <option value="2-4">2nd Year – Semester 4</option>
                                     <option value="3-5">3rd Year – Semester 5</option>
@@ -4132,7 +4147,7 @@
                             <label>📚 Year / Semester</label>
                             <select id="atp_yearSem">
                                 <option value="">-- Select --</option>
-                                <option value="1-1">1st Year (Sem 1)</option>
+                                <option value="1-1">1st Year</option>
                                 <option value="2-3">2nd Year – Semester 3</option>
                                 <option value="2-4">2nd Year – Semester 4</option>
                                 <option value="3-5">3rd Year – Semester 5</option>
@@ -4252,6 +4267,94 @@
             </div>
             <!-- ══════════════ END FORM GENERATOR TAB ══════════════ -->
 
+            <!-- ══════════════ ADMIN RESULTS TAB ══════════════ -->
+            <div id="adminResults" class="tab-content">
+                <div style="max-width:800px;margin:0 auto;padding:10px 0 40px;">
+                    <!-- Header -->
+                    <div style="background:linear-gradient(135deg,#1e3c72 0%,#2a5298 60%,#667eea 100%);border-radius:16px;padding:22px 28px 18px;margin-bottom:22px;box-shadow:0 8px 32px rgba(30,60,114,0.18);">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:34px;">📋</span>
+                            <div>
+                                <h2 style="color:#fff;margin:0;font-size:21px;font-weight:700;">Upload Exam Results</h2>
+                                <p style="color:rgba(255,255,255,0.75);margin:4px 0 0;font-size:13px;">Upload student results from Excel to Firestore • Available in Student Portal</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Toast notification -->
+                    <div id="res_toast" style="display:none;position:fixed;top:24px;right:24px;z-index:9999;padding:12px 22px;border-radius:10px;font-weight:600;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.18);min-width:220px;"></div>
+
+                    <!-- Step 1: Select Semesters -->
+                    <div style="background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+                            <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">1</div>
+                            <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Select Semester Details</h3>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                            <div>
+                                <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Students Currently In</label>
+                                <select id="res_currentSem" style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                                    <option value="">-- Select --</option>
+                                    <option value="1">Year 1 (Sem 1 & 2)</option>
+                                    <option value="2-3">Sem 3</option>
+                                    <option value="2-4">Sem 4</option>
+                                    <option value="3-5">Sem 5</option>
+                                    <option value="3-6">Sem 6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Results Of (Exam Semester)</label>
+                                <select id="res_examSem" style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                                    <option value="">-- Select --</option>
+                                    <option value="1-1">Year 1 (Sem 1 & 2)</option>
+                                    <option value="2-3">Sem 3</option>
+                                    <option value="2-4">Sem 4</option>
+                                    <option value="3-5">Sem 5</option>
+                                    <option value="3-6">Sem 6</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Select Excel File -->
+                    <div style="background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+                            <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">2</div>
+                            <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Select Excel File</h3>
+                        </div>
+                        <p style="font-size:13px;color:#888;margin-bottom:12px;">Excel Row 1: PIN, Name, Branch, then paper numbers (401, 402...). Row 2: sub-headers (External, Internal, Total, Grade Points, Credits Earned, Grade, SUB.Result per paper), Grand Total, GPA, Results, Month&amp;Year. Data from Row 3.</p>
+                        <input type="file" id="res_fileInput" accept=".xlsx,.xls" onchange="resPreviewExcel()" style="width:100%;padding:10px 12px;border:2px dashed #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;cursor:pointer;">
+                        <div id="res_fileInfo" style="margin-top:8px;font-size:13px;color:#2a5298;font-weight:600;display:none;"></div>
+                    </div>
+
+                    <!-- Step 3: Preview & Upload -->
+                    <div style="background:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+                            <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">3</div>
+                            <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Preview & Upload</h3>
+                        </div>
+                        <div id="res_previewArea" style="overflow-x:auto;margin-bottom:16px;"></div>
+                        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                            <button id="res_uploadBtn" onclick="resUploadToFirestore()" disabled style="padding:12px 28px;background:linear-gradient(135deg,#4CAF50,#2e7d32);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:not-allowed;box-shadow:0 4px 12px rgba(76,175,80,0.3);opacity:0.45;">
+                                🚀 Upload to Firestore
+                            </button>
+                            <div id="res_progressText" style="font-size:14px;font-weight:600;color:#2a5298;"></div>
+                        </div>
+                        <div id="res_statusBox" style="margin-top:12px;display:none;padding:14px;border-radius:10px;font-weight:600;font-size:14px;"></div>
+                    </div>
+
+                    <!-- Existing Results in Firestore -->
+                    <div style="background:#fff;border-radius:14px;padding:22px 24px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                            <span style="font-size:20px;">📂</span>
+                            <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Uploaded Results Summary</h3>
+                        </div>
+                        <div id="res_summaryArea" style="font-size:13px;color:#666;">Click the tab to load summary...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- ══════════════ END ADMIN RESULTS TAB ══════════════ -->
+
     </div>
 
 
@@ -4352,6 +4455,49 @@
             // Regular: must be mapped to this faculty
             return FACULTY_MAP[code] === username;
         }
+
+        // ── POWER USER HELPERS ────────────────────────────────────────────────────────────
+        // Returns the "acting faculty" username for all permission checks and attendance writes.
+        // Power User: the faculty selected in the #puFaculty dropdown.
+        // Regular faculty / admin: the logged-in user themselves.
+        function getEffectiveFaculty() {
+            if (currentUserType === 'powerUser') {
+                const sel = document.getElementById('puFaculty');
+                return (sel && sel.value) ? sel.value : '';
+            }
+            return currentUser;
+        }
+
+        // Populate the Power User "Select Faculty" dropdown from the in-memory USERS map.
+        // Called once after loadDataFromFirestore() at Power User login.
+        function populatePowerUserFacultyDropdown() {
+            const sel = document.getElementById('puFaculty');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- Select Faculty --</option>';
+            const facultyList = Object.entries(USERS)
+                .filter(([, d]) => d && (d.type === 'user' || !d.type))
+                .sort((a, b) => (a[1].name || a[0]).localeCompare(b[1].name || b[0]));
+            facultyList.forEach(([username, data]) => {
+                const opt = document.createElement('option');
+                opt.value = username;
+                opt.textContent = `${data.name || username} (${username})`;
+                sel.appendChild(opt);
+            });
+        }
+
+        // Called when Power User changes the faculty selection in the attendance form.
+        // Clears the attendance form and re-populates the period dropdown for the new faculty.
+        function onPowerUserFacultyChange() {
+            clearAttendanceForm();
+            loadPeriodsFromDate();
+
+            // If mode is already "Class Work Adjustment", reload subjects for the newly selected faculty
+            const modeRadio = document.querySelector('input[name="attMode"]:checked');
+            if (modeRadio && modeRadio.value === 'other') {
+                loadOtherSubjects();
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────────────────
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -4512,14 +4658,47 @@
                 const holBadge = document.getElementById('hol_badge');
                 if (holBadge) holBadge.textContent = hol_cache.length;
 
+                // Auto-generate Sundays + 2nd Saturdays if any are missing for current academic year
+                try {
+                    const nowMonth = new Date().getMonth(); // 0-indexed (0=Jan, 5=Jun)
+                    const autoAcadYear = nowMonth >= 5
+                        ? `${new Date().getFullYear()}-${String(new Date().getFullYear() + 1).slice(-2)}`
+                        : `${new Date().getFullYear() - 1}-${String(new Date().getFullYear()).slice(-2)}`;
+                    const addedCount = await hol_setupDefaults(autoAcadYear);
+                    if (addedCount > 0) {
+                        console.log(`[Holidays] Auto-generated ${addedCount} default holidays for ${autoAcadYear}`);
+                    }
+                } catch(e) {
+                    console.warn('[Holidays] Auto-generate defaults failed:', e);
+                }
+
                 // Load faculty profiles from users collection (post-migration)
                 const usersSnap = await db.collection('users').get();
+                const usersCollectionIds = new Set();
                 usersSnap.forEach(doc => {
                     const data = doc.data();
+                    usersCollectionIds.add(doc.id);
                     if (data.type === 'user' && !USERS[doc.id]) {
                         USERS[doc.id] = data;
                     }
                 });
+
+                // ── Self-heal: remove stale users from legacy settings/users ──
+                // If a user exists in USERS (loaded from legacy settings/users doc) but
+                // NOT in the users collection, they were deleted manually from Firestore.
+                // Remove them from USERS and clean up the legacy doc.
+                {
+                    const staleUsers = Object.keys(USERS).filter(uname =>
+                        USERS[uname].type === 'user' && !usersCollectionIds.has(uname)
+                    );
+                    if (staleUsers.length > 0) {
+                        console.warn('🧹 Removing stale users not in users collection:', staleUsers);
+                        staleUsers.forEach(uname => delete USERS[uname]);
+                        // Save cleaned USERS back to legacy doc (without merge to remove stale keys)
+                        db.collection('settings').doc('users').set(USERS)
+                            .catch(e => console.error('❌ Failed to clean stale users:', e));
+                    }
+                }
 
                 console.log('✅ Data loaded from Firestore');
             } catch (error) {
@@ -4604,13 +4783,19 @@
                 if (userData.type === 'admin') { return; }
                 // Force re-login if password change is required (page-refresh scenario)
                 if (userData.mustChangePassword || userData.forcePasswordChange) { await auth.signOut(); return; }
-                // Restore faculty session
+                // Restore faculty / powerUser session
+                const restoredType = userData.type || 'user';  // 'user' | 'powerUser'
                 currentUser = username;
-                currentUserType = 'user';
+                currentUserType = restoredType;
                 currentUserName = userData.name;
-                showAdminApp(username, 'user', userData.name);
+                showAdminApp(username, restoredType, userData.name);
                 await loadDataFromFirestore();
-                loadProfile();
+                if (restoredType === 'powerUser') {
+                    loadDashboard();
+                    populatePowerUserFacultyDropdown();
+                } else {
+                    loadProfile();
+                }
                 loadTodayAttendance();
                 loadPeriodsFromDate();
                 loadNotificationsList();
@@ -4642,6 +4827,10 @@
 
             // Hide everything below date until date is picked
             document.getElementById('attDateSection').classList.add('hidden');
+            // Hide Power User faculty selector on full reset
+            const puGrp = document.getElementById('puFacultyGroup');
+            if (puGrp) { puGrp.classList.add('hidden'); }
+            // Don't reset #puFaculty value here — PU may be re-using the same faculty
 
             document.getElementById('modeTimeTable').checked = true;
             document.getElementById('timetableMode').classList.remove('hidden');
@@ -4681,14 +4870,16 @@
             loginBtn.textContent = 'Logging in...';
             errorDiv.style.display = 'none';
 
-            // Auto-detect role: admin username = admin, everyone else = faculty
+            // Auto-detect role: admin username = admin, everyone else = faculty/powerUser
+            // Note: 'powerUser' is stored in Firestore as type:'powerUser' but signs in
+            // via the same non-admin Firebase Auth path as regular faculty (type:'user').
             const type = (user === 'admin') ? 'admin' : 'user';
             try {
                 // Convert username → internal email
                 const email = user + '@dharmavaram.com';
 
                 // Admin: SESSION persistence (clears on tab close)
-                // Faculty: LOCAL persistence (survives page refresh)
+                // Faculty / Power User: LOCAL persistence (survives page refresh)
                 if (type === 'admin') {
                     await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
                 } else {
@@ -4702,7 +4893,7 @@
                 // Fetch Firestore user doc for role + mustChangePassword
                 const userDoc = await db.collection('users').doc(user).get();
                 // Sync authPassword so admin can reset this user's password later
-                if (userDoc.exists && userDoc.data().type === 'user') {
+                if (userDoc.exists && (userDoc.data().type === 'user' || userDoc.data().type === 'powerUser')) {
                     db.collection('users').doc(user).update({ authPassword: pass }).catch(() => {});
                 }
                 if (!userDoc.exists) {
@@ -4712,10 +4903,12 @@
                 const userData = userDoc.data();
 
                 // Verify login type matches Firestore role
+                // powerUser uses the same non-admin Firebase Auth login path as 'user'
                 const expectedType = userData.type || 'user';
-                if (expectedType !== type) {
+                const effectiveLoginType = (expectedType === 'powerUser') ? 'user' : expectedType;
+                if (effectiveLoginType !== type) {
                     await auth.signOut();
-                    throw new Error(`Wrong login type! Select "${expectedType === 'admin' ? 'Admin' : 'User (Faculty)'}" from dropdown.`);
+                    throw new Error(`Wrong login type! Select "${effectiveLoginType === 'admin' ? 'Admin' : 'User (Faculty)'}" from dropdown.`);
                 }
 
                 // Store admin password in-memory (needed to re-auth after createUser)
@@ -4725,7 +4918,7 @@
                 // ── mustChangePassword / forcePasswordChange: show change-password screen ──
                 if (userData.mustChangePassword || userData.forcePasswordChange) {
                     currentUser = user;
-                    currentUserType = type;
+                    currentUserType = expectedType;  // store actual role: 'admin'|'user'|'powerUser'
                     currentUserName = userData.name;
                     // Show appropriate hint in the warning box
                     const warnBox = document.getElementById('changePwdWarning');
@@ -4748,15 +4941,15 @@
 
                 // ── Login successful ──
                 currentUser = user;
-                currentUserType = type;
+                currentUserType = expectedType;  // 'admin' | 'user' | 'powerUser'
                 currentUserName = userData.name;
 
-                showAdminApp(user, type, userData.name);
+                showAdminApp(user, expectedType, userData.name);
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Login';
 
                 await loadDataFromFirestore();
-                if (type === 'admin') {
+                if (expectedType === 'admin') {
                     loadDashboard();
                     displaySubjects();
                     updateTTSubjectList();
@@ -4764,6 +4957,9 @@
                     updateMapDropdowns();
                     displayMappings();
                     loadSettings();
+                } else if (expectedType === 'powerUser') {
+                    loadDashboard();
+                    populatePowerUserFacultyDropdown();
                 } else {
                     loadProfile();
                 }
@@ -4878,6 +5074,9 @@
                         updateMapDropdowns();
                         displayMappings();
                         loadSettings();
+                    } else if (currentUserType === 'powerUser') {
+                        loadDashboard();
+                        populatePowerUserFacultyDropdown();
                     } else {
                         loadProfile();
                     }
@@ -4926,6 +5125,21 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attrecovery\'); initAttRecoveryTab();">🛠️ Att. Recovery</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'absentlist\'); absList_onTabOpen();">📋 Absent List</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'adminResults\'); initAdminResultsTab();">📋 Results</button>';
+            } else if (currentUserType === 'powerUser') {
+                navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'dashboard\')">📊 Dashboard</button>';
+                // ── Attendance right after Dashboard for quick access ──
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attendance\')">📋 Attendance</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'statuslog\')">📊 Status</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'summary\')">📋 Summary</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'download\')">📥 Download</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'classlogbook\'); initClassLogbookTab();">📖 Class Logbook</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'absentlist\'); absList_onTabOpen();">📋 Absent List</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'facTimetable\'); renderFacTimetable();">🗓️ Time Table</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'extraclass\'); initExtraClassTab();">📚 Extra Class</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'profile\'); loadProfile();">👤 Profile</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Percentage</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'formgen\'); formGen_onTabOpen();">📋 Form Generator</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'facTimetable\'); renderFacTimetable();">🗓️ Time Table</button>';
@@ -5227,12 +5441,15 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('currentUserDisplay').textContent = name;
-            document.getElementById('userTypeDisplay').textContent = type === 'admin' ? '🔑 Admin' : '👨‍🏫 Faculty';
+            document.getElementById('userTypeDisplay').textContent =
+                type === 'admin'     ? '🔑 Admin'     :
+                type === 'powerUser' ? '⚡ Power User' :
+                                       '👨‍🏫 Faculty';
 
             resetAttendanceForm();
             setupNavigation();
 
-            if (type === 'admin') {
+            if (type === 'admin' || type === 'powerUser') {
                 showTabDirect('dashboard');
             } else {
                 showTabDirect('attendance');
@@ -5275,6 +5492,15 @@
             if (!y) { select.innerHTML = '<option value="">Select Year first</option>'; return; }
             if (y != 1 && !s) { select.innerHTML = '<option value="">Select Semester first</option>'; return; }
 
+            // For Power User, use the selected faculty; for regular faculty, use currentUser
+            const effectiveUser = getEffectiveFaculty();
+
+            // Power User must select a faculty first
+            if (currentUserType === 'powerUser' && !effectiveUser) {
+                select.innerHTML = '<option value="">Select Faculty first</option>';
+                return;
+            }
+
             // Get subjects from FACULTY_MAP that current faculty handles for this year/sem
             const subjectsToShow = new Map(); // code -> name
 
@@ -5282,26 +5508,30 @@
                 // Admin sees all subjects that belong to this year/sem from SUBJECTS
                 Object.keys(SUBJECTS).forEach(code => {
                     if (isSubjectForYearSem(code, y, s)) {
-                        subjectsToShow.set(code, getSubjectName(code));
+                        let name = getSubjectName(code);
+                        if (ACTIVITY_CODES.has(code) && (!name || name === code)) name = 'Activity';
+                        subjectsToShow.set(code, name);
                     }
                 });
             } else {
-                // Faculty: get subjects MAPPED TO THEM in FACULTY_MAP that belong to this year/sem
+                // Faculty (or Power User acting as faculty): get subjects MAPPED TO THEM in FACULTY_MAP
                 Object.keys(FACULTY_MAP).forEach(code => {
-                    if (FACULTY_MAP[code] === currentUser && isSubjectForYearSem(code, y, s)) {
+                    if (FACULTY_MAP[code] === effectiveUser && isSubjectForYearSem(code, y, s)) {
                         subjectsToShow.set(code, getSubjectName(code));
                     }
                 });
 
                 // Add Activity for this year/sem if faculty handles any subject in it
                 const activityCode = y == 1 ? 'CM-100' : s == 3 ? 'CM-300' : s == 4 ? 'CM-400' : s == 5 ? 'CM-500' : null;
-                if (activityCode && canFacultyHandleSubject(currentUser, activityCode, y, s)) {
-                    subjectsToShow.set(activityCode, getSubjectName(activityCode) || 'Activity');
+                if (activityCode && canFacultyHandleSubject(effectiveUser, activityCode, y, s)) {
+                    const actName = getSubjectName(activityCode);
+                    subjectsToShow.set(activityCode, (actName && actName !== activityCode) ? actName : 'Activity');
                 }
 
                 // Add Project Work for 5th sem if branch faculty
-                if (s == 5 && canFacultyHandleSubject(currentUser, PROJECT_WORK_CODE, y, s)) {
-                    subjectsToShow.set(PROJECT_WORK_CODE, getSubjectName(PROJECT_WORK_CODE) || 'Project Work');
+                if (s == 5 && canFacultyHandleSubject(effectiveUser, PROJECT_WORK_CODE, y, s)) {
+                    const pwName = getSubjectName(PROJECT_WORK_CODE);
+                    subjectsToShow.set(PROJECT_WORK_CODE, (pwName && pwName !== PROJECT_WORK_CODE) ? pwName : 'Project Work');
                 }
             }
 
@@ -5622,6 +5852,7 @@
                         </span>
                         <div>
                             <button class="btn btn-primary" onclick="resetUserPassword('${username}')" style="padding:8px 15px;" ${isPendingReset ? 'disabled title="Password reset already pending"' : ''}>🔑 Reset Password</button>
+                            <button class="btn" onclick="deleteUser('${username}')" style="padding:8px 15px;background:#dc3545;color:#fff;border:none;border-radius:6px;margin-left:6px;cursor:pointer;" title="Delete this user">🗑️ Delete</button>
                         </div>
                     `;
                     list.appendChild(div);
@@ -5667,7 +5898,9 @@
 
                 // Remove from in-memory store
                 delete USERS[username];
-                saveSettings('users', USERS);
+                // Use .set() WITHOUT merge so deleted user key is actually removed from legacy doc
+                db.collection('settings').doc('users').set(USERS)
+                    .catch(e => console.error('❌ Failed to save users after delete:', e));
                 displayUsers();
                 updateMapDropdowns();
 
@@ -5902,7 +6135,9 @@
                 const opt = document.createElement('option');
                 opt.value = code;
                 const isActivity = ACTIVITY_CODES.has(code);
-                opt.textContent = `${code} - ${getSubjectName(code)}${isActivity ? ' 🎯' : ''}`;
+                let subName = getSubjectName(code);
+                if (isActivity && (!subName || subName === code)) subName = 'Activity';
+                opt.textContent = `${code} - ${subName}${isActivity ? ' 🎯' : ''}`;
                 select.appendChild(opt);
             });
         }
@@ -6085,7 +6320,7 @@
             const isC26   = fullYr >= 2026;
             const sample  = APP_CONFIG.generatePIN(fullYr, 1).replace(/\d{3}$/, 'XXX');
             const branch  = APP_CONFIG.getBranchName(fullYr);
-            const scheme  = isC26 ? 'C26' : 'C23';
+            const scheme  = isC26 ? 'C26' : 'C25';
             const badgeBg = isC26 ? '#E8F5E9' : '#EFF6FF';
             const badgeFg = isC26 ? '#2E7D32' : '#1565C0';
             const infoEl  = document.getElementById('pinFormatInfo');
@@ -6329,7 +6564,7 @@
                         <span class="editable" onclick="editPIN('${y}','${s}',${i},'${st.pin}')">${st.pin}</span>
                         ${APP_CONFIG.detectSchemeFromPIN(st.pin) === 'C26'
                             ? '<span style="background:#E8F5E9;color:#2E7D32;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C26</span>'
-                            : '<span style="background:#EFF6FF;color:#1565C0;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C23</span>'}
+                            : '<span style="background:#EFF6FF;color:#1565C0;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C25</span>'}
                     </td>
                     <td>
                         <span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span>
@@ -6477,6 +6712,9 @@
                 per.disabled = true;
                 document.getElementById('dayDisplay').value = '';
                 document.getElementById('attDateSection').classList.add('hidden');
+                // Also hide power user faculty group
+                const puGrp = document.getElementById('puFacultyGroup');
+                if (puGrp) puGrp.classList.add('hidden');
                 return;
             }
 
@@ -6487,17 +6725,31 @@
             };
             document.getElementById('dayDisplay').value = fullDayNames[day];
 
-            // Reveal the date-dependent section (day, mode, period, buttons)
+            // Reveal the date-dependent section (day, faculty selector for PU, mode, period, buttons)
             document.getElementById('attDateSection').classList.remove('hidden');
+
+            // Show/hide Power User faculty selector
+            const puGrp = document.getElementById('puFacultyGroup');
+            if (puGrp) puGrp.classList.toggle('hidden', currentUserType !== 'powerUser');
+
+            // Guard: Power User must select a faculty before periods can load
+            if (currentUserType === 'powerUser') {
+                const effFac = getEffectiveFaculty();
+                if (!effFac) {
+                    per.innerHTML = '<option value="">⚠ Select a Faculty above first</option>';
+                    per.disabled = true;
+                    return;
+                }
+            }
 
             const key = `${y}-${s}-${day}`;
             const schedule = TIMETABLE[key] || [];
 
-            // For faculty: only show periods whose subject they can handle
+            // For faculty/powerUser: only show periods whose subject the effective faculty can handle
             // For admin: show all periods
             const filtered = schedule.filter(item => {
                 if (currentUserType === 'admin') return true;
-                return canFacultyHandleSubject(currentUser, item.code, y, s);
+                return canFacultyHandleSubject(getEffectiveFaculty(), item.code, y, s);
             });
 
             filtered.forEach(item => {
@@ -6510,14 +6762,15 @@
             per.disabled = filtered.length === 0;
 
             if (filtered.length === 0 && currentUserType !== 'admin') {
-                // Check if any subjects at all are assigned to this faculty for this year/sem
+                // Check if any subjects at all are assigned to this (effective) faculty for this year/sem
+                const effFac = getEffectiveFaculty();
                 const hasAnySubjectForClass = Object.keys(FACULTY_MAP).some(code =>
-                    FACULTY_MAP[code] === currentUser && isSubjectForYearSem(code, y, s)
+                    FACULTY_MAP[code] === effFac && isSubjectForYearSem(code, y, s)
                 );
                 if (!hasAnySubjectForClass) {
-                    per.innerHTML = '<option value="">No subjects assigned to you for this class</option>';
+                    per.innerHTML = '<option value="">No subjects assigned to this faculty for this class</option>';
                 } else {
-                    per.innerHTML = '<option value="">No periods assigned to you today</option>';
+                    per.innerHTML = '<option value="">No periods assigned to this faculty today</option>';
                 }
             }
         }
@@ -6567,6 +6820,10 @@
                 alert('⛔ Sunday is a holiday! Attendance cannot be marked on Sundays.');
                 return;
             }
+            if (isSecondSaturday(date)) {
+                alert('⛔ 2nd Saturday is a holiday! Attendance cannot be marked.');
+                return;
+            }
             if (isHoliday(date)) {
                 const holEntry = hol_cache.find(h => h.date === date);
                 const reason = holEntry?.reason || 'Holiday';
@@ -6593,7 +6850,8 @@
                 subject = item ? item.subject : '';
 
                 // Block if subject not assigned to this faculty (activity allowed if they handle this class)
-                if (currentUserType !== 'admin' && subCode) {
+                // Power User: permission already enforced at period-load stage via getEffectiveFaculty()
+                if (currentUserType === 'user' && subCode) {
                     const canHandle = canFacultyHandleSubject(currentUser, subCode, y, s);
                     if (!canHandle) {
                         const assignedName = FACULTY_MAP[subCode] ? (USERS[FACULTY_MAP[subCode]]?.name || 'another faculty') : null;
@@ -6667,7 +6925,8 @@
 
                 // Hard block: faculty cannot post for subject not assigned to them
                 // (Activity is allowed if they have any subject in this year/sem)
-                if (currentUserType !== 'admin') {
+                // Power User: permission already enforced at period-load stage via getEffectiveFaculty()
+                if (currentUserType === 'user') {
                     const canHandle = canFacultyHandleSubject(currentUser, subCode, y, s);
                     if (!canHandle) {
                         const assignedName = FACULTY_MAP[subCode] ? (USERS[FACULTY_MAP[subCode]]?.name || 'another faculty') : null;
@@ -6734,13 +6993,71 @@
                 return;
             }
 
+            // ---- Smart carry-over: pre-fill absentees from previous posted period ----
+            const currentPeriodList = getPeriodList(periods);
+            const firstPeriodNum = Math.min(...currentPeriodList.map(p => parseInt(p)));
+
+            // Build a per-student initial presence map (default: all present)
+            const initialPresence = {};
+            stu.forEach(st => { initialPresence[st.pin] = true; });
+
+            if (firstPeriodNum > 1) {
+                // Refresh PERIOD_FACULTY from Firestore to ensure cross-session visibility
+                try {
+                    const pfDoc = await db.collection('settings').doc('periodFaculty').get();
+                    if (pfDoc.exists) {
+                        const freshPF = pfDoc.data();
+                        delete freshPF.docId;
+                        // Merge fresh Firestore data into in-memory PERIOD_FACULTY
+                        Object.assign(PERIOD_FACULTY, freshPF);
+                    }
+                } catch (e) { console.warn('[carry-over] Could not refresh PERIOD_FACULTY:', e); }
+
+                const facultyKeyLocal = `${date}_${y}_${s}`;
+                const postedPeriods = PERIOD_FACULTY[facultyKeyLocal] || {};
+                let referencePeriodfound = -1;
+                for (let chk = firstPeriodNum - 1; chk >= 1; chk--) {
+                    const chkStr = String(chk);
+                    if (postedPeriods[chkStr]) {
+                        referencePeriodfound = chk;
+                        break;
+                    }
+                }
+
+                if (referencePeriodfound > 0) {
+                    // Get attendance data from ATTENDANCE_CACHE or fetch from Firestore
+                    let attDoc = getAttData(date);
+                    if (!attDoc || Object.keys(attDoc).length === 0) {
+                        try {
+                            const fetched = await db.collection('attendance').doc(date).get();
+                            if (fetched.exists) {
+                                attDoc = fetched.data();
+                                ATTENDANCE_CACHE['att_' + date] = attDoc;
+                            }
+                        } catch (e) { console.warn('[carry-over] Could not fetch attendance:', e); }
+                    }
+                    if (attDoc) {
+                        const refPeriodStr = String(referencePeriodfound);
+                        stu.forEach(st => {
+                            const stAtt = attDoc[st.pin];
+                            if (stAtt && stAtt[refPeriodStr]) {
+                                initialPresence[st.pin] = (stAtt[refPeriodStr].status === 'P');
+                            }
+                            // If no record for that student in reference period, keep default true
+                        });
+                    }
+                }
+                // If referencePeriodfound === -1, no prior period posted → all default present
+            }
+            // If firstPeriodNum === 1, all default present (period 1 or combos like 1-3)
+
             document.getElementById('currentPeriod').textContent = `${periods} - ${subject}`;
             const tbody = document.getElementById('tbody');
             tbody.innerHTML = '';
 
             stu.forEach((st, i) => {
                 const row = tbody.insertRow();
-                const isPresent = true; // Default present
+                const isPresent = initialPresence[st.pin];
                 row.innerHTML = `
                     <td><strong>${st.pin}</strong></td>
                     <td>${st.name}</td>
@@ -6791,6 +7108,13 @@
         }
 
         async function submitAttendance() {
+            // ── Show loading state on button so user knows it was clicked ──
+            const submitBtn = document.getElementById('btnSubmitAtt');
+            const originalBtnText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Submitting...';
+            submitBtn.style.opacity = '0.7';
+
             const y = document.getElementById('year').value;
             const s = (y == 1) ? '1' : document.getElementById('sem').value;
             const date = document.getElementById('date').value;
@@ -6806,6 +7130,12 @@
 
             const periodList = getPeriodList(periods);
 
+            // ── Power User: resolve the acting faculty ──────────────────────────────────
+            // For a regular faculty the effective faculty IS the logged-in user.
+            // For a Power User the effective faculty is the one selected in #puFaculty.
+            const effFaculty  = getEffectiveFaculty();
+            const effFacName  = (USERS[effFaculty]?.name) || effFaculty;
+
             // Build updated in-memory structures
             const facultyKey = `${date}_${y}_${s}`;
             if (!PERIOD_FACULTY[facultyKey]) PERIOD_FACULTY[facultyKey] = {};
@@ -6816,15 +7146,25 @@
                 const status = cb.checked ? 'P' : 'A';
                 periodList.forEach(period => {
                     const pKey = String(period);
-                    todayAttendance[st.pin][pKey] = {
-                        status: status,
-                        faculty: USERS[currentUser].name,
+                    // Core attendance record — attributed to the effective (acting) faculty
+                    const attRecord = {
+                        status:  status,
+                        faculty: effFacName,
                         subject: subCode
                     };
-                    PERIOD_FACULTY[facultyKey][pKey] = {
-                        faculty: USERS[currentUser].name,
-                        subject: subCode
-                    };
+                    // Audit trail — recorded only when a Power User posts on behalf of another faculty
+                    if (currentUserType === 'powerUser') {
+                        attRecord.auditedBy     = currentUser;
+                        attRecord.auditedByName = currentUserName || currentUser;
+                    }
+                    todayAttendance[st.pin][pKey] = attRecord;
+
+                    const lockRecord = { faculty: effFacName, subject: subCode };
+                    if (currentUserType === 'powerUser') {
+                        lockRecord.auditedBy     = currentUser;
+                        lockRecord.auditedByName = currentUserName || currentUser;
+                    }
+                    PERIOD_FACULTY[facultyKey][pKey] = lockRecord;
                 });
             });
 
@@ -6848,14 +7188,23 @@
                 });
                 document.getElementById('msg').textContent = '❌ Failed to submit attendance. Please check your connection and try again.';
                 document.getElementById('msg').classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                submitBtn.style.opacity = '1';
                 return;
             }
 
             const periodCount = periodList.length;
-            document.getElementById('msg').textContent = `✓ Attendance submitted for ${periodCount} period${periodCount > 1 ? 's' : ''}: ${periods}`;
+            const auditNote   = currentUserType === 'powerUser' ? ` (posted on behalf of ${effFacName})` : '';
+            document.getElementById('msg').textContent = `✓ Attendance submitted for ${periodCount} period${periodCount > 1 ? 's' : ''}: ${periods}${auditNote}`;
             document.getElementById('msg').classList.remove('hidden');
 
-            // Show topic entry popup for faculty (not admin)
+            // ── Restore button state ──
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+            submitBtn.style.opacity = '1';
+
+            // Show topic entry popup for faculty and Power User (not admin)
             if (currentUserType !== 'admin' && subCode) {
                 const yearSem = (y == 1) ? '1-1' : `${y}-${s}`;
                 showTopicPopup(date, periods, subCode, getSubjectName(subCode), yearSem);
@@ -6950,6 +7299,19 @@
         function isSaturday(dateStr) {
             const [y, m, d] = dateStr.split('-').map(Number);
             return new Date(y, m - 1, d).getDay() === 6;
+        }
+
+        // Returns true if a YYYY-MM-DD date string falls on the 2nd Saturday of its month
+        function isSecondSaturday(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            if (dt.getDay() !== 6) return false; // not a Saturday
+            // Count which Saturday of the month this is
+            let count = 0;
+            for (let i = 1; i <= d; i++) {
+                if (new Date(y, m - 1, i).getDay() === 6) count++;
+            }
+            return count === 2;
         }
 
         function updateDownloadFields() {
@@ -7647,27 +8009,45 @@
 
             const classLabel = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
 
+            // Format yesterday's date as DD/MM/YYYY
+            const dd = String(yesterday.getDate()).padStart(2, '0');
+            const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const yyyy = yesterday.getFullYear();
+            const tillDateStr = `${dd}/${mm}/${yyyy}`;
+
             // ── Build header rows ──
-            // Row 1: Title
             const totalCols = 3 + validMonths.length + 2; // Sl.No + PIN + Name + months + Total + Percentage
-            const titleRow = [`${classLabel}  |  Cumulative Attendance Summary`];
-            for (let i = 1; i < totalCols; i++) titleRow.push('');
+
+            // Row 0: College Name
+            const collegeRow = ['GOVERNMENT POLYTECHNIC, DHARMAVARAM'];
+            for (let i = 1; i < totalCols; i++) collegeRow.push('');
+
+            // Row 1: Branch Name
+            const branchRow = ['Diploma in Computer Engineering'];
+            for (let i = 1; i < totalCols; i++) branchRow.push('');
 
             // Row 2: blank
             const blankRow = new Array(totalCols).fill('');
 
-            // Row 3: "Days Present" spanning month columns, "" for fixed cols and Total/Percentage
-            const row3 = ['', '', '', 'Days Present'];
-            for (let i = 1; i < validMonths.length; i++) row3.push('');
-            row3.push('', ''); // Total, Percentage placeholders
+            // Row 3: Title with Till date
+            const titleRow = [`${classLabel}  |  Cumulative Attendance Summary Till ${tillDateStr}`];
+            for (let i = 1; i < totalCols; i++) titleRow.push('');
 
-            // Row 4: column headers
+            // Row 4: blank
+            const blankRow2 = new Array(totalCols).fill('');
+
+            // Row 5: "Days Present" spanning month columns
+            const daysPresentRow = ['', '', '', 'Days Present'];
+            for (let i = 1; i < validMonths.length; i++) daysPresentRow.push('');
+            daysPresentRow.push('', ''); // Total, Percentage placeholders
+
+            // Row 6: column headers
             const headerRow = ['Sl.No', 'PIN', 'Name'];
             validMonths.forEach(m => headerRow.push(`${m.monthName}(${m.workingDays})`));
             headerRow.push(`Total(${totalWorkingDays})`);
             headerRow.push('Percentage');
 
-            const data = [titleRow, blankRow, row3, headerRow];
+            const data = [collegeRow, branchRow, blankRow, titleRow, blankRow2, daysPresentRow, headerRow];
 
             // ── Student rows ──
             let rowNum = 1;
@@ -7705,15 +8085,29 @@
                 rowNum++;
             });
 
+            // ── Add Signature row at the bottom ──
+            data.push(new Array(totalCols).fill('')); // blank row
+            data.push(new Array(totalCols).fill('')); // blank row
+            const signRow = new Array(totalCols).fill('');
+            signRow[totalCols - 3] = 'Signature of Class Teacher';
+            data.push(signRow);
+
             // ── Build worksheet ──
             const ws = XLSX.utils.aoa_to_sheet(data);
 
             // Merges:
-            // Row 0 (title): full width
-            // Row 2 ("Days Present" label): spans month columns (col 3 to 3+validMonths.length-1)
+            // Row 0 (College Name): full width
+            // Row 1 (Branch Name): full width
+            // Row 3 (Title): full width
+            // Row 5 ("Days Present" label): spans month columns (col 3 to 3+validMonths.length-1)
+            // Signature row: merge last 3 cols
+            const signRowIdx = data.length - 1;
             const merges = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // Title
-                { s: { r: 2, c: 3 }, e: { r: 2, c: 3 + validMonths.length - 1 } } // "Days Present" label
+                { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // College Name
+                { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } }, // Branch Name
+                { s: { r: 3, c: 0 }, e: { r: 3, c: totalCols - 1 } }, // Title
+                { s: { r: 5, c: 3 }, e: { r: 5, c: 3 + validMonths.length - 1 } }, // "Days Present" label
+                { s: { r: signRowIdx, c: totalCols - 3 }, e: { r: signRowIdx, c: totalCols - 1 } } // Signature
             ];
             ws['!merges'] = merges;
 
@@ -7735,18 +8129,32 @@
                 right:  { style: 'thin', color: { rgb: '000000' } }
             };
             const totalRows = data.length;
+            const dataStartRow = 7; // student data starts at row 7
             for (let r = 0; r < totalRows; r++) {
                 for (let c = 0; c < totalCols; c++) {
                     const ref = XLSX.utils.encode_cell({ r, c });
                     // Force-create cell if it doesn't exist (empty/merged cells have no entry by default)
                     if (!ws[ref]) ws[ref] = { t: 'z' };
 
-                    const isTitle     = r === 0;
-                    const isDPLabel   = r === 2; // "Days Present" sub-header row
-                    const isHeaderRow = r === 3; // column header row
-                    const isDataRow   = r > 3;
+                    const isCollegeName = r === 0;
+                    const isBranchName  = r === 1;
+                    const isTitle       = r === 3;
+                    const isDPLabel     = r === 5; // "Days Present" sub-header row
+                    const isHeaderRow   = r === 6; // column header row
+                    const isDataRow     = r >= dataStartRow && r < signRowIdx - 2;
+                    const isSignRow     = r === signRowIdx;
 
-                    if (isTitle) {
+                    if (isCollegeName) {
+                        ws[ref].s = {
+                            font:      { bold: true, sz: 16, color: { rgb: '000000' } },
+                            alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+                        };
+                    } else if (isBranchName) {
+                        ws[ref].s = {
+                            font:      { bold: true, sz: 14, color: { rgb: '000000' } },
+                            alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+                        };
+                    } else if (isTitle) {
                         ws[ref].s = {
                             font:      { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
                             fill:      { fgColor: { rgb: '2A5298' } },
@@ -7773,9 +8181,18 @@
                             alignment: { horizontal: c < 3 ? 'left' : 'center', vertical: 'center', wrapText: false },
                             border:    borderStyle
                         };
+                    } else if (isSignRow) {
+                        ws[ref].s = {
+                            font:      { bold: true, sz: 11, color: { rgb: '000000' } },
+                            alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+                        };
                     } else {
-                        // blank row (r === 1)
-                        ws[ref].s = { border: borderStyle };
+                        // blank rows (r === 2, 4, or gap rows before signature)
+                        if (r >= dataStartRow && r < signRowIdx - 2) {
+                            ws[ref].s = { border: borderStyle };
+                        } else {
+                            ws[ref].s = {};
+                        }
                     }
                 }
             }
@@ -7843,7 +8260,23 @@
             });
 
             // Build Excel data
+            const scholTotalCols = 8; // Sl.No, PIN, Name, Actual Days Present, Days Added, Final Days, Working Days, Percentage
+
+            // Row 0: College Name
+            const scholCollegeRow = ['GOVERNMENT POLYTECHNIC, DHARMAVARAM'];
+            for (let i = 1; i < scholTotalCols; i++) scholCollegeRow.push('');
+
+            // Row 1: Branch Name
+            const scholBranchRow = ['Diploma in Computer Engineering'];
+            for (let i = 1; i < scholTotalCols; i++) scholBranchRow.push('');
+
+            // Row 2: blank
+            const scholBlankRow = new Array(scholTotalCols).fill('');
+
             const headerInfo = [
+                scholCollegeRow,
+                scholBranchRow,
+                scholBlankRow,
                 [`Scholarship Attendance Report - ${monthName} ${mYear}`],
                 [`Year: ${y}  |  Semester: ${s}  |  Month: ${monthName} ${mYear}`],
                 [`Actual Working Days: ${actualWorkingDays}  |  Scholarship Section Working Days: ${scholDays}  |  Days Added: ${daysToAdd}`],
@@ -7885,6 +8318,13 @@
                 scholRowNum++;
             });
 
+            // ── Add Signature row at the bottom ──
+            data.push(new Array(scholTotalCols).fill('')); // blank row
+            data.push(new Array(scholTotalCols).fill('')); // blank row
+            const scholSignRow = new Array(scholTotalCols).fill('');
+            scholSignRow[scholTotalCols - 3] = 'Signature of Class Teacher';
+            data.push(scholSignRow);
+
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(data);
             ws['!cols'] = [{ wch: 6 }, { wch: 20 }, { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 25 }, { wch: 12 }];
@@ -7894,12 +8334,48 @@
             xlsCenterCol(ws, 5);  // centre Final Days
             xlsCenterCol(ws, 6);  // centre Working Days (Scholarship)
             xlsCenterCol(ws, 7);  // centre Percentage
+
+            const scholSignRowIdx = data.length - 1;
             ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-                { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
-                { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } },
-                { s: { r: 3, c: 0 }, e: { r: 3, c: 7 } },
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },  // College Name
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },  // Branch Name
+                { s: { r: 3, c: 0 }, e: { r: 3, c: 7 } },  // Scholarship title
+                { s: { r: 4, c: 0 }, e: { r: 4, c: 7 } },  // Year/Sem/Month
+                { s: { r: 5, c: 0 }, e: { r: 5, c: 7 } },  // Working Days info
+                { s: { r: 6, c: 0 }, e: { r: 6, c: 7 } },  // Rule
+                { s: { r: scholSignRowIdx, c: scholTotalCols - 3 }, e: { r: scholSignRowIdx, c: scholTotalCols - 1 } } // Signature
             ];
+
+            // ── Style college/branch/signature rows ──
+            const scholBorderStyle = {
+                top:    { style: 'thin', color: { rgb: '000000' } },
+                bottom: { style: 'thin', color: { rgb: '000000' } },
+                left:   { style: 'thin', color: { rgb: '000000' } },
+                right:  { style: 'thin', color: { rgb: '000000' } }
+            };
+            for (let c = 0; c < scholTotalCols; c++) {
+                // College Name row (r=0)
+                const refC = XLSX.utils.encode_cell({ r: 0, c });
+                if (!ws[refC]) ws[refC] = { t: 'z' };
+                ws[refC].s = {
+                    font:      { bold: true, sz: 16, color: { rgb: '000000' } },
+                    alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+                };
+                // Branch Name row (r=1)
+                const refB = XLSX.utils.encode_cell({ r: 1, c });
+                if (!ws[refB]) ws[refB] = { t: 'z' };
+                ws[refB].s = {
+                    font:      { bold: true, sz: 14, color: { rgb: '000000' } },
+                    alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+                };
+                // Signature row
+                const refS = XLSX.utils.encode_cell({ r: scholSignRowIdx, c });
+                if (!ws[refS]) ws[refS] = { t: 'z' };
+                ws[refS].s = {
+                    font:      { bold: true, sz: 11, color: { rgb: '000000' } },
+                    alignment: { horizontal: 'center', vertical: 'center', wrapText: false }
+                };
+            }
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `Scholarship ${monthName}`);
@@ -7975,7 +8451,16 @@
                 html += `<div class="status-cell ${posted ? 'posted' : 'not-posted'}">${posted ? 'Y' : 'N'}</div>`;
             }
             html += '<div class="status-cell header">Faculty</div>';
-            for (let p = 1; p <= 7; p++) html += `<div class="status-cell"><div class="status-detail">${pData[p]?.faculty || '-'}</div></div>`;
+            for (let p = 1; p <= 7; p++) {
+                const pEntry = pData[p];
+                const facName = pEntry?.faculty || '-';
+                const auditName = pEntry?.auditedByName;
+                // If Power User posted on behalf → show faculty + "via ⚡ PU: name"
+                const cellContent = (pEntry && auditName)
+                    ? `${facName}<br><span style="font-size:10px;color:#667eea;font-weight:600;">⚡ via PU: ${auditName}</span>`
+                    : `<div class="status-detail">${facName}</div>`;
+                html += `<div class="status-cell">${cellContent}</div>`;
+            }
             html += '<div class="status-cell header">Subject</div>';
             for (let p = 1; p <= 7; p++) {
                 const sc = pData[p]?.subject || '';
@@ -8040,7 +8525,7 @@
 
             const tbody = document.getElementById('summaryTableBody');
             tbody.innerHTML = '';
-            summaryData.sort((a, b) => b.percent - a.percent).forEach((st, idx) => {
+            summaryData.sort((a, b) => a.pin.localeCompare(b.pin, undefined, { numeric: true })).forEach((st, idx) => {
                 const row = tbody.insertRow();
                 const pc = st.percent >= 90 ? 'percent-high' : (st.percent >= 75 ? 'percent-medium' : 'percent-low');
                 row.innerHTML = `<td>${idx + 1}</td><td>${st.pin}</td><td>${st.name}</td><td>${st.daysPresent}</td><td>${st.totalDays}</td><td class="${pc}">${st.percent}%</td>`;
@@ -8052,13 +8537,20 @@
 
         function loadProfile() {
             if (!USERS[currentUser]) return;
-            document.getElementById('profileName').textContent = USERS[currentUser].name;
-            document.getElementById('profileUsername').textContent = currentUser;
-            const mySubjects = [];
-            Object.keys(FACULTY_MAP).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).forEach(code => {
-                if (FACULTY_MAP[code] === currentUser) mySubjects.push(`<div class="subject-item"><span><strong>${code}:</strong> ${getSubjectName(code)}</span></div>`);
-            });
-            document.getElementById('profileSubjects').innerHTML = mySubjects.length ? mySubjects.join('') : '<p style="color:#999;">No subjects assigned</p>';
+            // Power User: hide Name/Username/Role/Assigned Subjects — show only Change Password
+            const infoSection = document.getElementById('profileInfoSection');
+            if (currentUserType === 'powerUser') {
+                if (infoSection) infoSection.style.display = 'none';
+            } else {
+                if (infoSection) infoSection.style.display = 'block';
+                document.getElementById('profileName').textContent = USERS[currentUser].name;
+                document.getElementById('profileUsername').textContent = currentUser;
+                const mySubjects = [];
+                Object.keys(FACULTY_MAP).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).forEach(code => {
+                    if (FACULTY_MAP[code] === currentUser) mySubjects.push(`<div class="subject-item"><span><strong>${code}:</strong> ${getSubjectName(code)}</span></div>`);
+                });
+                document.getElementById('profileSubjects').innerHTML = mySubjects.length ? mySubjects.join('') : '<p style="color:#999;">No subjects assigned</p>';
+            }
         }
 
         // ===================== PASSWORD MANAGEMENT =====================
@@ -9777,6 +10269,12 @@
                 return;
             }
 
+            if (isSecondSaturday(date)) {
+                alert('⚠️ 2nd Saturday is a holiday. Attendance cannot be marked.');
+                document.getElementById('date').value = '';
+                return;
+            }
+
             if (isHoliday(date)) {
                 alert('⚠️ This date is marked as a holiday. Attendance cannot be marked.');
                 document.getElementById('date').value = '';
@@ -9900,17 +10398,20 @@
             }
 
             // Permission check: only the faculty who posted can edit
-            const pfKey = `${date}_${y}_${s}`;
-            const pfData = PERIOD_FACULTY[pfKey] || {};
-            const currentUserFullName = USERS[currentUser]?.name || currentUser;
-            const unauthorisedPeriods = periodList.filter(p => {
-                const owner = pfData[String(p)]?.faculty;
-                return owner && owner !== currentUserFullName;
-            });
-            if (unauthorisedPeriods.length > 0) {
-                const ownerName = pfData[String(unauthorisedPeriods[0])]?.faculty || 'another faculty';
-                alert(`⛔ You cannot edit Period ${unauthorisedPeriods.join(', ')}. It was posted by ${ownerName}.`);
-                return;
+            // Power User bypasses this — they can edit any attendance (they posted on behalf of faculty)
+            if (currentUserType !== 'powerUser') {
+                const pfKey = `${date}_${y}_${s}`;
+                const pfData = PERIOD_FACULTY[pfKey] || {};
+                const currentUserFullName = USERS[currentUser]?.name || currentUser;
+                const unauthorisedPeriods = periodList.filter(p => {
+                    const owner = pfData[String(p)]?.faculty;
+                    return owner && owner !== currentUserFullName;
+                });
+                if (unauthorisedPeriods.length > 0) {
+                    const ownerName = pfData[String(unauthorisedPeriods[0])]?.faculty || 'another faculty';
+                    alert(`⛔ You cannot edit Period ${unauthorisedPeriods.join(', ')}. It was posted by ${ownerName}.`);
+                    return;
+                }
             }
 
             const firstStudent = students.find(st => todayAttendance[st.pin]?.[firstPeriod]);
@@ -10010,16 +10511,31 @@
                     }
 
                     // Apply change to ALL individual periods in the range
+                    // For edit: preserve existing faculty attribution; only update status
                     periodList.forEach(p => {
                         if (!todayAttendance[st.pin][p]) {
-                            todayAttendance[st.pin][p] = {
-                                status: newStatus,
-                                faculty: USERS[currentUser].name,
+                            // New record (gap fill) — attribute to effective faculty
+                            const effFac = getEffectiveFaculty();
+                            const rec = {
+                                status:  newStatus,
+                                faculty: (USERS[effFac]?.name) || effFac,
                                 subject: 'Edited'
                             };
+                            if (currentUserType === 'powerUser') {
+                                rec.auditedBy     = currentUser;
+                                rec.auditedByName = currentUserName || currentUser;
+                            }
+                            todayAttendance[st.pin][p] = rec;
                         } else {
+                            // Existing record — only update status; preserve original faculty
                             todayAttendance[st.pin][p].status = newStatus;
-                            todayAttendance[st.pin][p].editedBy = USERS[currentUser].name;
+                            // Record who edited and when
+                            if (currentUserType === 'powerUser') {
+                                todayAttendance[st.pin][p].editedBy     = currentUser;
+                                todayAttendance[st.pin][p].editedByName = currentUserName || currentUser;
+                            } else {
+                                todayAttendance[st.pin][p].editedBy = USERS[currentUser].name;
+                            }
                             todayAttendance[st.pin][p].editedAt = new Date().toISOString();
                         }
                     });
@@ -12151,19 +12667,39 @@
             document.getElementById('tpPeriods').textContent = periods;
             document.getElementById('tpSubject').textContent = `${subCode} – ${subjectName}`;
 
-            // Pre-load existing topic if any
-            document.getElementById('topicPopupInput').value = '';
-            updateCharCount('topicPopupInput', 'topicPopupCount');
-            try {
-                const doc = await db.collection('dailyTopics').doc(date).get();
-                if (doc.exists && doc.data()[_topicCtx.key]) {
-                    document.getElementById('topicPopupInput').value = doc.data()[_topicCtx.key].topic || '';
-                    updateCharCount('topicPopupInput', 'topicPopupCount');
-                }
-            } catch (e) { /* ignore */ }
+            // ── Power User mode: hide Topic Covered section, show only details + Close ──
+            const topicInputSection  = document.getElementById('topicPopupInputSection');
+            const topicFooterFaculty = document.getElementById('topicPopupFooterFaculty');
+            const topicFooterPU      = document.getElementById('topicPopupFooterPU');
+            const topicSubtitle      = document.getElementById('topicPopupSubtitle');
+            if (currentUserType === 'powerUser') {
+                if (topicInputSection)  topicInputSection.style.display  = 'none';
+                if (topicFooterFaculty) topicFooterFaculty.style.display = 'none';
+                if (topicFooterPU)      topicFooterPU.style.display      = 'flex';
+                if (topicSubtitle)      topicSubtitle.style.display      = 'none';
+            } else {
+                if (topicInputSection)  topicInputSection.style.display  = 'block';
+                if (topicFooterFaculty) topicFooterFaculty.style.display = 'flex';
+                if (topicFooterPU)      topicFooterPU.style.display      = 'none';
+                if (topicSubtitle)      topicSubtitle.style.display      = 'block';
+                document.getElementById('topicPopupInput').value = '';
+                updateCharCount('topicPopupInput', 'topicPopupCount');
+            }
 
+            // ── Show popup IMMEDIATELY — don't wait for DB read ──
             const modal = document.getElementById('topicPopupModal');
             modal.style.display = 'flex';
+
+            // ── Pre-load existing topic in background (faculty only) ──
+            if (currentUserType !== 'powerUser') {
+                try {
+                    const doc = await db.collection('dailyTopics').doc(date).get();
+                    if (doc.exists && doc.data()[_topicCtx.key]) {
+                        document.getElementById('topicPopupInput').value = doc.data()[_topicCtx.key].topic || '';
+                        updateCharCount('topicPopupInput', 'topicPopupCount');
+                    }
+                } catch (e) { /* ignore */ }
+            }
         }
 
         function skipTopicEntry() {
@@ -12175,16 +12711,24 @@
             if (!_topicCtx) return;
             const topic = document.getElementById('topicPopupInput').value.trim();
             try {
+                // Attribute topic to the effective (acting) faculty, not the logged-in Power User
+                const effFac     = getEffectiveFaculty();
+                const effFacName = (USERS[effFac]?.name) || effFac;
                 const entry = {
-                    subject: _topicCtx.subCode,
+                    subject:     _topicCtx.subCode,
                     subjectName: _topicCtx.subjectName,
-                    periods: _topicCtx.periods,
-                    faculty: currentUser,
-                    facultyName: currentUserName,
-                    yearSem: _topicCtx.yearSem,
-                    topic: topic,
-                    timestamp: new Date().toISOString()
+                    periods:     _topicCtx.periods,
+                    faculty:     effFac,
+                    facultyName: effFacName,
+                    yearSem:     _topicCtx.yearSem,
+                    topic:       topic,
+                    timestamp:   new Date().toISOString()
                 };
+                // Power User audit trail
+                if (currentUserType === 'powerUser') {
+                    entry.auditedBy     = currentUser;
+                    entry.auditedByName = currentUserName || currentUser;
+                }
                 await db.collection('dailyTopics').doc(_topicCtx.date)
                     .set({ [_topicCtx.key]: entry }, { merge: true });
             } catch (e) {
@@ -12219,19 +12763,22 @@
             if (!date) { alert('Please select Date'); return; }
             if (!periods) { alert('Please select at least one Period'); return; }
 
-            // Permission check: only the faculty who posted can edit topics
+            // Permission check: only the faculty who posted (or the Power User who audited) can edit topics
             const pfKeyT = `${date}_${y}_${s}`;
             const pfDataT = PERIOD_FACULTY[pfKeyT] || {};
             const currentUserFullNameT = USERS[currentUser]?.name || currentUser;
             const periodListT = getPeriodList(periods);
-            const unauthorisedT = periodListT.filter(p => {
-                const owner = pfDataT[String(p)]?.faculty;
-                return owner && owner !== currentUserFullNameT;
-            });
-            if (unauthorisedT.length > 0) {
-                const ownerNameT = pfDataT[String(unauthorisedT[0])]?.faculty || 'another faculty';
-                alert(`⛔ You cannot edit the topic for Period ${unauthorisedT.join(', ')}. It was posted by ${ownerNameT}.`);
-                return;
+            // Power User bypasses this check — they can always edit topics for periods they're on the attendance form for
+            if (currentUserType !== 'powerUser') {
+                const unauthorisedT = periodListT.filter(p => {
+                    const owner = pfDataT[String(p)]?.faculty;
+                    return owner && owner !== currentUserFullNameT;
+                });
+                if (unauthorisedT.length > 0) {
+                    const ownerNameT = pfDataT[String(unauthorisedT[0])]?.faculty || 'another faculty';
+                    alert(`⛔ You cannot edit the topic for Period ${unauthorisedT.join(', ')}. It was posted by ${ownerNameT}.`);
+                    return;
+                }
             }
 
             // Hide other areas, show topic edit
@@ -16796,7 +17343,7 @@
                     border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;">
                 <div>
                     <div style="font-size:16px;font-weight:700;">✅ Attendance Submitted!</div>
-                    <div style="font-size:12px;opacity:0.9;margin-top:2px;">Would you like to add the topic covered?
+                    <div id="topicPopupSubtitle" style="font-size:12px;opacity:0.9;margin-top:2px;">Would you like to add the topic covered?
                     </div>
                 </div>
                 <button onclick="skipTopicEntry()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:30px;height:30px;
@@ -16810,29 +17357,37 @@
                     <div><strong>Periods:</strong> <span id="tpPeriods"></span></div>
                     <div><strong>Subject:</strong> <span id="tpSubject"></span></div>
                 </div>
-                <label style="font-weight:600;color:#333;display:block;margin-bottom:6px;">Topic Covered <span
-                        style="font-weight:400;color:#888;font-size:12px;">(optional)</span></label>
-                <div style="display:flex;gap:8px;align-items:flex-start;">
-                    <textarea id="topicPopupInput" maxlength="120" rows="3"
-                        style="flex:1;padding:10px;border:2px solid #86efac;border-radius:8px;font-size:14px;font-family:inherit;resize:none;"
-                        placeholder="e.g., Binary Search Trees – Insertion and Deletion…"
-                        oninput="updateCharCount('topicPopupInput','topicPopupCount')"></textarea>
-                    <button id="voiceBtnPopup" onclick="startVoiceInput('topicPopupInput','voiceBtnPopup')" style="padding:10px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;
-                           border:none;border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;"
-                        title="Voice Input">🎤</button>
-                </div>
-                <div style="font-size:12px;color:#6b7280;margin-top:4px;">
-                    <span id="topicPopupCount">0</span> / 120 characters
-                    &nbsp;·&nbsp; Applies to all submitted periods.
+                <!-- Topic Covered section — hidden for Power User -->
+                <div id="topicPopupInputSection">
+                    <label style="font-weight:600;color:#333;display:block;margin-bottom:6px;">Topic Covered <span
+                            style="font-weight:400;color:#888;font-size:12px;">(optional)</span></label>
+                    <div style="display:flex;gap:8px;align-items:flex-start;">
+                        <textarea id="topicPopupInput" maxlength="120" rows="3"
+                            style="flex:1;padding:10px;border:2px solid #86efac;border-radius:8px;font-size:14px;font-family:inherit;resize:none;"
+                            placeholder="e.g., Binary Search Trees – Insertion and Deletion…"
+                            oninput="updateCharCount('topicPopupInput','topicPopupCount')"></textarea>
+                        <button id="voiceBtnPopup" onclick="startVoiceInput('topicPopupInput','voiceBtnPopup')" style="padding:10px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;
+                               border:none;border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;"
+                            title="Voice Input">🎤</button>
+                    </div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+                        <span id="topicPopupCount">0</span> / 120 characters
+                        &nbsp;·&nbsp; Applies to all submitted periods.
+                    </div>
                 </div>
             </div>
-            <!-- Footer -->
-            <div style="padding:0 22px 20px;display:flex;gap:10px;flex-wrap:wrap;">
+            <!-- Footer: Faculty (Save Topic + Skip) -->
+            <div id="topicPopupFooterFaculty" style="padding:0 22px 20px;display:flex;gap:10px;flex-wrap:wrap;">
                 <button onclick="saveTopicEntry()" style="flex:1;padding:11px 16px;background:linear-gradient(135deg,#56ab2f,#a8e063);
                        color:white;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">💾
                     Save Topic</button>
                 <button onclick="skipTopicEntry()" style="flex:1;padding:11px 16px;background:#e5e7eb;color:#555;border:none;
                        border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;">⏭️ Skip for Now</button>
+            </div>
+            <!-- Footer: Power User (Close only) -->
+            <div id="topicPopupFooterPU" style="padding:0 22px 20px;display:none;gap:10px;flex-wrap:wrap;">
+                <button onclick="skipTopicEntry()" style="flex:1;padding:11px 16px;background:#667eea;color:white;border:none;
+                       border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;">✔ Close</button>
             </div>
         </div>
     </div>
@@ -19130,6 +19685,387 @@ async function formGen_download() {
     }
 }
 // ╚══════════════ END FORM GENERATOR MODULE ═══════════════════╝
+
+// ╔══════════════ ADMIN RESULTS UPLOAD MODULE ═══════════════════╗
+
+let resParsedData = null; // holds parsed student data ready for Firestore
+
+function initAdminResultsTab() {
+    resLoadSummary();
+}
+
+function resToast(msg, type) {
+    const t = document.getElementById('res_toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    t.style.background = type === 'error' ? '#ffebee' : type === 'success' ? '#e8f5e9' : '#fff3e0';
+    t.style.color = type === 'error' ? '#c62828' : type === 'success' ? '#2e7d32' : '#e65100';
+    t.style.border = '1px solid ' + (type === 'error' ? '#f44336' : type === 'success' ? '#4CAF50' : '#ff9800');
+    setTimeout(() => { t.style.display = 'none'; }, 4000);
+}
+
+// ── Parse Excel file when selected (NEW FORMAT: 7 cols per paper) ──
+function resPreviewExcel() {
+    const fileInput = document.getElementById('res_fileInput');
+    const examSem = document.getElementById('res_examSem').value;
+    const fileInfo = document.getElementById('res_fileInfo');
+    const previewArea = document.getElementById('res_previewArea');
+    const uploadBtn = document.getElementById('res_uploadBtn');
+
+    if (!examSem) {
+        resToast('Please select "Results Of" semester first!', 'error');
+        fileInput.value = '';
+        return;
+    }
+    if (!fileInput.files.length) return;
+
+    const file = fileInput.files[0];
+    fileInfo.style.display = 'block';
+    fileInfo.textContent = '⏳ Reading: ' + file.name + '...';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const wb = XLSX.read(e.target.result, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+            if (rows.length < 3) {
+                resToast('Excel file needs at least 3 rows (2 header rows + data)', 'error');
+                return;
+            }
+
+            // Row 0 = paper numbers row (PIN, Name, Branch, then paper numbers spanning 7 cols each)
+            // Row 1 = sub-headers row (External, Internal, Total, Grade Points, Credits Earned, Grade, SUB.Result ...)
+            // Row 2+ = data rows
+            const row1 = rows[0].map(h => String(h).trim());
+            const row2 = rows[1].map(h => String(h).trim().toUpperCase());
+            const dataRows = rows.slice(2).filter(r => r[0] && String(r[0]).trim());
+
+            // Find PIN, Name, Branch columns from row2
+            const pinCol = row2.findIndex(h => h === 'PIN');
+            const nameCol = row2.findIndex(h => h === 'NAME');
+            const branchCol = row2.findIndex(h => h === 'BRANCH' || h === 'BRANCH NAME');
+
+            // Fallback: if row2 doesn't have PIN/NAME, check row1
+            const pinColFinal = pinCol >= 0 ? pinCol : row1.findIndex(h => h.toUpperCase() === 'PIN');
+            const nameColFinal = nameCol >= 0 ? nameCol : row1.findIndex(h => h.toUpperCase() === 'NAME');
+            const branchColFinal = branchCol >= 0 ? branchCol : row1.findIndex(h => h.toUpperCase().includes('BRANCH'));
+
+            if (pinColFinal < 0 || nameColFinal < 0) {
+                resToast('Cannot find PIN or NAME columns in header rows', 'error');
+                return;
+            }
+
+            // Detect paper groups: find paper codes from row1 (3 or 4-digit numbers)
+            const paperStart = (branchColFinal >= 0 ? branchColFinal : nameColFinal) + 1;
+            let papers = [];
+            let paperCols = []; // [{code, extCol, intCol, totCol, gpCol, ceCol, gradeCol, subResCol}]
+
+            // Strategy: scan row1 for paper codes (3-4 digit numbers)
+            // Each paper spans 7 columns: External, Internal, Total, Grade Points, Credits Earned, Grade, SUB.Result
+            for (let c = paperStart; c < row1.length; c++) {
+                const cellVal = String(row1[c]).trim();
+                const codeMatch = cellVal.match(/^(\d{3,4})$/);
+                if (codeMatch) {
+                    const code = codeMatch[1];
+                    // This paper starts at column c, spans 7 columns
+                    paperCols.push({
+                        code,
+                        extCol: c,
+                        intCol: c + 1,
+                        totCol: c + 2,
+                        gpCol: c + 3,
+                        ceCol: c + 4,
+                        gradeCol: c + 5,
+                        subResCol: c + 6
+                    });
+                    papers.push(code);
+                    c += 6; // skip the remaining 6 cols of this paper group
+                }
+            }
+
+            // Find Grand Total, GPA, Results, Month&Year columns (after all papers)
+            let gtCol = -1, gpaCol = -1, statusCol = -1, monthCol = -1;
+            const searchStart = paperCols.length > 0 ? paperCols[paperCols.length - 1].subResCol + 1 : paperStart;
+            for (let c = searchStart; c < row1.length; c++) {
+                const h1 = String(row1[c]).trim().toUpperCase();
+                const h2 = row2[c] ? row2[c] : '';
+                const h = h1 || h2;
+                if (h.includes('GRAND') || h === 'TOTAL MARKS' || h === 'GRAND_TOTAL' || h === 'GRAND TOTAL') gtCol = c;
+                else if (h === 'GPA') gpaCol = c;
+                else if (h === 'STATUS' || h === 'RESULT' || h === 'RESULTS') statusCol = c;
+                else if (h.includes('MONTH') || h.includes('MONTH_YEAR') || h.includes('MONTH&YEAR') || h.includes('MONTH&AMP;YEAR')) monthCol = c;
+            }
+            // Fallback: if not found by header, try sequential after last paper
+            if (gtCol < 0 && paperCols.length > 0) gtCol = paperCols[paperCols.length - 1].subResCol + 1;
+            if (gpaCol < 0 && gtCol >= 0) gpaCol = gtCol + 1;
+            if (statusCol < 0 && gpaCol >= 0) statusCol = gpaCol + 1;
+            if (monthCol < 0 && statusCol >= 0) monthCol = statusCol + 1;
+
+            // Parse all students — read ALL values directly from Excel, NO calculation
+            resParsedData = [];
+            dataRows.forEach(row => {
+                const pin = String(row[pinColFinal]).trim();
+                if (!pin) return;
+                const name = String(row[nameColFinal]).trim();
+                const branch = branchColFinal >= 0 ? String(row[branchColFinal]).trim() : 'DIPLOMA IN COMPUTER ENGINEERING';
+
+                let papersObj = {};
+                paperCols.forEach(pc => {
+                    const ext = String(row[pc.extCol]).trim();
+                    const intV = String(row[pc.intCol]).trim();
+                    const tot = String(row[pc.totCol]).trim();
+                    const gp = String(row[pc.gpCol]).trim();
+                    const ce = String(row[pc.ceCol]).trim();
+                    const grade = String(row[pc.gradeCol]).trim();
+                    const subResult = String(row[pc.subResCol]).trim();
+
+                    papersObj[pc.code] = {
+                        ext: ext,
+                        int: intV,
+                        tot: tot,
+                        gp: parseInt(gp) || 0,
+                        creditsEarned: parseInt(ce) || 0,
+                        grade: grade || '',
+                        subResult: subResult || ''
+                    };
+                });
+
+                const gt = parseInt(row[gtCol]) || 0;
+                const gpaVal = parseFloat(row[gpaCol]) || 0;
+                const status = statusCol >= 0 ? String(row[statusCol]).trim() : '';
+                const monthYear = monthCol >= 0 ? String(row[monthCol]).trim() : '';
+
+                resParsedData.push({
+                    pin, name, branch,
+                    semesters: {
+                        [examSem]: {
+                            examMonthYear: monthYear || 'MAR/APR 2026',
+                            grandTotal: gt,
+                            gpa: Math.round(gpaVal * 100) / 100,
+                            result: status,
+                            papers: papersObj
+                        }
+                    }
+                });
+            });
+
+            // Show preview
+            fileInfo.textContent = '✅ ' + file.name + ' — ' + resParsedData.length + ' students, ' + papers.length + ' papers (' + papers.join(', ') + ')';
+            
+            // Build preview table (first 5 students)
+            let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#e3f2fd;">';
+            html += '<th style="padding:6px;border:1px solid #ddd;">PIN</th>';
+            html += '<th style="padding:6px;border:1px solid #ddd;">Name</th>';
+            papers.forEach(p => html += '<th style="padding:6px;border:1px solid #ddd;">' + p + '</th>');
+            html += '<th style="padding:6px;border:1px solid #ddd;">Total</th>';
+            html += '<th style="padding:6px;border:1px solid #ddd;">GPA</th>';
+            html += '<th style="padding:6px;border:1px solid #ddd;">Status</th>';
+            html += '</tr></thead><tbody>';
+
+            const preview = resParsedData.slice(0, 5);
+            preview.forEach(s => {
+                const sem = s.semesters[examSem];
+                html += '<tr>';
+                html += '<td style="padding:5px;border:1px solid #eee;font-weight:600;">' + s.pin + '</td>';
+                html += '<td style="padding:5px;border:1px solid #eee;">' + s.name + '</td>';
+                papers.forEach(p => {
+                    const paper = sem.papers[p];
+                    const color = paper && paper.subResult === 'F' ? '#c62828' : paper && paper.subResult === 'AB' ? '#ff9800' : '#333';
+                    html += '<td style="padding:5px;border:1px solid #eee;text-align:center;color:' + color + ';">' + (paper ? paper.tot : '-') + '</td>';
+                });
+                html += '<td style="padding:5px;border:1px solid #eee;text-align:center;font-weight:600;">' + sem.grandTotal + '</td>';
+                html += '<td style="padding:5px;border:1px solid #eee;text-align:center;">' + sem.gpa + '</td>';
+                const statusColor = sem.result === 'PASS' ? '#2e7d32' : '#e65100';
+                html += '<td style="padding:5px;border:1px solid #eee;text-align:center;font-weight:600;color:' + statusColor + ';">' + sem.result + '</td>';
+                html += '</tr>';
+            });
+            if (resParsedData.length > 5) {
+                html += '<tr><td colspan="' + (papers.length + 5) + '" style="padding:8px;text-align:center;color:#999;font-style:italic;">... and ' + (resParsedData.length - 5) + ' more students</td></tr>';
+            }
+            html += '</tbody></table>';
+            previewArea.innerHTML = html;
+
+            // Enable upload button
+            uploadBtn.disabled = false;
+            uploadBtn.style.cursor = 'pointer';
+            uploadBtn.style.opacity = '1';
+
+        } catch (err) {
+            resToast('Error reading Excel: ' + err.message, 'error');
+            console.error('[Results] Excel parse error:', err);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// ── Upload parsed data to Firestore ──
+async function resUploadToFirestore() {
+    if (!resParsedData || resParsedData.length === 0) {
+        resToast('No data to upload. Select an Excel file first.', 'error');
+        return;
+    }
+    const examSem = document.getElementById('res_examSem').value;
+    const semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+    
+    if (!confirm('Upload ' + resParsedData.length + ' students\' ' + (semLabels[examSem] || examSem) + ' results to Firestore?\n\nThis will merge with existing data (won\'t overwrite other semesters).')) {
+        return;
+    }
+
+    const btn = document.getElementById('res_uploadBtn');
+    const prog = document.getElementById('res_progressText');
+    const statusBox = document.getElementById('res_statusBox');
+    btn.disabled = true; btn.style.opacity = '0.5';
+    statusBox.style.display = 'none';
+
+    let done = 0, errors = 0;
+    // Batch write in groups of 400
+    for (let i = 0; i < resParsedData.length; i += 400) {
+        const batch = db.batch();
+        const chunk = resParsedData.slice(i, i + 400);
+        chunk.forEach(student => {
+            if (!student.pin) { errors++; return; }
+            const ref = db.collection('results').doc(student.pin);
+            batch.set(ref, student, { merge: true });
+        });
+        try {
+            await batch.commit();
+            done += chunk.length;
+            prog.textContent = '⏳ Uploaded ' + done + ' / ' + resParsedData.length + '...';
+        } catch (e) {
+            errors += chunk.length;
+            console.error('[Results] Batch error:', e);
+        }
+    }
+
+    if (errors === 0) {
+        statusBox.style.display = 'block';
+        statusBox.style.background = '#e8f5e9';
+        statusBox.style.border = '1px solid #4CAF50';
+        statusBox.style.color = '#2e7d32';
+        statusBox.textContent = '✅ Successfully uploaded ' + done + ' students\' results!';
+        resToast('Upload complete! ' + done + ' students.', 'success');
+    } else {
+        statusBox.style.display = 'block';
+        statusBox.style.background = '#ffebee';
+        statusBox.style.border = '1px solid #f44336';
+        statusBox.style.color = '#c62828';
+        statusBox.textContent = '⚠️ Done with ' + errors + ' errors. ' + done + ' succeeded.';
+        resToast('Upload had errors.', 'error');
+    }
+    prog.textContent = '';
+    btn.disabled = false; btn.style.opacity = '1';
+
+    // Refresh summary
+    resLoadSummary();
+}
+
+// ── Load summary of uploaded results from Firestore ──
+async function resLoadSummary() {
+    const area = document.getElementById('res_summaryArea');
+    area.innerHTML = '<div style="text-align:center;color:#999;">⏳ Loading uploaded results...</div>';
+
+    try {
+        const snapshot = await db.collection('results').get();
+        if (snapshot.empty) {
+            area.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">No results uploaded yet.</div>';
+            return;
+        }
+
+        // Count students per semester
+        let semCounts = {};
+        let semPINs = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.semesters) {
+                Object.keys(data.semesters).forEach(sem => {
+                    if (!semCounts[sem]) { semCounts[sem] = 0; semPINs[sem] = []; }
+                    semCounts[sem]++;
+                    semPINs[sem].push(doc.id);
+                });
+            }
+        });
+
+        const semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:14px;">';
+        html += '<thead><tr style="background:#f5f5f5;"><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Semester</th><th style="padding:10px;text-align:center;border-bottom:2px solid #ddd;">Students</th><th style="padding:10px;text-align:center;border-bottom:2px solid #ddd;">Action</th></tr></thead><tbody>';
+
+        Object.keys(semCounts).sort().forEach(sem => {
+            html += '<tr style="border-bottom:1px solid #eee;">';
+            html += '<td style="padding:10px;font-weight:600;">📋 ' + (semLabels[sem] || sem) + ' Results</td>';
+            html += '<td style="padding:10px;text-align:center;">' + semCounts[sem] + ' students</td>';
+            html += '<td style="padding:10px;text-align:center;">';
+            html += '<button onclick="resDeleteSemester(\'' + sem + '\')" style="padding:6px 14px;background:#f44336;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🗑️ Remove</button>';
+            html += '</td></tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="margin-top:10px;font-size:12px;color:#aaa;">Total documents in Firestore: ' + snapshot.size + '</div>';
+        area.innerHTML = html;
+
+    } catch (e) {
+        area.innerHTML = '<div style="color:#c62828;">❌ Error loading summary: ' + e.message + '</div>';
+        console.error('[Results] Summary error:', e);
+    }
+}
+
+// ── Delete a semester's results from all documents ──
+async function resDeleteSemester(sem) {
+    const semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+    const label = semLabels[sem] || sem;
+
+    if (!confirm('⚠️ REMOVE all "' + label + '" results from Firestore?\n\nThis will delete ' + label + ' results for ALL students. Other semester results will NOT be affected.\n\nThis action cannot be undone!')) {
+        return;
+    }
+
+    const area = document.getElementById('res_summaryArea');
+    area.innerHTML = '<div style="text-align:center;color:#e65100;">⏳ Removing ' + label + ' results...</div>';
+
+    try {
+        const snapshot = await db.collection('results').get();
+        let deleted = 0;
+        const deleteField = firebase.firestore.FieldValue.delete();
+
+        // Process in batches
+        for (let i = 0; i < snapshot.docs.length; i += 400) {
+            const batch = db.batch();
+            const chunk = snapshot.docs.slice(i, i + 400);
+            chunk.forEach(doc => {
+                const data = doc.data();
+                if (data.semesters && data.semesters[sem]) {
+                    // Remove just this semester from the semesters map
+                    batch.update(doc.ref, { ['semesters.' + sem]: deleteField });
+                    deleted++;
+                }
+            });
+            await batch.commit();
+        }
+
+        // Clean up: delete documents that have no semesters left
+        const snapshot2 = await db.collection('results').get();
+        for (let i = 0; i < snapshot2.docs.length; i += 400) {
+            const batch = db.batch();
+            let needsCommit = false;
+            snapshot2.docs.slice(i, i + 400).forEach(doc => {
+                const data = doc.data();
+                if (!data.semesters || Object.keys(data.semesters).length === 0) {
+                    batch.delete(doc.ref);
+                    needsCommit = true;
+                }
+            });
+            if (needsCommit) await batch.commit();
+        }
+
+        resToast('Removed ' + label + ' results for ' + deleted + ' students.', 'success');
+        resLoadSummary();
+    } catch (e) {
+        resToast('Error removing results: ' + e.message, 'error');
+        console.error('[Results] Delete error:', e);
+        resLoadSummary();
+    }
+}
+
+// ╚══════════════ END ADMIN RESULTS UPLOAD MODULE ═══════════════╝
 </script>
 
 </body>

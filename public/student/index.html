@@ -274,6 +274,16 @@
             opacity: 0.5;
         }
 
+        .calendar-day.holiday-marked {
+            background: #FF9800;
+            border-color: #E65100;
+        }
+
+        .calendar-day.holiday-marked .status {
+            color: #fff;
+            font-weight: 700;
+        }
+
         .periods-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -1284,6 +1294,7 @@
                     <button class="tab" onclick="showTab('monthly')">📅 Monthly</button>
                     <button class="tab" onclick="showTab('unitmarks')">📝 Unit Marks</button>
                     <button class="tab" id="ttTabBtn" onclick="showTab('timetable')">🗓️ Time Table</button>
+                    <button class="tab" id="resultsTabBtn" onclick="showTab('results')">📋 Results</button>
                     <button class="tab" onclick="showTab('pqp')">📚 PQP</button>
                 </div>
 
@@ -1455,6 +1466,67 @@
                     </div>
                 </div>
 
+                <!-- Results Tab -->
+                <div id="resultsTab" class="tab-content">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                        <h3 style="color:#2a5298;margin:0;font-size:17px;">📋 Exam Results</h3>
+                        <select id="resultsSemSelector" onchange="loadResults()" style="padding:6px 12px;border-radius:6px;border:1px solid #ddd;font-size:13px;font-weight:600;">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+
+                    <div id="resultsLoading" style="text-align:center;padding:30px;color:#999;">
+                        <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+                        <div>Loading results…</div>
+                    </div>
+
+                    <div id="resultsContent" style="display:none;">
+                        <!-- Student Info Header -->
+                        <div id="resultsHeader" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb);border-radius:10px;padding:16px;margin-bottom:16px;">
+                            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                                <tr><td style="font-weight:700;color:#1565c0;padding:4px 8px;width:110px;">PIN</td><td id="resPIN" style="padding:4px 8px;"></td></tr>
+                                <tr><td style="font-weight:700;color:#1565c0;padding:4px 8px;">Name</td><td id="resName" style="padding:4px 8px;"></td></tr>
+                                <tr><td style="font-weight:700;color:#1565c0;padding:4px 8px;">Branch</td><td id="resBranch" style="padding:4px 8px;"></td></tr>
+                            </table>
+                        </div>
+
+                        <!-- Results Table -->
+                        <div style="overflow-x:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                            <table id="resultsTable" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
+                                <thead>
+                                    <tr>
+                                        <th style="padding:8px 3px;text-align:left;font-weight:700;background:#e3f2fd;color:#0d47a1;width:50px;">Paper</th>
+                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fff3e0;color:#e65100;width:40px;">Ext</th>
+                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#f3e5f5;color:#6a1b9a;width:35px;">Int</th>
+                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e8f5e9;color:#2e7d32;width:40px;">Total</th>
+                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fffde7;color:#f57f17;width:35px;">Res</th>
+                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e8eaf6;color:#283593;width:35px;">GP</th>
+                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fce4ec;color:#880e4f;width:30px;">CE</th>
+                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e0f2f1;color:#00695c;width:45px;">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTbody"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Summary -->
+                        <div id="resultsSummary" style="margin-top:16px;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border-radius:10px;padding:16px;">
+                            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;width:110px;">Grand Total</td><td id="resGrandTotal" style="padding:4px 8px;font-weight:700;"></td></tr>
+                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">GPA</td><td id="resGPA" style="padding:4px 8px;font-weight:700;"></td></tr>
+                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">Result</td><td id="resResult" style="padding:4px 8px;font-weight:700;"></td></tr>
+                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">Month & Year</td><td id="resMonthYear" style="padding:4px 8px;"></td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="resultsEmpty" style="display:none;text-align:center;padding:40px 20px;">
+                        <div style="font-size:48px;margin-bottom:12px;">📋</div>
+                        <div style="font-size:16px;font-weight:600;color:#2a5298;">No Results Available</div>
+                        <div style="font-size:13px;color:#999;margin-top:6px;">Your exam results will appear here once they are published.</div>
+                    </div>
+                </div>
+
                 <button class="logout-btn" onclick="logout()">🚪 Logout</button>
             </div>
         </div>
@@ -1505,6 +1577,18 @@
         function isStudentSunday(dateStr) {
             const [y, m, d] = dateStr.split('-').map(Number);
             return new Date(y, m - 1, d).getDay() === 0;
+        }
+
+        // Returns true if dateStr falls on the 2nd Saturday of its month
+        function isStudentSecondSaturday(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            if (dt.getDay() !== 6) return false; // not a Saturday
+            let count = 0;
+            for (let i = 1; i <= d; i++) {
+                if (new Date(y, m - 1, i).getDay() === 6) count++;
+            }
+            return count === 2;
         }
 
         // Helper: find attendance data for the current student in a day's record.
@@ -1774,8 +1858,12 @@
                 document.getElementById('ttTabBtn').classList.add('active');
                 document.getElementById('timetableTab').classList.add('active');
                 loadStudentTimetable();
+            } else if (tab === 'results') {
+                document.getElementById('resultsTabBtn').classList.add('active');
+                document.getElementById('resultsTab').classList.add('active');
+                loadResultsTab();
             } else if (tab === 'pqp') {
-                document.querySelector('.tab:nth-child(5)').classList.add('active');
+                document.querySelector('.tab:nth-child(6)').classList.add('active');
                 document.getElementById('pqpTab').classList.add('active');
                 loadStudentPQP();
             }
@@ -1824,8 +1912,8 @@
                     // Skip today if we are still within college hours (before 4:30 PM)
                     if (date === todayStrMR && !afterCutoffMR) continue;
 
-                    // Skip Sundays and holidays — they are not working days
-                    if (isStudentSunday(date) || holidaySet.has(date)) continue;
+                    // Skip Sundays, 2nd Saturdays and holidays — they are not working days
+                    if (isStudentSunday(date) || isStudentSecondSaturday(date) || holidaySet.has(date)) continue;
 
                     // Use in-memory cache (loaded at login) — no extra Firestore reads
                     const attData = allAttendance[date] || {};
@@ -1909,12 +1997,12 @@
                 const afterCutoff = now.getHours() > 16 || (now.getHours() === 16 && now.getMinutes() >= 30);
                 const showToday = (dateStr !== todayStr) || afterCutoff;
 
-                // Treat Sundays and holidays as '-'
-                const isHol = isStudentSunday(dateStr) || (holidaySet && holidaySet.has(dateStr));
+                // Treat Sundays, 2nd Saturdays and holidays as 'H'
+                const isHol = isStudentSunday(dateStr) || isStudentSecondSaturday(dateStr) || (holidaySet && holidaySet.has(dateStr));
 
                 if (isHol) {
-                    cell.classList.add('holiday');
-                    statusDiv.textContent = '-';
+                    cell.classList.add('holiday-marked');
+                    statusDiv.textContent = 'H';
                 } else if (dayStatus[dateStr] === 'P' && showToday) {
                     cell.classList.add('present');
                     statusDiv.textContent = 'P';
@@ -1966,6 +2054,17 @@
                     emoji: '🏖️',
                     headline: 'No Attendance – Sunday',
                     sub: 'Enjoy your weekend!'
+                });
+                return;
+            }
+
+            // ── 1b. 2nd Saturday check ─────────────────────────────────
+            if (isStudentSecondSaturday(dateStr)) {
+                await calculateCumulativePercentage();
+                showTodayNoDataMsg({
+                    emoji: '🏖️',
+                    headline: 'No Attendance – 2nd Saturday',
+                    sub: 'College Holiday'
                 });
                 return;
             }
@@ -3092,6 +3191,107 @@
 
         function closeAssignModal() {
             document.getElementById('assignDetailModal').style.display = 'none';
+        }
+
+
+        // ── RESULTS TAB: fetch from Firestore and display exam results ──
+        let cachedResultsDoc = null;
+
+        async function loadResultsTab() {
+            if (!currentStudent) return;
+            const loadingEl = document.getElementById('resultsLoading');
+            const contentEl = document.getElementById('resultsContent');
+            const emptyEl   = document.getElementById('resultsEmpty');
+            const semSel    = document.getElementById('resultsSemSelector');
+
+            loadingEl.style.display = 'block';
+            contentEl.style.display = 'none';
+            emptyEl.style.display   = 'none';
+
+            try {
+                // Fetch results document for this PIN
+                if (!cachedResultsDoc) {
+                    const doc = await db.collection('results').doc(currentStudent.pin).get();
+                    if (doc.exists) {
+                        cachedResultsDoc = doc.data();
+                    }
+                }
+
+                if (!cachedResultsDoc || !cachedResultsDoc.semesters || Object.keys(cachedResultsDoc.semesters).length === 0) {
+                    loadingEl.style.display = 'none';
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+
+                // Populate semester dropdown
+                const semesters = Object.keys(cachedResultsDoc.semesters).sort();
+                semSel.innerHTML = '';
+                const semLabels = {'1-1':'1st Year','1-2':'Sem 2','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+                semesters.forEach((s, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = semLabels[s] || ('Sem ' + s);
+                    semSel.appendChild(opt);
+                });
+
+                loadingEl.style.display = 'none';
+                loadResults();
+            } catch(e) {
+                console.error('Error loading results:', e);
+                loadingEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+            }
+        }
+
+        function loadResults() {
+            if (!cachedResultsDoc) return;
+            const semSel = document.getElementById('resultsSemSelector');
+            const sem = semSel.value;
+            if (!sem || !cachedResultsDoc.semesters[sem]) return;
+
+            const contentEl = document.getElementById('resultsContent');
+            contentEl.style.display = 'block';
+
+            const data = cachedResultsDoc.semesters[sem];
+
+            // Fill header
+            document.getElementById('resPIN').textContent = cachedResultsDoc.pin || currentStudent.pin;
+            document.getElementById('resName').textContent = cachedResultsDoc.name || currentStudent.name;
+            document.getElementById('resBranch').textContent = cachedResultsDoc.branch || '';
+
+            // Fill papers table
+            const tbody = document.getElementById('resultsTbody');
+            tbody.innerHTML = '';
+            const papers = data.papers || {};
+            const paperCodes = Object.keys(papers).sort((a,b) => parseInt(a) - parseInt(b));
+
+            paperCodes.forEach((code, i) => {
+                const p = papers[code];
+                const isPass = p.subResult === 'P';
+                const resultColor = isPass ? '#2e7d32' : '#c62828';
+                const gradeColor = p.grade === 'F' ? '#c62828' : '#00695c';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding:6px 3px;font-weight:700;color:#0d47a1;background:#f5f9ff;">${code}</td>
+                        <td style="padding:6px 3px;text-align:center;background:#fff8f0;">${p.ext}</td>
+                        <td style="padding:6px 3px;text-align:center;background:#fdf5ff;">${p.int}</td>
+                        <td style="padding:6px 3px;text-align:center;font-weight:600;background:#f5fff5;">${p.tot}</td>
+                        <td style="padding:6px 3px;text-align:center;font-weight:700;color:${resultColor};background:#fffff5;">${p.subResult}</td>
+                        <td style="padding:6px 3px;text-align:center;background:#f5f5ff;">${p.gp}</td>
+                        <td style="padding:6px 3px;text-align:center;background:#fff5f7;">${p.creditsEarned !== undefined ? p.creditsEarned : '-'}</td>
+                        <td style="padding:6px 3px;text-align:center;font-weight:600;color:${gradeColor};background:#f2fffd;">${p.grade}</td>
+                    </tr>`;
+            });
+
+            // Fill summary
+            document.getElementById('resGrandTotal').textContent = data.grandTotal || '';
+            document.getElementById('resGPA').textContent = data.gpa || '';
+            const resultText = data.result || '';
+            const resEl = document.getElementById('resResult');
+            resEl.textContent = resultText;
+            resEl.style.color = resultText === 'PASS' ? '#2e7d32' : '#c62828';
+            document.getElementById('resMonthYear').textContent = data.examMonthYear || '';
         }
 
 

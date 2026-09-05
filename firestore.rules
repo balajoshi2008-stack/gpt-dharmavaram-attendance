@@ -133,5 +133,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Results (Exam Results) ────────────────────────────────────────────────
+    match /results/{pin} {
+      allow read: if true;
+      allow write: if isAdminOrFaculty();
+    }
+
   }
 }
