@@ -4343,6 +4343,18 @@
                         <div id="res_statusBox" style="margin-top:12px;display:none;padding:14px;border-radius:10px;font-weight:600;font-size:14px;"></div>
                     </div>
 
+                    <!-- Result Analysis Button -->
+                    <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 4px 16px rgba(102,126,234,0.3);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="openResultAnalysis()">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:32px;">📊</span>
+                            <div>
+                                <h3 style="margin:0;color:#fff;font-size:18px;font-weight:700;">Result Analysis</h3>
+                                <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">Comprehensive analysis — pass/fail, subject-wise, toppers, grades, charts & reports</p>
+                            </div>
+                        </div>
+                        <span style="color:#fff;font-size:24px;">→</span>
+                    </div>
+
                     <!-- Existing Results in Firestore -->
                     <div style="background:#fff;border-radius:14px;padding:22px 24px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
                         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
@@ -4364,6 +4376,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         // Generate subject codes
         const SUBJECT_CODES = [];
@@ -20066,6 +20079,748 @@ async function resDeleteSemester(sem) {
 }
 
 // ╚══════════════ END ADMIN RESULTS UPLOAD MODULE ═══════════════╝
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║              RESULT ANALYSIS MODULE                             ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+let ra_allDocs = null; // cached Firestore docs
+let ra_analysis = null; // computed analysis object
+let ra_currentSem = null;
+let ra_charts = {}; // chart instances for cleanup
+const ra_semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+
+function ra_destroyCharts() {
+    Object.values(ra_charts).forEach(c => { try { c.destroy(); } catch(e){} });
+    ra_charts = {};
+}
+
+// ── Open Result Analysis overlay ──
+async function openResultAnalysis() {
+    // Create overlay if not exists
+    if (!document.getElementById('raOverlay')) {
+        const ov = document.createElement('div');
+        ov.id = 'raOverlay';
+        ov.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f2f8;z-index:10000;overflow-y:auto;';
+        ov.innerHTML = `
+        <div style="background:linear-gradient(135deg,#1e3c72 0%,#2a5298 60%,#667eea 100%);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10001;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:28px;">📊</span>
+                <div><h2 style="color:#fff;margin:0;font-size:18px;font-weight:700;">Result Analysis</h2>
+                <p id="ra_semLabel" style="color:rgba(255,255,255,0.7);margin:2px 0 0;font-size:12px;"></p></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <select id="ra_semSelect" onchange="ra_onSemChange()" style="padding:8px 12px;border:none;border-radius:8px;font-size:13px;font-weight:600;background:rgba(255,255,255,0.9);color:#1e3c72;cursor:pointer;"></select>
+                <button onclick="closeResultAnalysis()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;cursor:pointer;border-radius:8px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">✕</button>
+            </div>
+        </div>
+        <div id="ra_tabs" style="background:#fff;padding:4px 12px;display:flex;gap:2px;overflow-x:auto;border-bottom:2px solid #e8eef8;position:sticky;top:70px;z-index:10000;">
+            <button class="ra-tab-btn ra-tab-active" onclick="ra_showTab('overview',this)">📈 Overview</button>
+            <button class="ra-tab-btn" onclick="ra_showTab('students',this)">👥 Students</button>
+            <button class="ra-tab-btn" onclick="ra_showTab('subjects',this)">📚 Subjects</button>
+            <button class="ra-tab-btn" onclick="ra_showTab('toppers',this)">🏆 Toppers</button>
+            <button class="ra-tab-btn" onclick="ra_showTab('grades',this)">🎓 Grades</button>
+            <button class="ra-tab-btn" onclick="ra_showTab('failure',this)">⚠️ Failure</button>
+            <button class="ra-tab-btn" onclick="ra_showTab('reports',this)">📥 Reports</button>
+        </div>
+        <style>
+            .ra-tab-btn{padding:10px 14px;border:none;background:none;font-size:12px;font-weight:600;color:#666;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;border-radius:0;}
+            .ra-tab-active{color:#1e3c72;border-bottom-color:#667eea;background:#f0f4ff;}
+            .ra-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border:1px solid #e8eef8;}
+            .ra-stat{text-align:center;padding:18px 12px;}
+            .ra-stat .ra-num{font-size:28px;font-weight:800;color:#1e3c72;}
+            .ra-stat .ra-lbl{font-size:11px;color:#888;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;}
+            .ra-stat .ra-pct{font-size:14px;font-weight:600;margin-top:2px;}
+            .ra-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+            .ra-tbl th{padding:10px 8px;text-align:left;background:#f5f7ff;color:#1e3c72;font-weight:700;border-bottom:2px solid #e0e7ff;white-space:nowrap;}
+            .ra-tbl td{padding:8px;border-bottom:1px solid #f0f0f0;}
+            .ra-tbl tr:hover{background:#f8f9ff;}
+            .ra-tbl .ra-ctr{text-align:center;}
+            .ra-badge-p{background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
+            .ra-badge-f{background:#ffebee;color:#c62828;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
+            .ra-link{color:#1565c0;cursor:pointer;text-decoration:underline;}
+            .ra-link:hover{color:#0d47a1;}
+            @media(max-width:600px){.ra-stat .ra-num{font-size:22px;}.ra-tbl{font-size:11px;}.ra-tbl th,.ra-tbl td{padding:6px 4px;}}
+        </style>
+        <div id="ra_content" style="max-width:1100px;margin:0 auto;padding:20px 16px 40px;"></div>
+        <div id="ra_loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.85);z-index:10002;align-items:center;justify-content:center;">
+            <div style="text-align:center;"><div style="font-size:36px;margin-bottom:8px;">⏳</div><div style="font-size:16px;font-weight:600;color:#1e3c72;">Loading analysis...</div></div>
+        </div>`;
+        document.body.appendChild(ov);
+    }
+
+    document.getElementById('raOverlay').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    await ra_loadSemesters();
+}
+
+function closeResultAnalysis() {
+    document.getElementById('raOverlay').style.display = 'none';
+    document.body.style.overflow = '';
+    ra_destroyCharts();
+}
+
+async function ra_loadSemesters() {
+    const sel = document.getElementById('ra_semSelect');
+    sel.innerHTML = '<option value="">Loading...</option>';
+    try {
+        if (!ra_allDocs) {
+            const snap = await db.collection('results').get();
+            ra_allDocs = [];
+            snap.forEach(doc => ra_allDocs.push(doc.data()));
+        }
+        const sems = new Set();
+        ra_allDocs.forEach(d => { if(d.semesters) Object.keys(d.semesters).forEach(s => sems.add(s)); });
+        const sorted = [...sems].sort();
+        if (sorted.length === 0) {
+            sel.innerHTML = '<option value="">No results uploaded</option>';
+            document.getElementById('ra_content').innerHTML = '<div style="text-align:center;padding:60px;color:#999;font-size:16px;">No result data found. Upload results first.</div>';
+            return;
+        }
+        sel.innerHTML = sorted.map(s => `<option value="${s}">${ra_semLabels[s]||s} Results</option>`).join('');
+        ra_onSemChange();
+    } catch(e) {
+        sel.innerHTML = '<option value="">Error loading</option>';
+        console.error('RA load error:', e);
+    }
+}
+
+function ra_onSemChange() {
+    const sem = document.getElementById('ra_semSelect').value;
+    if (!sem) return;
+    ra_currentSem = sem;
+    ra_destroyCharts();
+    const students = [];
+    ra_allDocs.forEach(d => {
+        if (d.semesters && d.semesters[sem]) {
+            students.push({ pin: d.pin, name: d.name, branch: d.branch, sem: d.semesters[sem] });
+        }
+    });
+    ra_analysis = ra_compute(students);
+    document.getElementById('ra_semLabel').textContent = (ra_semLabels[sem]||sem) + ' • ' + ra_analysis.totalStudents + ' students' + (ra_analysis.examMonthYear ? ' • ' + ra_analysis.examMonthYear : '');
+    // Show overview tab
+    document.querySelectorAll('.ra-tab-btn').forEach((b,i) => b.classList.toggle('ra-tab-active', i===0));
+    ra_showTab('overview');
+}
+
+// ── Core computation engine ──
+function ra_compute(students) {
+    const a = { totalStudents: students.length, students: students };
+    let passed=0, failed=0, gtArr=[], gpaArr=[], examMY='';
+    const failedStudents=[], passedStudents=[];
+    const subjMap = {}; // code -> {appeared, passed, failed, totals[], exts[], ints[], failedList[], grades[]}
+    const gradeCount = {};
+    const failCounts = {}; // numFailedSubjects -> count
+    const failCountStudents = {}; // numFailedSubjects -> [{pin,name}]
+
+    students.forEach(st => {
+        const s = st.sem;
+        if (!examMY && s.examMonthYear) examMY = s.examMonthYear;
+        const gt = parseFloat(s.grandTotal) || 0;
+        const gpa = parseFloat(s.gpa) || 0;
+        gtArr.push(gt);
+        if (gpa > 0) gpaArr.push(gpa);
+
+        const papers = s.papers || {};
+        const codes = Object.keys(papers);
+        let failedPapers = [];
+
+        codes.forEach(code => {
+            const p = papers[code];
+            if (!subjMap[code]) subjMap[code] = { appeared:0, passed:0, failed:0, totals:[], exts:[], ints:[], failedList:[], grades:[], gps:[], ces:[] };
+            const sm = subjMap[code];
+            sm.appeared++;
+            const tot = parseInt(p.tot) || 0;
+            const ext = parseInt(p.ext) || 0;
+            const intV = parseInt(p.int) || 0;
+            sm.totals.push(tot);
+            sm.exts.push(ext);
+            sm.ints.push(intV);
+            if (p.gp !== undefined) sm.gps.push(parseInt(p.gp)||0);
+            if (p.creditsEarned !== undefined) sm.ces.push(parseInt(p.creditsEarned)||0);
+            if (p.grade) { gradeCount[p.grade] = (gradeCount[p.grade]||0) + 1; sm.grades.push(p.grade); }
+            const isFail = p.subResult === 'F' || p.subResult === 'AB' || p.subResult === 'f';
+            if (isFail) {
+                sm.failed++;
+                sm.failedList.push({ pin: st.pin, name: st.name, ext, int: intV, tot, grade: p.grade||'', subResult: p.subResult });
+                failedPapers.push(code);
+            } else { sm.passed++; }
+        });
+
+        if (failedPapers.length === 0) {
+            passed++;
+            passedStudents.push({ pin: st.pin, name: st.name, grandTotal: gt, gpa, result: s.result||'' });
+        } else {
+            failed++;
+            failedStudents.push({ pin: st.pin, name: st.name, failedPapers, grandTotal: gt, gpa, result: s.result||'' });
+        }
+        const fc = failedPapers.length;
+        const fk = fc >= 4 ? '4+' : String(fc);
+        failCounts[fk] = (failCounts[fk]||0) + 1;
+        if (!failCountStudents[fk]) failCountStudents[fk] = [];
+        if (fc > 0) failCountStudents[fk].push({ pin: st.pin, name: st.name, count: fc, papers: failedPapers });
+    });
+
+    // Subject analysis
+    const subjectAnalysis = {};
+    Object.keys(subjMap).sort((a,b)=>parseInt(a)-parseInt(b)).forEach(code => {
+        const sm = subjMap[code];
+        subjectAnalysis[code] = {
+            appeared: sm.appeared, passed: sm.passed, failed: sm.failed,
+            passPercent: sm.appeared ? ((sm.passed/sm.appeared)*100).toFixed(2) : '0',
+            failPercent: sm.appeared ? ((sm.failed/sm.appeared)*100).toFixed(2) : '0',
+            avgTotal: sm.totals.length ? (sm.totals.reduce((a,b)=>a+b,0)/sm.totals.length).toFixed(1) : '0',
+            highestTotal: sm.totals.length ? Math.max(...sm.totals) : 0,
+            lowestTotal: sm.totals.length ? Math.min(...sm.totals) : 0,
+            avgExt: sm.exts.length ? (sm.exts.reduce((a,b)=>a+b,0)/sm.exts.length).toFixed(1) : '0',
+            avgInt: sm.ints.length ? (sm.ints.reduce((a,b)=>a+b,0)/sm.ints.length).toFixed(1) : '0',
+            failedList: sm.failedList,
+            grades: sm.grades, gps: sm.gps, ces: sm.ces
+        };
+    });
+
+    // GPA distribution
+    const gpaDist = {'9.0-10.0':0,'8.0-8.99':0,'7.0-7.99':0,'6.0-6.99':0,'5.0-5.99':0,'Below 5.0':0};
+    gpaArr.forEach(g => {
+        if (g>=9) gpaDist['9.0-10.0']++;
+        else if (g>=8) gpaDist['8.0-8.99']++;
+        else if (g>=7) gpaDist['7.0-7.99']++;
+        else if (g>=6) gpaDist['6.0-6.99']++;
+        else if (g>=5) gpaDist['5.0-5.99']++;
+        else gpaDist['Below 5.0']++;
+    });
+
+    // Sort students by grand total descending
+    const ranked = [...students].sort((a,b) => (parseFloat(b.sem.grandTotal)||0) - (parseFloat(a.sem.grandTotal)||0));
+
+    gtArr.sort((a,b)=>a-b);
+    const median = gtArr.length ? (gtArr.length%2===0 ? (gtArr[gtArr.length/2-1]+gtArr[gtArr.length/2])/2 : gtArr[Math.floor(gtArr.length/2)]) : 0;
+
+    Object.assign(a, {
+        passed, failed, examMonthYear: examMY,
+        passPercent: a.totalStudents ? ((passed/a.totalStudents)*100).toFixed(2) : '0',
+        failPercent: a.totalStudents ? ((failed/a.totalStudents)*100).toFixed(2) : '0',
+        avgGrandTotal: gtArr.length ? (gtArr.reduce((a,b)=>a+b,0)/gtArr.length).toFixed(1) : '0',
+        highestGrandTotal: gtArr.length ? Math.max(...gtArr) : 0,
+        lowestGrandTotal: gtArr.length ? Math.min(...gtArr) : 0,
+        medianGrandTotal: median.toFixed(0),
+        avgGPA: gpaArr.length ? (gpaArr.reduce((a,b)=>a+b,0)/gpaArr.length).toFixed(2) : '0',
+        highestGPA: gpaArr.length ? Math.max(...gpaArr).toFixed(2) : '0',
+        lowestGPA: gpaArr.length ? Math.min(...gpaArr).toFixed(2) : '0',
+        failedStudents, passedStudents, subjectAnalysis, gradeCount, gpaDist,
+        failCounts, failCountStudents, ranked
+    });
+    return a;
+}
+
+// ── Tab switching ──
+function ra_showTab(tab, btn) {
+    if (btn) { document.querySelectorAll('.ra-tab-btn').forEach(b => b.classList.remove('ra-tab-active')); btn.classList.add('ra-tab-active'); }
+    ra_destroyCharts();
+    const c = document.getElementById('ra_content');
+    if (!ra_analysis) { c.innerHTML = '<div style="text-align:center;padding:60px;color:#999;">Select a semester to begin analysis.</div>'; return; }
+    switch(tab) {
+        case 'overview': ra_renderOverview(c); break;
+        case 'students': ra_renderStudents(c); break;
+        case 'subjects': ra_renderSubjects(c); break;
+        case 'toppers': ra_renderToppers(c); break;
+        case 'grades': ra_renderGrades(c); break;
+        case 'failure': ra_renderFailure(c); break;
+        case 'reports': ra_renderReports(c); break;
+    }
+}
+
+// ════════ TAB: OVERVIEW ════════
+function ra_renderOverview(c) {
+    const a = ra_analysis;
+    c.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;">
+        <div class="ra-card ra-stat"><div class="ra-num">${a.totalStudents}</div><div class="ra-lbl">Total Students</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num" style="color:#2e7d32;">${a.passed}</div><div class="ra-lbl">Passed All</div><div class="ra-pct" style="color:#2e7d32;">${a.passPercent}%</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num" style="color:#c62828;">${a.failed}</div><div class="ra-lbl">Failed</div><div class="ra-pct" style="color:#c62828;">${a.failPercent}%</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num">${a.avgGrandTotal}</div><div class="ra-lbl">Avg Grand Total</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num">${a.highestGrandTotal}</div><div class="ra-lbl">Highest Total</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num">${a.lowestGrandTotal}</div><div class="ra-lbl">Lowest Total</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;">
+        <div class="ra-card ra-stat"><div class="ra-num">${a.avgGPA}</div><div class="ra-lbl">Average GPA</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num">${a.highestGPA}</div><div class="ra-lbl">Highest GPA</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num">${a.lowestGPA}</div><div class="ra-lbl">Lowest GPA</div></div>
+        <div class="ra-card ra-stat"><div class="ra-num">${a.medianGrandTotal}</div><div class="ra-lbl">Median Total</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="ra-card"><h4 style="margin:0 0 12px;color:#1e3c72;">Overall Pass / Fail</h4><div style="height:250px;"><canvas id="ra_ch_pf"></canvas></div></div>
+        <div class="ra-card"><h4 style="margin:0 0 12px;color:#1e3c72;">Grand Total Distribution</h4><div style="height:250px;"><canvas id="ra_ch_gt"></canvas></div></div>
+    </div>`;
+    // Pass/Fail doughnut
+    ra_charts.pf = new Chart(document.getElementById('ra_ch_pf'), {
+        type:'doughnut', data:{labels:['Passed All','Failed'],datasets:[{data:[a.passed,a.failed],backgroundColor:['#4CAF50','#f44336']}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
+    });
+    // Grand Total histogram
+    const ranges = ['0-400','401-500','501-600','601-700','701-800','801-900','901+'];
+    const gtBins = [0,0,0,0,0,0,0];
+    a.students.forEach(st => {
+        const g = parseFloat(st.sem.grandTotal)||0;
+        if(g<=400) gtBins[0]++; else if(g<=500) gtBins[1]++; else if(g<=600) gtBins[2]++; else if(g<=700) gtBins[3]++; else if(g<=800) gtBins[4]++; else if(g<=900) gtBins[5]++; else gtBins[6]++;
+    });
+    ra_charts.gt = new Chart(document.getElementById('ra_ch_gt'), {
+        type:'bar', data:{labels:ranges,datasets:[{label:'Students',data:gtBins,backgroundColor:'#42a5f5'}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    });
+}
+
+// ════════ TAB: STUDENTS ════════
+function ra_renderStudents(c) {
+    const a = ra_analysis;
+    let html = `<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+        <input id="ra_search" type="text" placeholder="🔍 Search PIN or Name..." oninput="ra_filterStudents()" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;">
+        <select id="ra_stuFilter" onchange="ra_filterStudents()" style="padding:10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:13px;">
+            <option value="all">All Students (${a.totalStudents})</option>
+            <option value="failed">❌ Failed Students (${a.failed})</option>
+            <option value="passed">✅ Passed Students (${a.passed})</option>
+        </select>
+        <select id="ra_subjFilter" onchange="ra_filterStudents()" style="padding:10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:13px;">
+            <option value="">All Subjects</option>
+            ${Object.keys(a.subjectAnalysis).map(code => `<option value="${code}">${code}</option>`).join('')}
+        </select>
+    </div>
+    <div class="ra-card" style="overflow-x:auto;">
+        <table class="ra-tbl"><thead><tr>
+            <th>#</th><th>PIN</th><th>Name</th><th>Grand Total</th><th>GPA</th><th>Result</th><th>Failed In</th>
+        </tr></thead><tbody id="ra_stuBody"></tbody></table>
+    </div>`;
+    c.innerHTML = html;
+    ra_filterStudents();
+}
+
+function ra_filterStudents() {
+    const a = ra_analysis;
+    const query = (document.getElementById('ra_search').value||'').toLowerCase();
+    const mode = document.getElementById('ra_stuFilter').value;
+    const subj = document.getElementById('ra_subjFilter').value;
+    let list = a.students.map(st => {
+        const papers = st.sem.papers||{};
+        const failedPapers = Object.keys(papers).filter(c => papers[c].subResult==='F'||papers[c].subResult==='AB');
+        return { ...st, failedPapers, grandTotal: parseFloat(st.sem.grandTotal)||0, gpa: parseFloat(st.sem.gpa)||0, result: st.sem.result||'' };
+    });
+    if (mode==='failed') list = list.filter(s => s.failedPapers.length>0);
+    else if (mode==='passed') list = list.filter(s => s.failedPapers.length===0);
+    if (subj) list = list.filter(s => s.failedPapers.includes(subj));
+    if (query) list = list.filter(s => s.pin.toLowerCase().includes(query) || s.name.toLowerCase().includes(query));
+    list.sort((a,b) => b.grandTotal - a.grandTotal);
+    const body = document.getElementById('ra_stuBody');
+    body.innerHTML = list.map((s,i) => `<tr>
+        <td class="ra-ctr">${i+1}</td>
+        <td><span class="ra-link" onclick="ra_showStudentDetail('${s.pin}')">${s.pin}</span></td>
+        <td>${s.name}</td>
+        <td class="ra-ctr" style="font-weight:600;">${s.grandTotal}</td>
+        <td class="ra-ctr">${s.gpa||'-'}</td>
+        <td class="ra-ctr"><span class="${s.result==='PASS'?'ra-badge-p':'ra-badge-f'}">${s.result}</span></td>
+        <td>${s.failedPapers.length ? s.failedPapers.map(p=>'<span class="ra-badge-f" style="margin:1px;">'+p+'</span>').join(' ') : '<span class="ra-badge-p">All Pass</span>'}</td>
+    </tr>`).join('');
+    if (!list.length) body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#999;">No students match the filter.</td></tr>';
+}
+
+function ra_showStudentDetail(pin) {
+    const a = ra_analysis;
+    const st = a.students.find(s => s.pin === pin);
+    if (!st) return;
+    const s = st.sem;
+    const papers = s.papers||{};
+    const codes = Object.keys(papers).sort((a,b)=>parseInt(a)-parseInt(b));
+    let modal = document.getElementById('raStudentModal');
+    if (!modal) { modal = document.createElement('div'); modal.id='raStudentModal'; document.body.appendChild(modal); }
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10003;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:650px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#e3f2fd,#bbdefb);padding:20px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div style="font-size:13px;color:#1565c0;font-weight:700;">PIN: ${st.pin}</div>
+                <div style="font-size:18px;font-weight:700;color:#0d47a1;margin:4px 0;">${st.name}</div>
+                <div style="font-size:13px;color:#666;">${st.branch||''}</div>
+            </div>
+            <button onclick="document.getElementById('raStudentModal').style.display='none'" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">✕</button>
+        </div>
+        <div style="padding:16px;">
+            <div style="overflow-x:auto;">
+            <table class="ra-tbl"><thead><tr>
+                <th>Paper</th><th class="ra-ctr">Ext</th><th class="ra-ctr">Int</th><th class="ra-ctr">Total</th><th class="ra-ctr">Res</th><th class="ra-ctr">GP</th><th class="ra-ctr">CE</th><th class="ra-ctr">Grade</th>
+            </tr></thead><tbody>
+                ${codes.map(code => {
+                    const p = papers[code];
+                    const isFail = p.subResult==='F'||p.subResult==='AB';
+                    return `<tr style="${isFail?'background:#fff5f5;':''}">
+                        <td style="font-weight:700;">${code}</td>
+                        <td class="ra-ctr">${p.ext}</td><td class="ra-ctr">${p.int}</td>
+                        <td class="ra-ctr" style="font-weight:600;">${p.tot}</td>
+                        <td class="ra-ctr"><span class="${isFail?'ra-badge-f':'ra-badge-p'}">${p.subResult}</span></td>
+                        <td class="ra-ctr">${p.gp!==undefined?p.gp:'-'}</td>
+                        <td class="ra-ctr">${p.creditsEarned!==undefined?p.creditsEarned:'-'}</td>
+                        <td class="ra-ctr" style="font-weight:600;">${p.grade||'-'}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody></table></div>
+            <div style="margin-top:16px;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border-radius:10px;padding:14px;">
+                <table style="width:100%;font-size:14px;border-collapse:collapse;">
+                    <tr><td style="font-weight:700;color:#2e7d32;padding:3px 8px;">Grand Total</td><td style="font-weight:700;padding:3px 8px;">${s.grandTotal||''}</td></tr>
+                    <tr><td style="font-weight:700;color:#2e7d32;padding:3px 8px;">GPA</td><td style="font-weight:700;padding:3px 8px;">${s.gpa||''}</td></tr>
+                    <tr><td style="font-weight:700;color:#2e7d32;padding:3px 8px;">Result</td><td style="font-weight:700;padding:3px 8px;color:${s.result==='PASS'?'#2e7d32':'#c62828'}">${s.result||''}</td></tr>
+                    <tr><td style="font-weight:700;color:#2e7d32;padding:3px 8px;">Month & Year</td><td style="padding:3px 8px;">${s.examMonthYear||''}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>`;
+    modal.onclick = function(e) { if(e.target===modal) modal.style.display='none'; };
+}
+
+// ════════ TAB: SUBJECTS ════════
+function ra_renderSubjects(c) {
+    const a = ra_analysis;
+    const codes = Object.keys(a.subjectAnalysis);
+    c.innerHTML = `
+    <div class="ra-card" style="margin-bottom:20px;overflow-x:auto;">
+        <h4 style="margin:0 0 12px;color:#1e3c72;">📚 Subject-wise Result Analysis</h4>
+        <table class="ra-tbl"><thead><tr>
+            <th>Paper</th><th class="ra-ctr">Appeared</th><th class="ra-ctr">Passed</th><th class="ra-ctr">Failed</th><th class="ra-ctr">Pass%</th><th class="ra-ctr">Fail%</th><th class="ra-ctr">Avg</th><th class="ra-ctr">Highest</th><th class="ra-ctr">Lowest</th><th class="ra-ctr">Avg Ext</th><th class="ra-ctr">Avg Int</th>
+        </tr></thead><tbody>
+            ${codes.map(code => {
+                const s = a.subjectAnalysis[code];
+                return `<tr>
+                    <td><span class="ra-link" onclick="ra_showSubjectDetail('${code}')" style="font-weight:700;">${code}</span></td>
+                    <td class="ra-ctr">${s.appeared}</td><td class="ra-ctr" style="color:#2e7d32;font-weight:600;">${s.passed}</td>
+                    <td class="ra-ctr" style="color:#c62828;font-weight:600;">${s.failed}</td>
+                    <td class="ra-ctr"><span class="ra-badge-p">${s.passPercent}%</span></td>
+                    <td class="ra-ctr">${s.failed>0?'<span class="ra-badge-f">'+s.failPercent+'%</span>':'<span style="color:#999;">0%</span>'}</td>
+                    <td class="ra-ctr">${s.avgTotal}</td><td class="ra-ctr" style="font-weight:600;">${s.highestTotal}</td>
+                    <td class="ra-ctr">${s.lowestTotal}</td><td class="ra-ctr">${s.avgExt}</td><td class="ra-ctr">${s.avgInt}</td>
+                </tr>`;
+            }).join('')}
+        </tbody></table>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="ra-card"><h4 style="margin:0 0 12px;color:#1e3c72;">Subject Pass %</h4><div style="height:${Math.max(250,codes.length*30)}px;"><canvas id="ra_ch_sp"></canvas></div></div>
+        <div class="ra-card"><h4 style="margin:0 0 12px;color:#c62828;">Subject Fail %</h4><div style="height:${Math.max(250,codes.length*30)}px;"><canvas id="ra_ch_sf"></canvas></div></div>
+    </div>`;
+    const passData = codes.map(c => parseFloat(a.subjectAnalysis[c].passPercent));
+    const failData = codes.map(c => parseFloat(a.subjectAnalysis[c].failPercent));
+    ra_charts.sp = new Chart(document.getElementById('ra_ch_sp'), {
+        type:'bar', data:{labels:codes,datasets:[{label:'Pass %',data:passData,backgroundColor:'#66bb6a'}]},
+        options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,beginAtZero:true}},
+            onClick:(e,el)=>{ if(el.length) ra_showSubjectDetail(codes[el[0].index]); }}
+    });
+    ra_charts.sf = new Chart(document.getElementById('ra_ch_sf'), {
+        type:'bar', data:{labels:codes,datasets:[{label:'Fail %',data:failData,backgroundColor:'#ef5350'}]},
+        options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{max:100,beginAtZero:true}},
+            onClick:(e,el)=>{ if(el.length) ra_showSubjectDetail(codes[el[0].index]); }}
+    });
+}
+
+function ra_showSubjectDetail(code) {
+    const a = ra_analysis;
+    const s = a.subjectAnalysis[code];
+    if (!s) return;
+    let modal = document.getElementById('raSubjectModal');
+    if (!modal) { modal = document.createElement('div'); modal.id='raSubjectModal'; document.body.appendChild(modal); }
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10003;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+        <div style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);padding:20px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;">
+            <div><h3 style="margin:0;color:#283593;">📚 Paper ${code} — Subject Analysis</h3></div>
+            <button onclick="document.getElementById('raSubjectModal').style.display='none'" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">✕</button>
+        </div>
+        <div style="padding:16px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;">
+                <div class="ra-card ra-stat"><div class="ra-num">${s.appeared}</div><div class="ra-lbl">Appeared</div></div>
+                <div class="ra-card ra-stat"><div class="ra-num" style="color:#2e7d32;">${s.passed}</div><div class="ra-lbl">Passed</div><div class="ra-pct" style="color:#2e7d32;">${s.passPercent}%</div></div>
+                <div class="ra-card ra-stat"><div class="ra-num" style="color:#c62828;">${s.failed}</div><div class="ra-lbl">Failed</div><div class="ra-pct" style="color:#c62828;">${s.failPercent}%</div></div>
+                <div class="ra-card ra-stat"><div class="ra-num">${s.avgTotal}</div><div class="ra-lbl">Avg Marks</div></div>
+                <div class="ra-card ra-stat"><div class="ra-num">${s.highestTotal}</div><div class="ra-lbl">Highest</div></div>
+                <div class="ra-card ra-stat"><div class="ra-num">${s.lowestTotal}</div><div class="ra-lbl">Lowest</div></div>
+            </div>
+            ${s.failedList.length ? `<h4 style="color:#c62828;margin:16px 0 8px;">❌ Failed Students in Paper ${code}</h4>
+            <div style="overflow-x:auto;"><table class="ra-tbl"><thead><tr>
+                <th>#</th><th>PIN</th><th>Name</th><th class="ra-ctr">Ext</th><th class="ra-ctr">Int</th><th class="ra-ctr">Total</th><th class="ra-ctr">Grade</th><th class="ra-ctr">Result</th>
+            </tr></thead><tbody>
+                ${s.failedList.map((f,i) => `<tr style="background:#fff5f5;"><td class="ra-ctr">${i+1}</td><td style="font-weight:600;">${f.pin}</td><td>${f.name}</td><td class="ra-ctr">${f.ext}</td><td class="ra-ctr">${f.int}</td><td class="ra-ctr" style="font-weight:600;">${f.tot}</td><td class="ra-ctr">${f.grade}</td><td class="ra-ctr"><span class="ra-badge-f">${f.subResult}</span></td></tr>`).join('')}
+            </tbody></table></div>` : '<p style="color:#2e7d32;font-weight:600;">✅ All students passed this subject!</p>'}
+        </div>
+    </div>`;
+    modal.onclick = function(e) { if(e.target===modal) modal.style.display='none'; };
+}
+
+// ════════ TAB: TOPPERS ════════
+function ra_renderToppers(c) {
+    const a = ra_analysis;
+    c.innerHTML = `
+    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;">
+        <h4 style="margin:0;color:#1e3c72;">🏆 Top Students by Grand Total</h4>
+        <select id="ra_topN" onchange="ra_renderTopperTable()" style="padding:8px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:13px;">
+            <option value="5">Top 5</option><option value="10">Top 10</option><option value="20">Top 20</option><option value="0">All</option>
+        </select>
+    </div>
+    <div class="ra-card" style="overflow-x:auto;">
+        <table class="ra-tbl"><thead><tr>
+            <th class="ra-ctr">Rank</th><th>PIN</th><th>Name</th><th class="ra-ctr">Grand Total</th><th class="ra-ctr">GPA</th><th class="ra-ctr">Result</th>
+        </tr></thead><tbody id="ra_topBody"></tbody></table>
+    </div>`;
+    ra_renderTopperTable();
+}
+
+function ra_renderTopperTable() {
+    const a = ra_analysis;
+    const n = parseInt(document.getElementById('ra_topN').value) || a.ranked.length;
+    const list = a.ranked.slice(0, n || a.ranked.length);
+    const medals = ['🥇','🥈','🥉'];
+    document.getElementById('ra_topBody').innerHTML = list.map((st,i) => {
+        const s = st.sem;
+        return `<tr><td class="ra-ctr" style="font-weight:700;font-size:16px;">${medals[i]||i+1}</td>
+        <td><span class="ra-link" onclick="ra_showStudentDetail('${st.pin}')">${st.pin}</span></td>
+        <td>${st.name}</td>
+        <td class="ra-ctr" style="font-weight:700;font-size:15px;">${s.grandTotal||0}</td>
+        <td class="ra-ctr" style="font-weight:600;">${s.gpa||'-'}</td>
+        <td class="ra-ctr"><span class="${s.result==='PASS'?'ra-badge-p':'ra-badge-f'}">${s.result||''}</span></td></tr>`;
+    }).join('');
+}
+
+// ════════ TAB: GRADES ════════
+function ra_renderGrades(c) {
+    const a = ra_analysis;
+    const gradeOrder = ['O','A+','A','B+','B','C+','C','D','F','AB'];
+    const grades = Object.keys(a.gradeCount).sort((x,y) => { const ix=gradeOrder.indexOf(x),iy=gradeOrder.indexOf(y); return (ix<0?99:ix)-(iy<0?99:iy); });
+    const totalGrades = Object.values(a.gradeCount).reduce((a,b)=>a+b,0);
+    const gpaKeys = Object.keys(a.gpaDist);
+    c.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="ra-card">
+            <h4 style="margin:0 0 12px;color:#1e3c72;">🎓 Grade Distribution (All Subjects)</h4>
+            <table class="ra-tbl"><thead><tr><th>Grade</th><th class="ra-ctr">Count</th><th class="ra-ctr">Percentage</th></tr></thead><tbody>
+                ${grades.map(g => `<tr><td style="font-weight:700;">${g}</td><td class="ra-ctr">${a.gradeCount[g]}</td><td class="ra-ctr">${totalGrades?(a.gradeCount[g]/totalGrades*100).toFixed(1)+'%':'0%'}</td></tr>`).join('')}
+            </tbody></table>
+        </div>
+        <div class="ra-card"><h4 style="margin:0 0 12px;color:#1e3c72;">Grade Chart</h4><div style="height:280px;"><canvas id="ra_ch_gr"></canvas></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="ra-card">
+            <h4 style="margin:0 0 12px;color:#1e3c72;">📊 GPA Distribution</h4>
+            <table class="ra-tbl"><thead><tr><th>GPA Range</th><th class="ra-ctr">Students</th></tr></thead><tbody>
+                ${gpaKeys.map(k => `<tr><td style="font-weight:600;">${k}</td><td class="ra-ctr">${a.gpaDist[k]}</td></tr>`).join('')}
+            </tbody></table>
+        </div>
+        <div class="ra-card"><h4 style="margin:0 0 12px;color:#1e3c72;">GPA Chart</h4><div style="height:280px;"><canvas id="ra_ch_gpa"></canvas></div></div>
+    </div>`;
+    const grColors = grades.map(g => g==='O'?'#1b5e20':g==='A+'||g==='A'?'#2e7d32':g==='B+'||g==='B'?'#1565c0':g==='C+'||g==='C'?'#f57f17':g==='D'?'#e65100':'#c62828');
+    ra_charts.gr = new Chart(document.getElementById('ra_ch_gr'), {
+        type:'bar', data:{labels:grades,datasets:[{label:'Count',data:grades.map(g=>a.gradeCount[g]),backgroundColor:grColors}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    });
+    ra_charts.gpa = new Chart(document.getElementById('ra_ch_gpa'), {
+        type:'bar', data:{labels:gpaKeys,datasets:[{label:'Students',data:gpaKeys.map(k=>a.gpaDist[k]),backgroundColor:['#1b5e20','#2e7d32','#43a047','#66bb6a','#a5d6a7','#ef9a9a']}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    });
+}
+
+// ════════ TAB: FAILURE ANALYSIS ════════
+function ra_renderFailure(c) {
+    const a = ra_analysis;
+    // Sort subjects by fail% descending for "most difficult"
+    const codes = Object.keys(a.subjectAnalysis);
+    const byFail = [...codes].sort((x,y) => parseFloat(a.subjectAnalysis[y].failPercent) - parseFloat(a.subjectAnalysis[x].failPercent));
+    const byPass = [...codes].sort((x,y) => parseFloat(a.subjectAnalysis[y].passPercent) - parseFloat(a.subjectAnalysis[x].passPercent));
+    const patternKeys = ['1','2','3','4+'];
+    c.innerHTML = `
+    <div class="ra-card" style="margin-bottom:20px;">
+        <h4 style="margin:0 0 12px;color:#1e3c72;">📊 Failure Pattern Analysis</h4>
+        <p style="font-size:13px;color:#666;margin:0 0 12px;">How many subjects each failed student has failed.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;">
+            ${patternKeys.map(k => `<div class="ra-card ra-stat" style="cursor:pointer;${a.failCounts[k]?'':'opacity:0.5;'}" onclick="ra_showFailGroup('${k}')">
+                <div class="ra-num" style="color:#c62828;">${a.failCounts[k]||0}</div>
+                <div class="ra-lbl">${k} Subject${k!=='1'?'s':''} Failed</div>
+            </div>`).join('')}
+        </div>
+        <div id="ra_failGroupDetail"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="ra-card">
+            <h4 style="margin:0 0 12px;color:#c62828;">⚠️ Subjects with Highest Failure Rate</h4>
+            <table class="ra-tbl"><thead><tr><th>Rank</th><th>Paper</th><th class="ra-ctr">Failed</th><th class="ra-ctr">Fail %</th></tr></thead><tbody>
+                ${byFail.filter(c => parseInt(a.subjectAnalysis[c].failed)>0).map((code,i) => {
+                    const s = a.subjectAnalysis[code];
+                    return `<tr><td class="ra-ctr">${i+1}</td><td><span class="ra-link" onclick="ra_showSubjectDetail('${code}')" style="font-weight:700;">${code}</span></td><td class="ra-ctr">${s.failed}</td><td class="ra-ctr"><span class="ra-badge-f">${s.failPercent}%</span></td></tr>`;
+                }).join('')}
+            </tbody></table>
+        </div>
+        <div class="ra-card">
+            <h4 style="margin:0 0 12px;color:#2e7d32;">⭐ Best Performing Subjects</h4>
+            <table class="ra-tbl"><thead><tr><th>Rank</th><th>Paper</th><th class="ra-ctr">Passed</th><th class="ra-ctr">Pass %</th></tr></thead><tbody>
+                ${byPass.slice(0,5).map((code,i) => {
+                    const s = a.subjectAnalysis[code];
+                    return `<tr><td class="ra-ctr">${i+1}</td><td style="font-weight:700;">${code}</td><td class="ra-ctr">${s.passed}</td><td class="ra-ctr"><span class="ra-badge-p">${s.passPercent}%</span></td></tr>`;
+                }).join('')}
+            </tbody></table>
+        </div>
+    </div>
+    <div class="ra-card"><h4 style="margin:0 0 12px;color:#1e3c72;">Failure Pattern Chart</h4><div style="height:250px;"><canvas id="ra_ch_fp"></canvas></div></div>`;
+    ra_charts.fp = new Chart(document.getElementById('ra_ch_fp'), {
+        type:'bar', data:{labels:patternKeys.map(k=>k+' subj'),datasets:[{label:'Students',data:patternKeys.map(k=>a.failCounts[k]||0),backgroundColor:['#ffb74d','#ff7043','#e53935','#b71c1c']}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    });
+}
+
+function ra_showFailGroup(k) {
+    const a = ra_analysis;
+    const list = a.failCountStudents[k] || [];
+    const el = document.getElementById('ra_failGroupDetail');
+    if (!list.length) { el.innerHTML = '<p style="color:#999;text-align:center;">No students in this category.</p>'; return; }
+    el.innerHTML = `<h4 style="margin:12px 0 8px;color:#c62828;">Students who failed ${k} subject${k!=='1'?'s':''} (${list.length})</h4>
+    <div style="overflow-x:auto;"><table class="ra-tbl"><thead><tr><th>#</th><th>PIN</th><th>Name</th><th>Failed Subjects</th></tr></thead><tbody>
+        ${list.map((s,i) => `<tr><td class="ra-ctr">${i+1}</td><td><span class="ra-link" onclick="ra_showStudentDetail('${s.pin}')">${s.pin}</span></td><td>${s.name}</td><td>${s.papers.map(p=>'<span class="ra-badge-f" style="margin:1px;">'+p+'</span>').join(' ')}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+// ════════ TAB: REPORTS ════════
+function ra_renderReports(c) {
+    const reportTypes = [
+        {id:'complete',icon:'📋',title:'Complete Result Analysis',desc:'Overall summary, subject-wise, top 5, grade distribution, failure pattern'},
+        {id:'failed',icon:'❌',title:'Failed Students Report',desc:'All students who failed with their failed subjects'},
+        {id:'subjectwise',icon:'📚',title:'Subject-wise Analysis',desc:'Each subject: appeared, passed, failed, pass%, avg, highest, lowest'},
+        {id:'toppers',icon:'🏆',title:'Top Students Report',desc:'Students ranked by Grand Total'},
+        {id:'grade',icon:'🎓',title:'Grade Distribution Report',desc:'Grade counts and percentages across all subjects'},
+        {id:'passed',icon:'✅',title:'Passed Students Report',desc:'All students who passed every subject'}
+    ];
+    c.innerHTML = `
+    <div class="ra-card" style="margin-bottom:20px;">
+        <h4 style="margin:0 0 8px;color:#1e3c72;">📥 Download / Print Reports</h4>
+        <p style="font-size:13px;color:#666;margin:0 0 16px;">Select a report type to generate a professional PDF report.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
+            ${reportTypes.map(r => `<div class="ra-card" style="cursor:pointer;border:2px solid #e8eef8;transition:all 0.2s;" onmouseenter="this.style.borderColor='#667eea';this.style.boxShadow='0 4px 16px rgba(102,126,234,0.2)'" onmouseleave="this.style.borderColor='#e8eef8';this.style.boxShadow=''" onclick="ra_generatePDF('${r.id}')">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="font-size:28px;">${r.icon}</span>
+                    <div><div style="font-weight:700;color:#1e3c72;font-size:14px;">${r.title}</div><div style="font-size:12px;color:#888;margin-top:2px;">${r.desc}</div></div>
+                </div>
+            </div>`).join('')}
+        </div>
+    </div>`;
+}
+
+// ── PDF Report Generation ──
+function ra_generatePDF(type) {
+    const a = ra_analysis;
+    if (!a) { alert('No analysis data.'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p','mm','a4');
+    const pw = doc.internal.pageSize.getWidth();
+    const semLabel = ra_semLabels[ra_currentSem] || ra_currentSem;
+    let y = 15;
+
+    function addHeader() {
+        doc.setFontSize(16); doc.setFont(undefined,'bold'); doc.setTextColor(30,60,114);
+        doc.text('GPT Dharmavaram', pw/2, y, {align:'center'}); y+=7;
+        doc.setFontSize(10); doc.setFont(undefined,'normal'); doc.setTextColor(100);
+        doc.text('DIPLOMA IN COMPUTER ENGINEERING', pw/2, y, {align:'center'}); y+=6;
+        doc.setFontSize(12); doc.setFont(undefined,'bold'); doc.setTextColor(30,60,114);
+    }
+
+    function addFooter(doc) {
+        const pages = doc.internal.getNumberOfPages();
+        for(let i=1;i<=pages;i++) {
+            doc.setPage(i);
+            doc.setFontSize(8); doc.setTextColor(150);
+            doc.text('Generated: '+new Date().toLocaleString(), 14, 290);
+            doc.text('Page '+i+' of '+pages, pw-14, 290, {align:'right'});
+        }
+    }
+
+    if (type === 'complete') {
+        addHeader();
+        doc.text(semLabel + ' — Complete Result Analysis', pw/2, y, {align:'center'}); y+=5;
+        if(a.examMonthYear){doc.setFontSize(10);doc.setFont(undefined,'normal');doc.text(a.examMonthYear,pw/2,y,{align:'center'});y+=8;} else y+=3;
+        doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.text('Overall Summary', 14, y); y+=6;
+        doc.autoTable({startY:y,head:[['Metric','Value']],body:[
+            ['Total Students',a.totalStudents],['Passed All Subjects',a.passed+' ('+a.passPercent+'%)'],
+            ['Failed Students',a.failed+' ('+a.failPercent+'%)'],['Average Grand Total',a.avgGrandTotal],
+            ['Highest Grand Total',a.highestGrandTotal],['Lowest Grand Total',a.lowestGrandTotal],
+            ['Average GPA',a.avgGPA],['Highest GPA',a.highestGPA],['Lowest GPA',a.lowestGPA]
+        ],theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:9}});
+        y = doc.lastAutoTable.finalY + 8;
+        doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.text('Subject-wise Analysis', 14, y); y+=4;
+        const codes = Object.keys(a.subjectAnalysis);
+        doc.autoTable({startY:y,head:[['Paper','Appeared','Passed','Failed','Pass%','Fail%','Avg','Highest']],
+            body:codes.map(c=>{const s=a.subjectAnalysis[c];return[c,s.appeared,s.passed,s.failed,s.passPercent+'%',s.failPercent+'%',s.avgTotal,s.highestTotal];}),
+            theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:8}});
+        y = doc.lastAutoTable.finalY + 8;
+        doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.text('Top 5 Students', 14, y); y+=4;
+        doc.autoTable({startY:y,head:[['Rank','PIN','Name','Grand Total','GPA','Result']],
+            body:a.ranked.slice(0,5).map((st,i)=>[i+1,st.pin,st.name,st.sem.grandTotal||0,st.sem.gpa||'-',st.sem.result||'']),
+            theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:9}});
+        y = doc.lastAutoTable.finalY + 8;
+        const grades = Object.keys(a.gradeCount).sort();
+        const totalG = Object.values(a.gradeCount).reduce((a,b)=>a+b,0);
+        doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.text('Grade Distribution', 14, y); y+=4;
+        doc.autoTable({startY:y,head:[['Grade','Count','Percentage']],
+            body:grades.map(g=>[g,a.gradeCount[g],totalG?(a.gradeCount[g]/totalG*100).toFixed(1)+'%':'0%']),
+            theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:9}});
+        addFooter(doc);
+        doc.save(semLabel.replace(/ /g,'_')+'_Complete_Analysis.pdf');
+    }
+    else if (type === 'failed') {
+        addHeader();
+        doc.text(semLabel + ' — Failed Students Report', pw/2, y, {align:'center'}); y+=8;
+        doc.autoTable({startY:y,head:[['#','PIN','Name','Failed Subjects','Grand Total','GPA']],
+            body:a.failedStudents.map((s,i)=>[i+1,s.pin,s.name,s.failedPapers.join(', '),s.grandTotal,s.gpa||'-']),
+            theme:'grid',headStyles:{fillColor:[198,40,40]},styles:{fontSize:9}});
+        y = doc.lastAutoTable.finalY + 8;
+        doc.setFontSize(10); doc.text('Total Students: '+a.totalStudents+'  |  Failed: '+a.failed+'  |  Failure%: '+a.failPercent+'%', 14, y);
+        addFooter(doc);
+        doc.save(semLabel.replace(/ /g,'_')+'_Failed_Students.pdf');
+    }
+    else if (type === 'subjectwise') {
+        addHeader();
+        doc.text(semLabel + ' — Subject-wise Analysis', pw/2, y, {align:'center'}); y+=8;
+        const codes = Object.keys(a.subjectAnalysis);
+        doc.autoTable({startY:y,head:[['Paper','Appeared','Passed','Failed','Pass%','Fail%','Avg','Highest','Lowest','Avg Ext','Avg Int']],
+            body:codes.map(c=>{const s=a.subjectAnalysis[c];return[c,s.appeared,s.passed,s.failed,s.passPercent+'%',s.failPercent+'%',s.avgTotal,s.highestTotal,s.lowestTotal,s.avgExt,s.avgInt];}),
+            theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:8},columnStyles:{0:{fontStyle:'bold'}}});
+        addFooter(doc);
+        doc.save(semLabel.replace(/ /g,'_')+'_Subject_Analysis.pdf');
+    }
+    else if (type === 'toppers') {
+        addHeader();
+        doc.text(semLabel + ' — Top Students Report', pw/2, y, {align:'center'}); y+=8;
+        doc.autoTable({startY:y,head:[['Rank','PIN','Name','Grand Total','GPA','Result']],
+            body:a.ranked.map((st,i)=>[i+1,st.pin,st.name,st.sem.grandTotal||0,st.sem.gpa||'-',st.sem.result||'']),
+            theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:9}});
+        addFooter(doc);
+        doc.save(semLabel.replace(/ /g,'_')+'_Top_Students.pdf');
+    }
+    else if (type === 'grade') {
+        addHeader();
+        doc.text(semLabel + ' — Grade Distribution Report', pw/2, y, {align:'center'}); y+=8;
+        const grades = Object.keys(a.gradeCount).sort();
+        const totalG = Object.values(a.gradeCount).reduce((a,b)=>a+b,0);
+        doc.autoTable({startY:y,head:[['Grade','Count','Percentage']],
+            body:grades.map(g=>[g,a.gradeCount[g],totalG?(a.gradeCount[g]/totalG*100).toFixed(1)+'%':'0%']),
+            theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:10}});
+        y = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(11); doc.setFont(undefined,'bold'); doc.text('GPA Distribution', 14, y); y+=4;
+        doc.autoTable({startY:y,head:[['GPA Range','Students']],
+            body:Object.keys(a.gpaDist).map(k=>[k,a.gpaDist[k]]),
+            theme:'grid',headStyles:{fillColor:[30,60,114]},styles:{fontSize:10}});
+        addFooter(doc);
+        doc.save(semLabel.replace(/ /g,'_')+'_Grade_Distribution.pdf');
+    }
+    else if (type === 'passed') {
+        addHeader();
+        doc.text(semLabel + ' — Passed Students Report', pw/2, y, {align:'center'}); y+=8;
+        const sorted = [...a.passedStudents].sort((a,b)=>b.grandTotal-a.grandTotal);
+        doc.autoTable({startY:y,head:[['Rank','PIN','Name','Grand Total','GPA']],
+            body:sorted.map((s,i)=>[i+1,s.pin,s.name,s.grandTotal,s.gpa||'-']),
+            theme:'grid',headStyles:{fillColor:[46,125,50]},styles:{fontSize:9}});
+        y = doc.lastAutoTable.finalY + 8;
+        doc.setFontSize(10); doc.text('Total Passed: '+a.passed+' / '+a.totalStudents+'  |  Pass%: '+a.passPercent+'%', 14, y);
+        addFooter(doc);
+        doc.save(semLabel.replace(/ /g,'_')+'_Passed_Students.pdf');
+    }
+    resToast('PDF generated: ' + type, 'success');
+}
 </script>
 
 </body>
