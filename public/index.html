@@ -1826,9 +1826,16 @@
                 <h2 style="color:#2a5298;margin-bottom:6px;">🏖️ Faculty Leave / OD</h2>
                 <p style="color:#888;font-size:13px;margin-bottom:20px;">Apply leave or On-Duty, manage period ownership transfers, and browse orphan periods.</p>
 
-                <!-- Apply Leave/OD Form -->
-                <div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #e8eef8;margin-bottom:20px;">
+                <!-- Apply Leave/OD Form (admin only — hidden by default, JS shows for admin) -->
+                <div id="lod_applySection" style="display:none;background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #e8eef8;margin-bottom:20px;">
                     <h3 style="color:#1e3c72;margin:0 0 14px;font-size:16px;">📝 Apply Leave / OD</h3>
+                    <!-- Select Faculty (admin picks which faculty is on leave) -->
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:12px;color:#555;font-weight:600;">Select Faculty ⚡</label>
+                        <select id="lod_faculty" style="width:100%;padding:10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;">
+                            <option value="">-- Select Faculty --</option>
+                        </select>
+                    </div>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
                         <div><label style="font-size:12px;color:#555;font-weight:600;">Type</label>
                             <select id="lod_type" style="width:100%;padding:10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;">
@@ -1861,17 +1868,28 @@
                     </div>
                 </div>
 
-                <!-- My Leave/OD Records -->
+                <!-- Leave/OD Records (collapsible) -->
                 <div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #e8eef8;margin-bottom:20px;">
-                    <h3 style="color:#1e3c72;margin:0 0 14px;font-size:16px;">📋 My Leave / OD Records</h3>
-                    <div id="lod_myRecords" style="font-size:13px;color:#666;">Loading...</div>
+                    <h3 onclick="document.getElementById('lod_recordsBody').style.display = document.getElementById('lod_recordsBody').style.display === 'none' ? 'block' : 'none'; this.querySelector('.lod_ra').textContent = document.getElementById('lod_recordsBody').style.display === 'none' ? '▶' : '▼';"
+                        id="lod_recordsTitle" style="color:#1e3c72;margin:0;font-size:16px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;">
+                        <span class="lod_ra">▶</span> 📋 Leave / OD Records
+                        <span style="font-size:12px;color:#888;font-weight:400;">Click to expand</span>
+                    </h3>
+                    <div id="lod_recordsBody" style="display:none;margin-top:14px;">
+                        <div id="lod_myRecords" style="font-size:13px;color:#666;">Loading...</div>
+                    </div>
                 </div>
 
-                <!-- Orphan Periods Browser -->
+                <!-- Orphan Periods Browser (collapsible) -->
                 <div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #e8eef8;">
-                    <h3 style="color:#1e3c72;margin:0 0 14px;font-size:16px;">🔓 Available Orphan Periods</h3>
-                    <p style="font-size:12px;color:#888;margin-bottom:12px;">Periods released by faculty on leave. You can take over eligible periods.</p>
-                    <div id="lod_orphanList" style="font-size:13px;color:#666;">Loading...</div>
+                    <h3 onclick="document.getElementById('lod_orphanBody').style.display = document.getElementById('lod_orphanBody').style.display === 'none' ? 'block' : 'none'; this.querySelector('.lod_arrow').textContent = document.getElementById('lod_orphanBody').style.display === 'none' ? '▶' : '▼';"
+                        style="color:#1e3c72;margin:0;font-size:16px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;">
+                        <span class="lod_arrow">▶</span> 🔓 Available Orphan Periods
+                    </h3>
+                    <div id="lod_orphanBody" style="display:none;margin-top:14px;">
+                        <p style="font-size:12px;color:#888;margin-bottom:12px;">Periods released by faculty on leave. Admin can assign them to eligible faculty.</p>
+                        <div id="lod_orphanList" style="font-size:13px;color:#666;">Loading...</div>
+                    </div>
                 </div>
             </div>
 
@@ -2338,6 +2356,23 @@
                         <input type="text" id="singleName" placeholder="Student full name">
                     </div>
                 </div>
+                <!-- Year 1 Admission Date (shown/hidden by JS) -->
+                <div id="admDateSection" style="display:none;margin-top:10px;background:#FFF3E0;border-left:4px solid #FF9800;border-radius:0 8px 8px 0;padding:12px 16px;">
+                    <div style="font-size:.83rem;color:#E65100;margin-bottom:10px;">ℹ️ Only for late / spot admissions. Leave blank for Phase 1 students.</div>
+                    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:.82rem;font-weight:600;color:#555;">Admission Date</label>
+                            <input type="date" id="singleAdmDate" style="display:block;padding:6px 10px;border:1.5px solid #dde1f0;border-radius:6px;font-size:.9rem;margin-top:4px;" />
+                        </div>
+                        <div>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem;margin-top:18px;">
+                                <input type="checkbox" id="singleIsSpot" onchange="adm_onSpotChange()" />
+                                <span>Spot Admission</span>
+                            </label>
+                            <div id="spotWarning" style="display:none;background:#FFEBEE;border-left:3px solid #F44336;border-radius:0 6px 6px 0;padding:4px 10px;font-size:.78rem;color:#C62828;margin-top:4px;">⚠️ Spot admission = NO scholarship</div>
+                        </div>
+                    </div>
+                </div>
                 <button class="btn btn-success" onclick="addOneStudent()" style="margin-top:5px;">➕ Add Student</button>
                 <div id="singleAddMsg" class="success-message hidden"></div>
 
@@ -2380,6 +2415,42 @@
                 </div>
                 <div id="stFilterMsg" class="success-message hidden" style="margin-bottom:10px;"></div>
                 <div id="studentList"></div>
+
+                <!-- ═══ BULK ADMISSION DATE TOOL (Year 1 only) ═══ -->
+                <div id="bulkAdmSection" style="display:none;border-top:2px dashed #dde1f0;margin-top:1.5rem;padding-top:1.2rem;">
+                    <h3 style="color:#1F3864;margin-bottom:.8rem;font-size:1.05rem;">
+                        📅 Set Admission Dates — Year 1 Late / Spot Admissions
+                    </h3>
+                    <div style="background:#EFF6FF;border-left:3px solid #2E75B6;border-radius:0 8px 8px 0;padding:.75rem 1rem;font-size:.83rem;color:#1E40AF;margin-bottom:1rem;">
+                        Use this for students who did NOT join in Phase 1. Phase 1 students (majority) don't need a date — their attendance starts from the Academic Calendar start date.
+                    </div>
+                    <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">
+                        <div>
+                            <label style="font-size:.82rem;font-weight:600;color:#555;">Admission Date</label>
+                            <input type="date" id="bulk_admDate" style="display:block;padding:6px 10px;border:1.5px solid #dde1f0;border-radius:6px;font-size:.9rem;margin-top:4px;" />
+                        </div>
+                        <div>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem;">
+                                <input type="checkbox" id="bulk_isSpot" />
+                                <span>Spot Admission (no scholarship)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:.82rem;font-weight:600;color:#555;">Select Students (without admission date)</label>
+                        <div style="margin-top:4px;display:flex;gap:8px;">
+                            <button onclick="adm_bulkSelectAll(true)" style="padding:4px 10px;font-size:.78rem;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;">Select All</button>
+                            <button onclick="adm_bulkSelectAll(false)" style="padding:4px 10px;font-size:.78rem;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;">Deselect All</button>
+                        </div>
+                        <div id="bulk_studentList" style="max-height:200px;overflow-y:auto;border:1.5px solid #dde1f0;border-radius:8px;padding:.5rem;margin-top:6px;background:#fafbff;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <button onclick="adm_bulkSetAdmissionDate()" style="background:#2E75B6;color:white;padding:.72rem 1.3rem;border:none;border-radius:8px;font-size:.92rem;font-weight:700;cursor:pointer;width:100%;">
+                        📅 Set Admission Date for Selected Students
+                    </button>
+                    <div id="bulk_admMsg" class="hidden" style="margin-top:8px;padding:8px 12px;border-radius:6px;font-size:.85rem;"></div>
+                </div>
             </div>
 
             <!-- ══ MARK INACTIVE MODAL (TC/Transfer) ══════════════════ -->
@@ -4629,6 +4700,17 @@
                 const subjectsDoc = await db.collection('settings').doc('subjects').get();
                 if (subjectsDoc.exists) { SUBJECTS = subjectsDoc.data(); delete SUBJECTS._v; }
 
+                // ── Extend ACTIVITY_CODES with C26 activity subjects ──
+                // C23 has CM-100, CM-300, CM-400, CM-500. C26 equivalents are
+                // codes like 26CM100L, 26CM300A etc. Detect them and add to the set.
+                Object.keys(SUBJECTS).forEach(code => {
+                    if (!/^\d{2}[A-Z]/.test(code)) return; // not a C26 code
+                    const num = parseInt(code.slice(4, 7)) || 0;
+                    if ([100, 300, 400, 500].includes(num)) {
+                        ACTIVITY_CODES.add(code);
+                    }
+                });
+
                 // timetable
                 const timetableDoc = await db.collection('settings').doc('timetable').get();
                 if (timetableDoc.exists) { TIMETABLE = timetableDoc.data(); delete TIMETABLE._v; }
@@ -4801,8 +4883,10 @@
         // Helper functions for subject data (supports both old string and new object format)
         function getSubjectName(code) {
             const sub = SUBJECTS[code];
-            if (!sub) return code;
-            return typeof sub === 'string' ? sub : sub.name;
+            if (sub) return typeof sub === 'string' ? sub : sub.name;
+            // Fallback for C23 activity codes that may no longer be in SUBJECTS
+            if (code === 'CM-100' || code === 'CM-300' || code === 'CM-400' || code === 'CM-500') return 'Activity';
+            return code;
         }
 
         function getSubjectType(code) {
@@ -4819,6 +4903,39 @@
             }
             // C25: existing logic unchanged
             return getSubjectType(code) === 'Theory';
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // ── YEAR 1 PHASE-WISE ADMISSION HELPERS ──────────────────────
+        // ═══════════════════════════════════════════════════════════════
+        /** Get effective attendance start date for a Year 1 student.
+         *  - Phase 1 (no admissionDate): returns academic calendar start date
+         *  - Late / Spot (has admissionDate): returns the admission date
+         *  - Non-Year-1: returns academicStart unchanged */
+        function adm_getStudentStartDate(student, academicStart) {
+            if (student.admissionDate) return student.admissionDate;
+            return academicStart;
+        }
+
+        /** Check if a student has joined by a given date (YYYY-MM-DD).
+         *  Returns true if the student should appear in attendance on dateStr. */
+        function adm_hasStudentJoined(student, dateStr, academicStart) {
+            const startDate = adm_getStudentStartDate(student, academicStart);
+            return !startDate || dateStr >= startDate;
+        }
+
+        /** Get admission phase badge HTML for student list display */
+        function adm_getAdmBadge(student) {
+            if (!student.admissionDate) return ''; // Phase 1 — no badge
+            if (student.isSpotAdmission) {
+                const d = student.admissionDate.split('-');
+                const shortDate = parseInt(d[1]) + '/' + parseInt(d[2]);
+                return `<span style="background:#FFEBEE;color:#C62828;border-radius:8px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;margin-left:6px;" title="Spot Admission: ${student.admissionDate}">🎯 Spot (${shortDate})</span>`;
+            }
+            const d = student.admissionDate.split('-');
+            const months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const shortDate = months[parseInt(d[1])] + ' ' + parseInt(d[2]);
+            return `<span style="background:#FFF3E0;color:#E65100;border-radius:8px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;margin-left:6px;" title="Late Admission: ${student.admissionDate}">📅 ${shortDate}</span>`;
         }
 
         let currentUser = null;
@@ -5201,6 +5318,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'absentlist\'); absList_onTabOpen();">📋 Absent List</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'adminResults\'); initAdminResultsTab();">📋 Results</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'leaveod\'); lod_initTab();">🏖️ Leave/OD</button>';
             } else if (currentUserType === 'powerUser') {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'dashboard\')">📊 Dashboard</button>';
                 // ── Attendance right after Dashboard for quick access ──
@@ -5214,7 +5332,6 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'extraclass\'); initExtraClassTab();">📚 Extra Class</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'profile\'); loadProfile();">👤 Profile</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Percentage</button>';
-                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'leaveod\'); lod_initTab();">🏖️ Leave/OD</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'formgen\'); formGen_onTabOpen();">📋 Form Generator</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
@@ -5599,10 +5716,17 @@
                 });
 
                 // Add Activity for this year/sem if faculty handles any subject in it
-                const activityCode = y == 1 ? 'CM-100' : s == 3 ? 'CM-300' : s == 4 ? 'CM-400' : s == 5 ? 'CM-500' : null;
-                if (activityCode && canFacultyHandleSubject(effectiveUser, activityCode, y, s)) {
-                    const actName = getSubjectName(activityCode);
-                    subjectsToShow.set(activityCode, (actName && actName !== activityCode) ? actName : 'Activity');
+                const activityNum = y == 1 ? '100' : s == 3 ? '300' : s == 4 ? '400' : s == 5 ? '500' : null;
+                if (activityNum) {
+                    // Check if a C26 activity code exists in SUBJECTS (e.g. 26CM100L)
+                    const c26ActivityCode = Object.keys(SUBJECTS).find(code =>
+                        /^\d{2}[A-Z]/.test(code) && code.slice(4, 7) === activityNum
+                    );
+                    const activityCode = c26ActivityCode || (y == 1 ? 'CM-100' : s == 3 ? 'CM-300' : s == 4 ? 'CM-400' : 'CM-500');
+                    if (canFacultyHandleSubject(effectiveUser, activityCode, y, s)) {
+                        const actName = getSubjectName(activityCode);
+                        subjectsToShow.set(activityCode, (actName && actName !== activityCode) ? actName : 'Activity');
+                    }
                 }
 
                 // Add Project Work for 5th sem if branch faculty
@@ -5928,6 +6052,7 @@
                             ${resetBadge}
                         </span>
                         <div>
+                            <button class="btn" onclick="editUserName('${username}')" style="padding:8px 15px;background:#1976d2;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:6px;" title="Edit display name">✏️ Edit Name</button>
                             <button class="btn btn-primary" onclick="resetUserPassword('${username}')" style="padding:8px 15px;" ${isPendingReset ? 'disabled title="Password reset already pending"' : ''}>🔑 Reset Password</button>
                             <button class="btn" onclick="deleteUser('${username}')" style="padding:8px 15px;background:#dc3545;color:#fff;border:none;border-radius:6px;margin-left:6px;cursor:pointer;" title="Delete this user">🗑️ Delete</button>
                         </div>
@@ -5937,6 +6062,84 @@
             });
             if (list.children.length === 0) {
                 list.innerHTML = '<p style="color:#999;padding:15px;">No faculty users created yet</p>';
+            }
+        }
+
+        async function editUserName(username) {
+            const userData = USERS[username];
+            if (!userData) { alert('User not found'); return; }
+
+            const oldName = userData.name;
+            const newName = prompt('Edit display name for "' + username + '":', oldName || '');
+            if (newName === null) return; // cancelled
+            const trimmed = newName.trim();
+            if (!trimmed) { alert('⚠️ Name cannot be empty.'); return; }
+            if (trimmed === oldName) return; // no change
+
+            try {
+                // 1. Update in Firestore users collection
+                await db.collection('users').doc(username).update({ name: trimmed });
+
+                // 2. Update in-memory USERS
+                USERS[username].name = trimmed;
+
+                // 3. Update legacy settings/users doc
+                await db.collection('settings').doc('users').set(USERS)
+                    .catch(e => console.warn('Legacy users doc update failed:', e));
+
+                // 4. Patch PERIOD_FACULTY: read fresh from Firestore, update, and save back
+                let pfChanged = false;
+                try {
+                    const pfDoc = await db.collection('settings').doc('periodFaculty').get();
+                    const freshPF = pfDoc.exists ? pfDoc.data() : {};
+                    Object.keys(freshPF).forEach(pfKey => {
+                        const pfData = freshPF[pfKey];
+                        if (!pfData || typeof pfData !== 'object') return;
+                        Object.keys(pfData).forEach(pNum => {
+                            const entry = pfData[pNum];
+                            if (!entry || typeof entry !== 'object') return;
+                            if (entry.faculty === oldName) {
+                                entry.faculty = trimmed;
+                                pfChanged = true;
+                            }
+                            if (entry.originalFaculty === oldName) {
+                                entry.originalFaculty = trimmed;
+                                pfChanged = true;
+                            }
+                        });
+                    });
+                    if (pfChanged) {
+                        await db.collection('settings').doc('periodFaculty').set(freshPF);
+                        // Also update in-memory cache
+                        Object.assign(PERIOD_FACULTY, freshPF);
+                    }
+                } catch(e) {
+                    console.error('periodFaculty patch error:', e);
+                    alert('⚠️ Name updated but attendance records update failed. Try again.');
+                }
+
+                // 5. Patch facultyLeaveOD records in Firestore + cache
+                const leaveSnap = await db.collection('facultyLeaveOD')
+                    .where('facultyId', '==', username).get();
+                const batch = db.batch();
+                let leaveCount = 0;
+                leaveSnap.forEach(doc => {
+                    batch.update(doc.ref, { facultyName: trimmed });
+                    leaveCount++;
+                });
+                if (leaveCount > 0) await batch.commit();
+                // Update leave cache too
+                if (typeof LEAVE_OD_CACHE !== 'undefined') {
+                    LEAVE_OD_CACHE.forEach(lr => {
+                        if (lr.facultyId === username) lr.facultyName = trimmed;
+                    });
+                }
+
+                displayUsers();
+                alert('✅ Name updated: ' + trimmed + (pfChanged ? '\n📋 Attendance records also updated.' : ''));
+            } catch (err) {
+                console.error('❌ editUserName:', err);
+                alert('❌ Failed to update name: ' + (err.message || err));
             }
         }
 
@@ -6378,6 +6581,9 @@
                 sem.innerHTML += '<option value="5">Sem 5</option>';
                 sem.disabled = false;
             }
+            // Show/hide admission date section for Year 1
+            const admSec = document.getElementById('admDateSection');
+            if (admSec) admSec.style.display = (y == 1) ? 'block' : 'none';
         }
 
         // Scheme-aware PIN generator — delegates to APP_CONFIG
@@ -6527,6 +6733,19 @@
             }
 
             STUDENTS[y][s].push({ pin, name, scholarship: true });
+
+            // Year 1 admission date fields
+            if (y === '1') {
+                const admDate = document.getElementById('singleAdmDate')?.value || '';
+                const isSpot = document.getElementById('singleIsSpot')?.checked || false;
+                if (admDate) {
+                    STUDENTS[y][s][STUDENTS[y][s].length - 1].admissionDate = admDate;
+                    STUDENTS[y][s][STUDENTS[y][s].length - 1].isSpotAdmission = isSpot;
+                    STUDENTS[y][s][STUDENTS[y][s].length - 1].admissionPhase = isSpot ? 'spot' : 'late';
+                    if (isSpot) STUDENTS[y][s][STUDENTS[y][s].length - 1].scholarship = false;
+                }
+            }
+
             STUDENTS[y][s].sort((a, b) => a.pin.localeCompare(b.pin));
             saveStudents(y);
 
@@ -6535,11 +6754,109 @@
             msgEl.classList.remove('hidden');
             document.getElementById('singlePin').value = '';
             document.getElementById('singleName').value = '';
+            if (document.getElementById('singleAdmDate')) document.getElementById('singleAdmDate').value = '';
+            if (document.getElementById('singleIsSpot')) document.getElementById('singleIsSpot').checked = false;
+            if (document.getElementById('spotWarning')) document.getElementById('spotWarning').style.display = 'none';
             setTimeout(() => msgEl.classList.add('hidden'), 4000);
 
             // Refresh the view if it's open
             if (document.getElementById('viewYear').value === `${y}-${s}`) viewStudents();
         }
+
+        // Spot admission checkbox handler
+        function adm_onSpotChange() {
+            const isSpot = document.getElementById('singleIsSpot')?.checked;
+            const warn = document.getElementById('spotWarning');
+            if (warn) warn.style.display = isSpot ? 'block' : 'none';
+        }
+
+        // Edit admission date for existing student (inline edit)
+        function editAdmissionDate(y, s, idx) {
+            const st = STUDENTS[y]?.[s]?.[idx];
+            if (!st) return;
+            const current = st.admissionDate || '';
+            const newDate = prompt(
+                `Admission Date for ${st.name}\n` +
+                `Current: ${current || 'Not set (Phase 1)'}\n\n` +
+                `Enter new date (YYYY-MM-DD) or leave empty to clear:`,
+                current
+            );
+            if (newDate === null) return; // cancelled
+            if (newDate === '') {
+                // Clear — revert to Phase 1
+                delete st.admissionDate;
+                delete st.isSpotAdmission;
+                delete st.admissionPhase;
+            } else if (/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+                st.admissionDate = newDate;
+                const isSpot = confirm('Is this a Spot Admission? (OK = Yes, Cancel = No)');
+                st.isSpotAdmission = isSpot;
+                st.admissionPhase = isSpot ? 'spot' : 'late';
+                if (isSpot) st.scholarship = false;
+            } else {
+                alert('Invalid date format. Use YYYY-MM-DD');
+                return;
+            }
+            saveStudents(y);
+            viewStudents();
+        }
+
+        // ── Bulk Admission Date: populate student list ──
+        function adm_populateBulkStudents() {
+            const container = document.getElementById('bulk_studentList');
+            const section = document.getElementById('bulkAdmSection');
+            if (!container || !section) return;
+            // Only for Year 1
+            const val = document.getElementById('viewYear')?.value || '';
+            const [y, s] = val.split('-');
+            if (y !== '1') { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+            const arr = STUDENTS['1']?.['1'] || [];
+            // Show only active students WITHOUT admission date (Phase 1 candidates for update)
+            const eligible = arr.filter((st, i) => {
+                if (st.status && st.status !== 'active') return false;
+                if (st.admissionDate) return false; // already has date
+                return true;
+            });
+            if (eligible.length === 0) {
+                container.innerHTML = '<div style="color:#888;font-size:.82rem;padding:8px;">All Year 1 students either already have admission dates or are inactive.</div>';
+                return;
+            }
+            container.innerHTML = eligible.map(st => {
+                const idx = arr.indexOf(st);
+                return `<label style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:.85rem;cursor:pointer;">
+                    <input type="checkbox" class="bulk_adm_cb" value="${idx}" />
+                    <span>${st.pin} — ${st.name}</span>
+                </label>`;
+            }).join('');
+        }
+
+        function adm_bulkSelectAll(checked) {
+            document.querySelectorAll('.bulk_adm_cb').forEach(cb => cb.checked = checked);
+        }
+
+        function adm_bulkSetAdmissionDate() {
+            const admDate = document.getElementById('bulk_admDate')?.value;
+            const isSpot = document.getElementById('bulk_isSpot')?.checked || false;
+            if (!admDate) { alert('Please select an admission date.'); return; }
+            const selected = [...document.querySelectorAll('.bulk_adm_cb:checked')].map(cb => parseInt(cb.value));
+            if (selected.length === 0) { alert('Please select at least one student.'); return; }
+            const label = isSpot ? 'Spot Admission' : 'Late Admission';
+            if (!confirm(`Set ${label} date ${admDate} for ${selected.length} student(s)?${isSpot ? '\nScholarship will be set to NO.' : ''}`)) return;
+            const arr = STUDENTS['1']?.['1'] || [];
+            selected.forEach(idx => {
+                const st = arr[idx];
+                if (!st) return;
+                st.admissionDate = admDate;
+                st.isSpotAdmission = isSpot;
+                st.admissionPhase = isSpot ? 'spot' : 'late';
+                if (isSpot) st.scholarship = false;
+            });
+            saveStudents('1');
+            viewStudents();
+            alert(`✅ Admission date set for ${selected.length} student(s)!`);
+        }
+
 
         function viewStudents() {
             const val = document.getElementById('viewYear').value;
@@ -6558,12 +6875,11 @@
             // Apply TC/Transfer filter
             const filter = window.admin_st_currentFilter || 'active';
             const stu = allStu.filter(st => {
-                const status = st.status || 'active';
-                if (filter === 'all')         return true;
-                if (filter === 'active')      return status === 'active' || !st.status;
-                if (filter === 'transferred') return status === 'transferred';
-                if (filter === 'tc_issued')   return status === 'tc_issued';
-                return true;
+                if (filter === 'all') return true;
+                if (filter === 'transferred') return st.status === 'transferred';
+                if (filter === 'tc_issued')   return st.status === 'tc_issued';
+                // 'active' (default): show anyone who is NOT transferred and NOT tc_issued
+                return st.status !== 'transferred' && st.status !== 'tc_issued';
             });
 
             const activeStu  = allStu.filter(st => !st.status || st.status === 'active');
@@ -6644,7 +6960,9 @@
                             : '<span style="background:#EFF6FF;color:#1565C0;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C25</span>'}
                     </td>
                     <td>
-                        <span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span>
+                        <span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span>${adm_getAdmBadge(st)}
+                        ${(String(y) === '1' && !st.admissionDate) ? `<span onclick="editAdmissionDate('${y}','${s}',${i})" style="cursor:pointer;font-size:.7rem;color:#2E75B6;margin-left:6px;" title="Set admission date">📅+</span>` : ''}
+                        ${(String(y) === '1' && st.admissionDate) ? `<span onclick="editAdmissionDate('${y}','${s}',${i})" style="cursor:pointer;font-size:.65rem;color:#888;margin-left:4px;" title="Edit admission date">✏️</span>` : ''}
                         ${badge}${inactiveNote}
                     </td>
                     <td><span class="editable" onclick="editParentMobile('${y}','${s}',${i},'${mobile}')" style="color:${mobile ? '#1565c0' : '#aaa'};">${mobile || '+ Add mobile'}</span></td>
@@ -6662,6 +6980,8 @@
             });
 
             list.appendChild(table);
+            // Refresh bulk admission date tool (Year 1 only)
+            adm_populateBulkStudents();
         }
 
         function toggleScholarship(y, s, idx, checked) {
@@ -6908,6 +7228,31 @@
                 return;
             }
 
+            // ── Leave/OD block: prevent loading students if faculty is on leave ──
+            const effFac = getEffectiveFaculty();
+            const effFacName = (USERS[effFac]?.name) || effFac;
+            let _leaveBlock = lod_checkFacultyOnLeave(effFac, date);
+            if (!_leaveBlock) {
+                // Cache might be stale — check Firestore directly
+                try {
+                    const freshSnap = await db.collection('facultyLeaveOD')
+                        .where('facultyId', '==', effFac)
+                        .where('status', '==', 'ACTIVE')
+                        .get();
+                    freshSnap.forEach(doc => {
+                        const r = doc.data();
+                        if (r.fromDate && r.toDate && date >= r.fromDate && date <= r.toDate) {
+                            _leaveBlock = r;
+                        }
+                    });
+                } catch(e) { console.warn('Leave check query failed:', e); }
+            }
+            if (_leaveBlock) {
+                const fmt = d => { const [yy,mm,dd] = d.split('-'); return `${dd}/${mm}/${yy.slice(2)}`; };
+                alert(`⛔ Cannot mark attendance.\n\n${effFacName} is on ${_leaveBlock.type} from ${fmt(_leaveBlock.fromDate)} to ${fmt(_leaveBlock.toDate)}.\n\n${_leaveBlock.displayText || ''}`);
+                return;
+            }
+
             let periods, subject, subCode;
 
             if (mode === 'timetable') {
@@ -7051,14 +7396,37 @@
             // If faculty selects a past date when the student was still in college — they appear.
             const stu = allStuList.filter(st => {
                 const status = st.status;
-                if (!status || status === 'active') return true; // active — always show
+                if (!status || status === 'active') {
+                    // Year 1 admission date filter
+                    if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
+                    return true;
+                }
                 const isInactive = status === 'transferred' || status === 'tc_issued';
                 if (isInactive && st.inactiveDate) {
                     // Show only if the selected date is BEFORE their leave date
+                    if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
                     return date < st.inactiveDate;
                 }
                 return false; // inactive without a date — hide
             });
+
+            // Show info if Year 1 students excluded due to admission date
+            if (y === '1') {
+                const excludedAdm = allStuList.filter(st => {
+                    if (st.status && st.status !== 'active') return false;
+                    return !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '');
+                });
+                if (excludedAdm.length > 0) {
+                    const wb = document.getElementById('warningBox');
+                    if (wb) {
+                        wb.innerHTML = `ℹ️ <strong>${excludedAdm.length} student(s)</strong> not shown — their admission date is after <strong>${date.split('-').reverse().join('/')}</strong>.`;
+                        wb.style.background = '#E3F2FD';
+                        wb.style.borderColor = '#1565c0';
+                        wb.style.color = '#0D47A1';
+                        wb.classList.remove('hidden');
+                    }
+                }
+            }
 
             if (!stu.length) {
                 const hasInactive = allStuList.some(st => st.status === 'transferred' || st.status === 'tc_issued');
@@ -7197,6 +7565,8 @@
             const date = document.getElementById('date').value;
             // Date-aware filter: mirrors the filter in loadStudents — show inactive only if date < inactiveDate
             const stu = (STUDENTS[y]?.[s] || []).filter(st => {
+                // Year 1 admission date filter
+                if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
                 if (!st.status || st.status === 'active') return true;
                 const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
                 return isInactive && st.inactiveDate && date < st.inactiveDate;
@@ -7214,10 +7584,26 @@
             const effFacName  = (USERS[effFaculty]?.name) || effFaculty;
 
             // ── Leave/OD blocking: prevent attendance if faculty is on leave ────────
-            const _leaveCheck = lod_checkFacultyOnLeave(effFaculty, date);
+            // First check cache (fast), then also refresh from Firestore (authoritative)
+            let _leaveCheck = lod_checkFacultyOnLeave(effFaculty, date);
+            if (!_leaveCheck) {
+                // Cache might be stale — do a quick Firestore check
+                try {
+                    const freshSnap = await db.collection('facultyLeaveOD')
+                        .where('facultyId', '==', effFaculty)
+                        .where('status', '==', 'ACTIVE')
+                        .get();
+                    freshSnap.forEach(doc => {
+                        const r = doc.data();
+                        if (r.fromDate && r.toDate && date >= r.fromDate && date <= r.toDate) {
+                            _leaveCheck = r;
+                        }
+                    });
+                } catch(e) { console.warn('Leave check query failed:', e); }
+            }
             if (_leaveCheck) {
                 const fmt = d => { const [yy,mm,dd] = d.split('-'); return `${dd}/${mm}/${yy.slice(2)}`; };
-                document.getElementById('msg').innerHTML = `⛔ Cannot mark attendance. <strong>${effFacName}</strong> is on <strong>${_leaveCheck.type}</strong> from ${fmt(_leaveCheck.fromDate)} to ${fmt(_leaveCheck.toDate)}.<br><em>${_leaveCheck.displayText}</em>`;
+                document.getElementById('msg').innerHTML = `⛔ Cannot mark attendance. <strong>${effFacName}</strong> is on <strong>${_leaveCheck.type}</strong> from ${fmt(_leaveCheck.fromDate)} to ${fmt(_leaveCheck.toDate)}.<br><em>${_leaveCheck.displayText || ''}</em>`;
                 document.getElementById('msg').classList.remove('hidden');
                 submitBtn.disabled = false; submitBtn.textContent = originalBtnText; submitBtn.style.opacity = '1';
                 return;
@@ -7715,7 +8101,9 @@
                         const att = getAttData(d);
                         const sa  = att[st.pin] || {};
 
-                        if (isInactive && inactiveDate && d >= inactiveDate) {
+                        if (y === '1' && st.admissionDate && d < st.admissionDate) {
+                            for (let p = 1; p <= 7; p++) row.push('');
+                        } else if (isInactive && inactiveDate && d >= inactiveDate) {
                             // From leave date onwards — show TC / Tr for each period cell
                             for (let p = 1; p <= 7; p++) row.push(statusLabel);
                         } else {
@@ -7724,14 +8112,18 @@
                         }
 
                         if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
+                            let validDates = weekDates.slice(0, idx + 1);
+                            if (y === '1' && st.admissionDate) {
+                                validDates = validDates.filter(wd => wd >= st.admissionDate);
+                            }
                             if (isInactive && inactiveDate && inactiveDate <= weekEnd) {
                                 // Show %  only for days they attended (dates < inactiveDate in this week)
-                                const attendedDates = weekDates.slice(0, idx + 1).filter(wd => wd < inactiveDate);
-                                const result = calculateDayBasedPercentage(st.pin, attendedDates);
-                                row.push(attendedDates.length ? result.pct + '% (' + statusLabel + ')' : statusLabel);
+                                validDates = validDates.filter(wd => wd < inactiveDate);
+                                const result = calculateDayBasedPercentage(st.pin, validDates);
+                                row.push(validDates.length ? result.pct + '% (' + statusLabel + ')' : statusLabel);
                             } else {
-                                const result = calculateDayBasedPercentage(st.pin, weekDates.slice(0, idx + 1));
-                                row.push(result.pct + '%');
+                                const result = calculateDayBasedPercentage(st.pin, validDates);
+                                row.push(validDates.length ? result.pct + '%' : '0%');
                             }
                         }
                     });
@@ -7796,17 +8188,33 @@
                 const inactiveDate = st.inactiveDate || '';
                 const statusLabel  = st.status === 'transferred' ? '[Tr]' : (st.status === 'tc_issued' ? '[TC]' : '');
                 const nameCell = statusLabel ? `${st.name} ${statusLabel}` : st.name;
+
+                const academicStart = (y === '1') ? (CALENDAR_DATES['1-1']?.start || '') : '';
+                let studentWorkingDays = totalMonthWorkingDays; // default: same as class
+                if (y === '1' && st.admissionDate) {
+                    studentWorkingDays = allMonthDates.reduce((count, d) => {
+                        if (d < st.admissionDate) return count; // skip pre-admission dates
+                        const att = getAttData(d);
+                        return count + (Object.keys(att).length > 0 ? 1 : 0);
+                    }, 0);
+                }
+
                 if (inactiveDate && statusLabel) {
                     // Days present: only count days before leave date
                     const attendedDates = allMonthDates.filter(d => d < inactiveDate);
                     const result = calculateDayBasedPercentage(st.pin, attendedDates);
-                    // Total working days = whole month (same as active students)
-                    const pct = totalMonthWorkingDays > 0
-                        ? ((result.days / totalMonthWorkingDays) * 100).toFixed(2) : '0.00';
-                    summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, totalMonthWorkingDays, pct + '%']);
+                    const pct = studentWorkingDays > 0
+                        ? ((result.days / studentWorkingDays) * 100).toFixed(2) : '0.00';
+                    summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, studentWorkingDays, pct + '%']);
                 } else {
-                    const result = calculateDayBasedPercentage(st.pin, allMonthDates);
-                    summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, result.total, result.pct + '%']);
+                    let validDates = allMonthDates;
+                    if (y === '1' && st.admissionDate) {
+                        validDates = allMonthDates.filter(d => d >= st.admissionDate);
+                    }
+                    const result = calculateDayBasedPercentage(st.pin, validDates);
+                    const pct = studentWorkingDays > 0
+                        ? ((result.days / studentWorkingDays) * 100).toFixed(2) : '0.00';
+                    summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, studentWorkingDays, pct + '%']);
                 }
                 sumRowIdx++;
             });
@@ -7949,6 +8357,13 @@
                 //   (meaning their last day was >= halfCalStart, i.e. they attended at least 1 day in this half)
                 if (isInactive && inactiveDate && inactiveDate <= halfCalStart) return;
 
+                const yearMonthStr = `${mYear}-${String(mMonth).padStart(2, '0')}`;
+                if (y === '1' && st.admissionDate) {
+                    if (half === 'first' && st.admissionDate > `${yearMonthStr}-15`) {
+                        return;
+                    }
+                }
+
                 // Name: append [TC] or [Tr] suffix for inactive students
                 const nameCell = isInactive ? `${st.name} [${tcLabel}]` : st.name;
                 const row = [rowNum, st.pin, nameCell];
@@ -7956,6 +8371,11 @@
                 const attendanceRow = [];
 
                 dates.forEach(date => {
+                    if (y === '1' && st.admissionDate && date < st.admissionDate) {
+                        attendanceRow.push('');
+                        return;
+                    }
+
                     // From inactiveDate onwards — show TC/Tr regardless of what faculty marked
                     if (isInactive && inactiveDate && date >= inactiveDate) {
                         attendanceRow.push(tcLabel);
@@ -8146,11 +8566,24 @@
                 const row = [rowNum, st.pin, nameCell];
                 let totalPresent = 0;
 
+                let studentWorkingDays = totalWorkingDays;
+                if (y === '1' && st.admissionDate) {
+                    studentWorkingDays = 0;
+                    validMonths.forEach(({ dates }) => {
+                        studentWorkingDays += dates.filter(d => d >= st.admissionDate).reduce((count, d) => {
+                            const att = getAttData(d);
+                            const posted = stu.some(s => att[s.pin] && Object.keys(att[s.pin]).length > 0);
+                            return count + (posted ? 1 : 0);
+                        }, 0);
+                    });
+                }
+
                 validMonths.forEach(({ dates, workingDays }) => {
                     let daysPresent = 0;
                     dates.forEach(ds => {
                         // For inactive students, don't count days on/after inactiveDate
                         if (inactiveDate && ds >= inactiveDate) return;
+                        if (y === '1' && st.admissionDate && ds < st.admissionDate) return;
                         const att = getAttData(ds);
                         const sa = att[st.pin] || {};
                         let periodsPresent = 0, hasAtt = false;
@@ -8164,8 +8597,8 @@
                 });
 
                 row.push(totalPresent);
-                const pct = totalWorkingDays > 0
-                    ? ((totalPresent / totalWorkingDays) * 100).toFixed(2) + '%'
+                const pct = studentWorkingDays > 0
+                    ? ((totalPresent / studentWorkingDays) * 100).toFixed(2) + '%'
                     : '0.00%';
                 row.push(pct);
                 data.push(row);
@@ -13987,31 +14420,29 @@
                         });
                     });
 
-                    // ── Ownership-aware filtering (Leave/OD module) ──
-                    // Remove periods that have been orphaned or transferred away from this faculty
-                    // and include periods transferred TO this faculty
-                    const pfKeysForDate = Object.keys(PERIOD_FACULTY).filter(k => k.startsWith(date + '_'));
-                    pfKeysForDate.forEach(pfKey => {
+                    // PERIOD_FACULTY override: handle ownership changes
+                    Object.keys(PERIOD_FACULTY).forEach(pfKey => {
+                        if (!pfKey.startsWith(date + '_')) return;
                         const pfData = PERIOD_FACULTY[pfKey];
                         if (!pfData) return;
                         Object.keys(pfData).forEach(pStr => {
-                            const entry = pfData[pStr];
-                            if (!entry || entry.subject !== subCode) return;
-                            const status = entry.ownershipStatus || 'ASSIGNED';
+                            const pf = pfData[pStr];
+                            if (!pf) return;
                             const pNum = parseInt(pStr);
-
-                            if (status === 'ORPHAN') {
-                                myPeriods.delete(pNum); // Remove orphaned period
-                            } else if (status === 'TRANSFERRED') {
-                                // If transferred AWAY from this faculty, remove
-                                if (entry.originalFacultyId === currentUser || entry.originalFaculty === myFacultyName) {
-                                    if (entry.ownerFacultyId !== currentUser && entry.ownerFaculty !== myFacultyName) {
-                                        myPeriods.delete(pNum);
-                                    }
-                                }
-                                // If transferred TO this faculty, add
-                                if (entry.ownerFacultyId === currentUser || entry.ownerFaculty === myFacultyName) {
+                            if (pf.ownershipStatus === 'TRANSFERRED') {
+                                // If transferred TO this faculty → include
+                                if (pf.subject === subCode &&
+                                    (pf.faculty === myFacultyName || pf.faculty === currentUser)) {
                                     myPeriods.add(pNum);
+                                }
+                                // If transferred AWAY from this faculty → exclude
+                                else if (pf.originalFacultyId === currentUser) {
+                                    myPeriods.delete(pNum);
+                                }
+                            } else if (pf.ownershipStatus === 'ORPHAN') {
+                                // Orphaned (faculty on leave, no one took over) → exclude from original faculty
+                                if (pf.originalFacultyId === currentUser) {
+                                    myPeriods.delete(pNum);
                                 }
                             }
                         });
@@ -14652,6 +15083,18 @@
                 code => FACULTY_MAP[code] === currentUser && SUBJECTS[code]
             );
 
+            // Also include subjects TRANSFERRED to this faculty via Leave/OD
+            Object.values(PERIOD_FACULTY).forEach(pfData => {
+                if (!pfData || typeof pfData !== 'object') return;
+                Object.values(pfData).forEach(pe => {
+                    if (!pe || pe.ownershipStatus !== 'TRANSFERRED') return;
+                    if ((pe.faculty === myFacultyName || pe.faculty === currentUser) &&
+                        pe.subject && !mySubjectCodes.includes(pe.subject)) {
+                        mySubjectCodes.push(pe.subject);
+                    }
+                });
+            });
+
             if (mySubjectCodes.length === 0) return [];
 
             // ── Step 2: Detect yearSem per subject (from PERIOD_FACULTY / subject code) ──
@@ -14726,25 +15169,29 @@
                         });
                     });
 
-                    // ── Ownership-aware filtering (Leave/OD module) ──
-                    const pfKeysForDate2 = Object.keys(PERIOD_FACULTY).filter(k => k.startsWith(date + '_'));
-                    pfKeysForDate2.forEach(pfKey => {
+                    // PERIOD_FACULTY override: handle ownership changes
+                    Object.keys(PERIOD_FACULTY).forEach(pfKey => {
+                        if (!pfKey.startsWith(date + '_')) return;
                         const pfData = PERIOD_FACULTY[pfKey];
                         if (!pfData) return;
                         Object.keys(pfData).forEach(pStr => {
-                            const entry = pfData[pStr];
-                            if (!entry || entry.subject !== subCode) return;
-                            const status = entry.ownershipStatus || 'ASSIGNED';
+                            const pf = pfData[pStr];
+                            if (!pf) return;
                             const pNum = parseInt(pStr);
-                            if (status === 'ORPHAN') {
-                                myPeriods.delete(pNum);
-                            } else if (status === 'TRANSFERRED') {
-                                if ((entry.originalFacultyId === currentUser || entry.originalFaculty === myFacultyName) &&
-                                    entry.ownerFacultyId !== currentUser && entry.ownerFaculty !== myFacultyName) {
+                            if (pf.ownershipStatus === 'TRANSFERRED') {
+                                // If transferred TO this faculty → include
+                                if (pf.subject === subCode &&
+                                    (pf.faculty === myFacultyName || pf.faculty === currentUser)) {
+                                    myPeriods.add(pNum);
+                                }
+                                // If transferred AWAY from this faculty → exclude
+                                else if (pf.originalFacultyId === currentUser) {
                                     myPeriods.delete(pNum);
                                 }
-                                if (entry.ownerFacultyId === currentUser || entry.ownerFaculty === myFacultyName) {
-                                    myPeriods.add(pNum);
+                            } else if (pf.ownershipStatus === 'ORPHAN') {
+                                // Orphaned → exclude from original faculty
+                                if (pf.originalFacultyId === currentUser) {
+                                    myPeriods.delete(pNum);
                                 }
                             }
                         });
@@ -14892,8 +15339,10 @@
                 if (dc !== 0) return dc;
                 const ae = a.isExtraClass ? 1 : 0, be = b.isExtraClass ? 1 : 0;
                 if (ae !== be) return ae - be;
-                const sOrder = s => s === 'FN' ? 0 : s === 'AN' ? 1 : 2;
-                return sOrder(a._session) - sOrder(b._session);
+                // Sort by first period number within the same date
+                const ap = a._myPeriods ? a._myPeriods[0] : parseInt(a.periods) || 99;
+                const bp = b._myPeriods ? b._myPeriods[0] : parseInt(b.periods) || 99;
+                return ap - bp;
             });
 
             // ── Step 8: Build per-subject running cumulative from semStart ──
@@ -14917,43 +15366,54 @@
             });
 
             // ── Step 9: Insert Leave/OD rows for this faculty ──
-            // Leave/OD rows appear chronologically but do NOT count toward cumulative
+            // ONE row per leave record (not per date) — displayed as a single merged row
             const myLeaveRecords = LEAVE_OD_CACHE.filter(lr =>
                 lr.status === 'ACTIVE' && lr.facultyId === currentUser
             );
-            const leaveDatesInserted = new Set();
+            const leaveIdsInserted = new Set();
             myLeaveRecords.forEach(lr => {
-                // Iterate through each date in leave range that falls within display range
-                let d = new Date(lr.fromDate);
-                const endD = new Date(lr.toDate);
-                while (d <= endD) {
-                    const dStr = d.toISOString().slice(0, 10);
-                    if (dStr >= fromDate && dStr <= toDate && !leaveDatesInserted.has(dStr + '_' + lr.id)) {
-                        leaveDatesInserted.add(dStr + '_' + lr.id);
-                        withCumulative.push({
-                            date: dStr,
-                            subject: '—',
-                            periods: '—',
-                            topic: lr.displayText,
-                            cumulativePeriod: '—',
-                            _periodCount: 0,
-                            isLeaveOD: true,
-                            leaveType: lr.type,
-                            isExtraClass: false,
-                            _session: ''
-                        });
-                    }
-                    d.setDate(d.getDate() + 1);
+                if (leaveIdsInserted.has(lr.id)) return;
+                // Check if leave range overlaps with display range
+                if (lr.toDate < fromDate || lr.fromDate > toDate) return;
+                leaveIdsInserted.add(lr.id);
+
+                // Compute days
+                const lfrom = new Date(lr.fromDate), lto = new Date(lr.toDate);
+                const leaveDays = Math.round((lto - lfrom) / (24*60*60*1000)) + 1;
+
+                // Fix single-day display text: "from X to X" → "on X"
+                let leaveDisplayText = lr.displayText || '';
+                if (leaveDays === 1) {
+                    const fmtD = lod_fmtDate(lr.fromDate);
+                    leaveDisplayText = leaveDisplayText.replace(`from ${fmtD} to ${fmtD}`, `on ${fmtD}`);
                 }
+
+                // Place the row at the last date of the leave (for sort order)
+                const effectiveToDate = lr.toDate <= toDate ? lr.toDate : toDate;
+                withCumulative.push({
+                    date: effectiveToDate,
+                    subject: '',
+                    periods: '',
+                    topic: leaveDisplayText,
+                    cumulativePeriod: '',
+                    _periodCount: 0,
+                    isLeaveOD: true,
+                    leaveType: lr.type,
+                    leaveFromDate: lr.fromDate,
+                    leaveToDate: lr.toDate,
+                    leaveDays: leaveDays,
+                    isExtraClass: false,
+                    _session: ''
+                });
             });
 
             // Re-sort after inserting leave rows
             withCumulative.sort((a, b) => {
                 const dc = a.date.localeCompare(b.date);
                 if (dc !== 0) return dc;
-                // Leave rows before regular rows on same date
-                if (a.isLeaveOD && !b.isLeaveOD) return -1;
-                if (!a.isLeaveOD && b.isLeaveOD) return 1;
+                // Leave rows after regular rows on same date (appear at end of that date group)
+                if (a.isLeaveOD && !b.isLeaveOD) return 1;
+                if (!a.isLeaveOD && b.isLeaveOD) return -1;
                 return 0;
             });
 
@@ -15037,11 +15497,17 @@
             // ── Pass 1: compute rowspan for each row index ──
             // rowspanMap[i] = N  → this row is the FIRST of a date group spanning N rows
             // rowspanMap[i] = 0  → this row is a continuation (skip Date/Day cell)
+            // Leave/OD rows are standalone — they break the date group
             const rowspanMap = new Array(rows.length).fill(0);
             let i = 0;
             while (i < rows.length) {
+                if (rows[i].isLeaveOD) {
+                    rowspanMap[i] = -1; // special marker for leave rows
+                    i++;
+                    continue;
+                }
                 let j = i + 1;
-                while (j < rows.length && rows[j].date === rows[i].date) j++;
+                while (j < rows.length && !rows[j].isLeaveOD && rows[j].date === rows[i].date) j++;
                 rowspanMap[i] = j - i;   // span count for group leader
                 // continuation rows stay 0
                 i = j;
@@ -15094,15 +15560,16 @@
                     </td>`;
                 }
                 // span === 0 → continuation row: no Date/Day td at all
+                // span === -1 → leave row: handled separately below
 
-                // ── Leave/OD row: special rendering ──
+                // ── Leave/OD row: special rendering — single merged row ──
                 if (r.isLeaveOD) {
-                    const leaveIcon = r.leaveType === 'Leave' ? '🏖️' : '📋';
                     html += `<tr style="border-bottom:1px solid #e0e0e0;background:#fff3e0;">
-                        ${dateCellHtml}
-                        <td colspan="5" style="padding:10px 12px;border:1px solid #ddd;color:#e65100;font-weight:600;font-size:13px;">
-                            ${leaveIcon} <strong>${r.leaveType}</strong>: ${r.topic}
+                        <td style="padding:8px;border:1px solid #ddd;"></td>
+                        <td colspan="4" style="padding:10px 12px;border:1px solid #ddd;color:#e65100;font-weight:600;font-size:13px;text-align:center;">
+                            ${r.topic}
                         </td>
+                        <td style="padding:8px;border:1px solid #ddd;"></td>
                     </tr>`;
                     return;
                 }
@@ -15189,11 +15656,14 @@
 
                 // ── Pre-process: mark consecutive same-date rows ──────────
                 // isContinuation = true for rows[i] when rows[i].date === rows[i-1].date
+                // Leave/OD rows are standalone — they are NOT continuations of date groups
                 const dateGroupInfo = rows.map((r, idx) => {
-                    const isContinuation = idx > 0 && rows[idx - 1].date === r.date;
+                    if (r.isLeaveOD) return { isContinuation: false, groupLeader: idx, isLeaveRow: true };
+                    const prevNonLeave = idx > 0 && !rows[idx - 1].isLeaveOD && rows[idx - 1].date === r.date;
+                    const isContinuation = prevNonLeave;
                     let leader = idx;
-                    while (leader > 0 && rows[leader - 1].date === r.date) leader--;
-                    return { isContinuation, groupLeader: leader };
+                    while (leader > 0 && !rows[leader - 1].isLeaveOD && rows[leader - 1].date === r.date) leader--;
+                    return { isContinuation, groupLeader: leader, isLeaveRow: false };
                 });
 
                 // Tracking maps filled during drawing hooks
@@ -15209,6 +15679,18 @@
                     const yy    = String(d.getFullYear()).slice(-2);
                     const day3  = DAY3[d.getDay()];
                     const sName = (r.subjectName || getSubjectName(r.subject) || '').substring(0, 22);
+
+                    // Leave/OD row: all cells empty except topic (col 3)
+                    if (r.isLeaveOD) {
+                        return [
+                            '',           // Date/Day — empty
+                            '',           // Period Nos — empty (no dash)
+                            '',           // Sub Code/Name — empty (no dash)
+                            r.topic,      // Topic — leave display text
+                            '',           // Cumulative — empty (no dash)
+                            ''            // Staff Sign — empty
+                        ];
+                    }
 
                     let periodCell = r.periods || '';
                     if (r.isExtraClass && r._isWorkingDay) {
@@ -15279,21 +15761,38 @@
 
                     // ── Decide per cell: merge or restore date text ────────
                     willDrawCell: (data) => {
-                        if (data.section !== 'body' || data.column.index !== 0) return;
+                        if (data.section !== 'body') return;
                         const rowIdx  = data.row.index;
+                        const colIdx  = data.column.index;
                         const curPage = data.doc.internal.getCurrentPageInfo().pageNumber;
-                        rowPageMap[rowIdx] = curPage;                    // record this row's page
+                        const info    = dateGroupInfo[rowIdx];
 
-                        const info = dateGroupInfo[rowIdx];
+                        // Track page for col 0
+                        if (colIdx === 0) {
+                            rowPageMap[rowIdx] = curPage;
+                        }
+
+                        // ── Leave/OD row: suppress text in cols 1,2,4 (they'll be merged with col 3) ──
+                        if (info && info.isLeaveRow) {
+                            if (colIdx === 1 || colIdx === 2 || colIdx === 4) {
+                                data.cell.text = [];
+                            }
+                            // Col 3 (Topic) text will also be suppressed — we draw it manually in didDrawCell
+                            if (colIdx === 3) {
+                                data.cell.text = [];
+                            }
+                            return;
+                        }
+
+                        // ── Regular date group merging (col 0 only) ──
+                        if (colIdx !== 0) return;
                         if (!info || !info.isContinuation) return;
 
                         const leaderPage = rowPageMap[info.groupLeader];
                         if (leaderPage === curPage) {
-                            // Same page → visual merge: keep text blank
                             mergeActive[rowIdx] = true;
                             data.cell.text = [];
                         } else {
-                            // Cross-page → restore full date so it appears normally
                             mergeActive[rowIdx] = false;
                             const r2  = rows[rowIdx];
                             const d2  = new Date(r2.date + 'T00:00:00');
@@ -15306,9 +15805,55 @@
 
                     // ── Record cell geometry + erase shared top-border for merged cells ─
                     didDrawCell: (data) => {
-                        if (data.section !== 'body' || data.column.index !== 0) return;
+                        if (data.section !== 'body') return;
                         const rowIdx = data.row.index;
+                        const colIdx = data.column.index;
                         const curPage = data.doc.internal.getCurrentPageInfo().pageNumber;
+                        const info    = dateGroupInfo[rowIdx];
+
+                        // ── Leave/OD row: merge cols 1–4 visually ──
+                        if (info && info.isLeaveRow) {
+                            // Track cell geometry for each column in this leave row
+                            if (!rowCellInfo[`leave_${rowIdx}`]) rowCellInfo[`leave_${rowIdx}`] = {};
+                            rowCellInfo[`leave_${rowIdx}`][colIdx] = {
+                                x: data.cell.x, y: data.cell.y,
+                                width: data.cell.width, height: data.cell.height,
+                                page: curPage
+                            };
+
+                            // After the last merged column (col 4) is drawn, do the visual merge
+                            if (colIdx === 4) {
+                                const cells = rowCellInfo[`leave_${rowIdx}`];
+                                const c1 = cells[1], c2 = cells[2], c3 = cells[3], c4 = cells[4];
+                                if (c1 && c2 && c3 && c4) {
+                                    const mergeX = c1.x;
+                                    const mergeY = c1.y;
+                                    const mergeW = (c4.x + c4.width) - c1.x;
+                                    const mergeH = c1.height;
+
+                                    // Fill merged area with white background (same as normal rows)
+                                    data.doc.setFillColor(255, 255, 255);
+                                    data.doc.rect(mergeX + 0.15, mergeY + 0.15, mergeW - 0.3, mergeH - 0.3, 'F');
+
+                                    // Draw outer border of merged area
+                                    data.doc.setDrawColor(0, 0, 0);
+                                    data.doc.setLineWidth(0.3);
+                                    data.doc.rect(mergeX, mergeY, mergeW, mergeH, 'S');
+
+                                    // Draw centered leave text
+                                    const leaveText = rows[rowIdx].topic || '';
+                                    data.doc.setFontSize(8).setFont(undefined, 'bold');
+                                    data.doc.setTextColor(0, 0, 0);
+                                    const textY = mergeY + mergeH / 2 + 1;
+                                    data.doc.text(leaveText, mergeX + mergeW / 2, textY, { align: 'center' });
+                                    data.doc.setFont(undefined, 'normal');
+                                }
+                            }
+                            return;
+                        }
+
+                        // ── Regular date merging (col 0 only) ──
+                        if (colIdx !== 0) return;
 
                         // Always record geometry so post-process can use it
                         rowCellInfo[rowIdx] = {
@@ -15348,7 +15893,7 @@
                 // the combined merged area (leader row + active continuation rows).
                 rows.forEach((r, idx) => {
                     const info = dateGroupInfo[idx];
-                    if (info.isContinuation) return;          // skip non-leaders
+                    if (info.isContinuation || info.isLeaveRow) return;  // skip non-leaders and leave rows
                     const leaderCell = rowCellInfo[idx];
                     if (!leaderCell) return;                   // not drawn yet (shouldn't happen)
 
@@ -15604,17 +16149,19 @@
                     }
                 });
             });
-            // Fallback: PERIOD_FACULTY (also filtered by year/sem via the key structure)
+
+            // PERIOD_FACULTY override/supplement: If a period has faculty/subject
+            // info (from timetable, transfer, or CWA posting), use it.
+            // - Override existing periodMap entries (handles transfers)
+            // - Add new entries if periodMap slot is empty (handles CWA-posted periods)
             const pfKey = `${date}_${year}_${sem}`;
             const pfData = PERIOD_FACULTY[pfKey] || {};
             Object.keys(pfData).forEach(pStr => {
-                if (!periodMap[pStr]) {
-                    const pfEntry = pfData[pStr];
-                    // Validate subject code belongs to this year/sem
-                    if (pfEntry && pfEntry.subject && isSubjectForYearSem(pfEntry.subject, year, sem)) {
-                        periodMap[pStr] = pfEntry;
-                    }
-                }
+                const pfEntry = pfData[pStr];
+                if (!pfEntry || !pfEntry.faculty || !pfEntry.subject) return;
+                if (pfEntry.ownershipStatus === 'ORPHAN') return; // orphaned periods are unhandled
+                // Add or override
+                periodMap[pStr] = { faculty: pfEntry.faculty, subject: pfEntry.subject };
             });
 
             // Topics from pre-fetched map
@@ -20339,54 +20886,85 @@ function lod_checkPeriodClash(facultyId, dateStr, periodNum) {
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const dayOfWeek = dayNames[new Date(dateStr).getDay()];
 
-    // Check all ongoing year/sems where this faculty has subjects
-    const facYearSems = lod_getFacultyYearSems(facultyId);
+    // Check ALL year/sems — faculty can't be in two places at once regardless of year/sem
+    const allYearSems = [['1','1'],['2','3'],['2','4'],['3','5'],['3','6'],['4','7'],['4','8']];
 
-    for (const ysKey of Object.keys(facYearSems)) {
-        const [y, s] = ysKey.split('-');
-
-        // 1. Check timetable for scheduled period
+    for (const [y, s] of allYearSems) {
+        // Skip year/sems not active on this date (per academic calendar)
+        const calKey = (y === '1') ? '1-1' : `${y}-${s}`;
+        const calEntry = CALENDAR_DATES[calKey];
+        if (calEntry) {
+            if (calEntry.start && dateStr < calEntry.start) continue; // hasn't started yet
+            if (calEntry.end && dateStr > calEntry.end) continue;     // already ended
+        }
+        // 1. Check timetable: does this faculty have a scheduled class at this period?
         const ttKey = `${y}-${s}-${dayOfWeek}`;
         const schedule = TIMETABLE[ttKey] || [];
         for (const item of schedule) {
+            // Skip Activity and Project Work — they're shared, not a real clash
+            if (ACTIVITY_CODES.has(item.code) || item.code === PROJECT_WORK_CODE) continue;
             const periods = getPeriodList(item.periods);
             if (periods.includes(String(periodNum))) {
-                // Faculty has a timetable entry, check if they can handle the subject
+                // This period/slot is occupied — check if this faculty handles that subject
                 if (canFacultyHandleSubject(facultyId, item.code, y, s)) {
-                    return { hasClash: true, detail: `Timetable: ${item.code} P${periodNum} (${ysKey})` };
+                    return { hasClash: true, detail: `Timetable: ${item.code} P${periodNum} (${y}-${s})` };
                 }
             }
         }
 
-        // 2. Check PERIOD_FACULTY for already-posted periods
+        // 2. Check PERIOD_FACULTY: has this faculty already posted/owns a period here?
         const pfKey = `${dateStr}_${y}_${s}`;
         const pfData = PERIOD_FACULTY[pfKey] || {};
         const pEntry = pfData[String(periodNum)];
-        if (pEntry) {
-            const owner = pEntry.ownerFaculty || pEntry.faculty;
-            const ownerId = pEntry.ownerFacultyId || null;
-            const ownerStatus = pEntry.ownershipStatus || 'ASSIGNED';
-            // If this faculty already owns/posted this period
-            if (ownerStatus !== 'ORPHAN' && (owner === facultyName || ownerId === facultyId)) {
-                return { hasClash: true, detail: `Already owns P${periodNum} in ${ysKey}` };
+        if (pEntry && pEntry.faculty === facultyName && pEntry.ownershipStatus !== 'ORPHAN') {
+            // Skip if the clashing subject is Activity or Project Work (shared)
+            if (!ACTIVITY_CODES.has(pEntry.subject) && pEntry.subject !== PROJECT_WORK_CODE) {
+                return { hasClash: true, detail: `Already owns P${periodNum} in ${y}-${s} (${pEntry.subject || '?'})` };
             }
         }
     }
+
+    // 3. Also scan attendance records for this date (catches cases not in PERIOD_FACULTY)
+    const attCacheKey = `att_${dateStr}`;
+    const attDoc = ATTENDANCE_CACHE[attCacheKey];
+    if (attDoc) {
+        // Check any student's period entry
+        for (const pin of Object.keys(attDoc)) {
+            const pinData = attDoc[pin];
+            if (!pinData || typeof pinData !== 'object') continue;
+            const pEntry = pinData[String(periodNum)];
+            if (pEntry && (pEntry.faculty === facultyName || pEntry.faculty === facultyId)) {
+                // Skip if the clashing subject is Activity or Project Work (shared)
+                if (!ACTIVITY_CODES.has(pEntry.subject) && pEntry.subject !== PROJECT_WORK_CODE) {
+                    return { hasClash: true, detail: `Already posted P${periodNum} (${pEntry.subject || '?'})` };
+                }
+            }
+            break; // Only need to check one student — all share same faculty
+        }
+    }
+
     return { hasClash: false };
 }
 
 // ── Get eligible faculty for a period (transfer or orphan takeover) ──
-function lod_getEligibleFaculty(dateStr, periodNum, targetYearSem) {
+function lod_getEligibleFaculty(dateStr, periodNum, targetYearSem, subjectCode) {
     const [tgtY, tgtS] = targetYearSem.split('-');
     const allFaculty = Object.entries(USERS)
         .filter(([, d]) => d && (d.type === 'user' || !d.type))
         .map(([username, data]) => ({ id: username, name: data.name || username }));
 
+    const isSharedSubject = subjectCode && (ACTIVITY_CODES.has(subjectCode) || subjectCode === PROJECT_WORK_CODE);
+
     return allFaculty.map(fac => {
-        // Rule 1: Must have a subject in target year/sem
-        const hasSubject = Object.keys(FACULTY_MAP).some(code =>
-            FACULTY_MAP[code] === fac.id && isSubjectForYearSem(code, tgtY, tgtS)
-        );
+        // Rule 1: Must be able to handle a subject in target year/sem
+        let hasSubject;
+        if (isSharedSubject) {
+            hasSubject = canFacultyHandleSubject(fac.id, subjectCode, tgtY, tgtS);
+        } else {
+            hasSubject = Object.keys(FACULTY_MAP).some(code =>
+                FACULTY_MAP[code] === fac.id && isSubjectForYearSem(code, tgtY, tgtS)
+            );
+        }
         if (!hasSubject) return { ...fac, eligible: false, reason: `Not assigned in ${targetYearSem}` };
 
         // Rule 2: Not on Leave/OD
@@ -20450,10 +21028,64 @@ function lod_findPeriodsInRange(facultyId, fromDate, toDate) {
 // ═══════════════════════════════════════════════════════════════
 // ── TAB INITIALIZATION ──
 // ═══════════════════════════════════════════════════════════════
-function lod_initTab() {
+async function lod_initTab() {
+    // ── Re-fetch Leave/OD records from Firestore (ensures fresh data) ──
+    try {
+        const leaveSnap = await db.collection('facultyLeaveOD').get();
+        LEAVE_OD_CACHE = [];
+        leaveSnap.forEach(doc => { LEAVE_OD_CACHE.push({ id: doc.id, ...doc.data() }); });
+
+        // ── Auto-fix: single-day leaves should use "on Date" instead of "from Date to Date" ──
+        for (const lr of LEAVE_OD_CACHE) {
+            if (!lr.fromDate || !lr.toDate || !lr.displayText) continue;
+            if (lr.fromDate !== lr.toDate) continue; // multi-day, skip
+            // Check if displayText still uses "from X to X" pattern for single-day
+            const fmtDate = lod_fmtDate(lr.fromDate);
+            const oldPattern = `from ${fmtDate} to ${fmtDate}`;
+            if (lr.displayText.includes(oldPattern)) {
+                const newDisplayText = lr.displayText.replace(oldPattern, `on ${fmtDate}`);
+                lr.displayText = newDisplayText;
+                // Update Firestore in background
+                db.collection('facultyLeaveOD').doc(lr.id).update({ displayText: newDisplayText })
+                    .catch(e => console.warn('Auto-fix displayText failed for', lr.id, e));
+            }
+        }
+    } catch (err) { console.warn('lod_initTab: failed to refresh Leave/OD cache:', err); }
+
+    // ── Show apply form for everyone ──
+    const applySection = document.getElementById('lod_applySection');
+    if (applySection) {
+        applySection.style.display = 'block';
+    }
+
+    // ── Faculty dropdown: admin sees dropdown, faculty auto-set to self ──
+    const facSelect = document.getElementById('lod_faculty');
+    const facSelectWrapper = facSelect ? facSelect.parentElement : null;
+    if (facSelect) {
+        if (currentUserType === 'admin') {
+            // Admin: show dropdown with all faculty
+            if (facSelectWrapper) facSelectWrapper.style.display = 'block';
+            const currentVal = facSelect.value;
+            facSelect.innerHTML = '<option value="">-- Select Faculty --</option>';
+            const facultyList = Object.entries(USERS)
+                .filter(([, d]) => d && (d.type === 'user' || !d.type))
+                .map(([username, data]) => ({ id: username, name: data.name || username }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+            facultyList.forEach(f => {
+                facSelect.innerHTML += `<option value="${f.id}">${f.name} (${f.id})</option>`;
+            });
+            if (currentVal) facSelect.value = currentVal;
+        } else {
+            // Faculty: hide dropdown, auto-set to themselves
+            if (facSelectWrapper) facSelectWrapper.style.display = 'none';
+            facSelect.innerHTML = `<option value="${currentUser}">${USERS[currentUser]?.name || currentUser}</option>`;
+            facSelect.value = currentUser;
+        }
+    }
+
     lod_renderMyRecords();
     lod_renderOrphanPeriods();
-    // Reset form
+    // Reset form messages
     const msgEl = document.getElementById('lod_msg');
     if (msgEl) { msgEl.style.display = 'none'; }
     document.getElementById('lod_periodModal').style.display = 'none';
@@ -20469,6 +21101,10 @@ async function lod_previewAndApply() {
     const reason = document.getElementById('lod_reason').value.trim();
     const msgEl = document.getElementById('lod_msg');
 
+    // Get selected faculty from dropdown
+    const selectedFaculty = document.getElementById('lod_faculty').value;
+    if (!selectedFaculty) { alert('Please select a faculty member.'); return; }
+
     // Validation
     if (!fromDate || !toDate) { alert('Please select both From and To dates.'); return; }
     if (fromDate > toDate) { alert('From date cannot be after To date.'); return; }
@@ -20478,11 +21114,13 @@ async function lod_previewAndApply() {
     const from = new Date(fromDate), to = new Date(toDate);
     const days = Math.round((to - from) / (24*60*60*1000)) + 1;
 
-    // Auto-generate display text
-    const displayText = `${reason} from ${lod_fmtDate(fromDate)} to ${lod_fmtDate(toDate)}.`;
+    // Auto-generate display text — single-day uses "on", multi-day uses "from…to"
+    const displayText = (days === 1)
+        ? `${reason} on ${lod_fmtDate(fromDate)}.`
+        : `${reason} from ${lod_fmtDate(fromDate)} to ${lod_fmtDate(toDate)}.`;
 
     // Check for overlapping existing Leave/OD
-    const effectiveFac = currentUser;
+    const effectiveFac = selectedFaculty;
     const overlap = LEAVE_OD_CACHE.find(r =>
         r.status === 'ACTIVE' && r.facultyId === effectiveFac &&
         !(toDate < r.fromDate || fromDate > r.toDate)
@@ -20532,15 +21170,16 @@ function lod_showPeriodActionModal(periods) {
             <th style="padding:8px;border:1px solid #ddd;">Period</th>
             <th style="padding:8px;border:1px solid #ddd;">Subject</th>
             <th style="padding:8px;border:1px solid #ddd;">Year/Sem</th>
-            <th style="padding:8px;border:1px solid #ddd;min-width:200px;">Action</th>
+            <th style="padding:8px;border:1px solid #ddd;min-width:180px;">Action</th>
+            <th style="padding:8px;border:1px solid #ddd;min-width:160px;">Transfer Subject</th>
         </tr></thead><tbody>`;
 
     periods.forEach((p, idx) => {
         // Get eligible faculty for transfer
-        const eligible = lod_getEligibleFaculty(p.date, parseInt(p.period), p.yearSem)
+        const eligible = lod_getEligibleFaculty(p.date, parseInt(p.period), p.yearSem, p.subject)
             .filter(f => f.id !== lod_pendingLeave.facultyId);
 
-        let actionHtml = `<select id="lod_action_${idx}" style="width:100%;padding:6px;border:1px solid #d0d9f0;border-radius:6px;font-size:11px;" onchange="lod_onActionChange(${idx})">
+        let actionHtml = `<select id="lod_action_${idx}" style="width:100%;padding:6px;border:1px solid #d0d9f0;border-radius:6px;font-size:11px;" onchange="lod_onActionChange(${idx}, '${p.yearSem}')">
             <option value="orphan">🔓 Mark as Orphan</option>`;
 
         const eligibleOnes = eligible.filter(f => f.eligible);
@@ -20556,12 +21195,23 @@ function lod_showPeriodActionModal(periods) {
 
         actionHtml += `</select>`;
 
-        html += `<tr style="border-bottom:1px solid #eee;">
+        // Subject dropdown (shown only when transfer is selected)
+        const subHtml = `<select id="lod_transferSub_${idx}" style="width:100%;padding:6px;border:1px solid #d0d9f0;border-radius:6px;font-size:11px;display:none;">
+            <option value="">-- Subject --</option>
+        </select>`;
+
+            // Show C26 activity code if available instead of old C23 code
+            const displaySubCode = ACTIVITY_CODES.has(p.subject) && !SUBJECTS[p.subject]
+                ? (Object.keys(SUBJECTS).find(c => /^\d{2}[A-Z]/.test(c) && c.slice(4,7) === p.subject.replace('CM-','')) || p.subject)
+                : p.subject;
+            const displaySubName = getSubjectName(displaySubCode);
+            html += `<tr style="border-bottom:1px solid #eee;">
             <td style="padding:8px;border:1px solid #ddd;font-weight:600;">${lod_fmtDate(p.date)}</td>
             <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;">P${p.period}</td>
-            <td style="padding:8px;border:1px solid #ddd;">${p.subject}: ${p.subjectName}</td>
+            <td style="padding:8px;border:1px solid #ddd;">${displaySubCode}: ${displaySubName}</td>
             <td style="padding:8px;border:1px solid #ddd;text-align:center;">${p.yearSem}</td>
             <td style="padding:8px;border:1px solid #ddd;">${actionHtml}</td>
+            <td style="padding:8px;border:1px solid #ddd;">${subHtml}</td>
         </tr>`;
     });
 
@@ -20571,8 +21221,30 @@ function lod_showPeriodActionModal(periods) {
     modal.scrollIntoView({ behavior: 'smooth' });
 }
 
-function lod_onActionChange(idx) {
-    // Visual feedback could be added here
+// ── Show/hide subject dropdown when transfer action changes ──
+function lod_onActionChange(idx, yearSem) {
+    const actionSelect = document.getElementById(`lod_action_${idx}`);
+    const subSelect = document.getElementById(`lod_transferSub_${idx}`);
+    if (!actionSelect || !subSelect) return;
+
+    const val = actionSelect.value;
+    if (val.startsWith('transfer_')) {
+        // Show subject dropdown and populate with target faculty's subjects
+        const targetId = val.replace('transfer_', '');
+        const [y, s] = yearSem.split('-');
+        const subjects = lod_getFacultySubjectsForYearSem(targetId, y, s);
+
+        subSelect.innerHTML = '<option value="">-- Subject --</option>';
+        subjects.forEach(sub => {
+            subSelect.innerHTML += `<option value="${sub.code}">${sub.code}: ${sub.name}</option>`;
+        });
+        if (subjects.length === 1) subSelect.value = subjects[0].code;
+        subSelect.style.display = 'block';
+    } else {
+        // Hide subject dropdown for orphan
+        subSelect.style.display = 'none';
+        subSelect.value = '';
+    }
 }
 
 // ── Confirm and apply leave with period actions ──
@@ -20586,8 +21258,11 @@ async function lod_confirmApply() {
     msgEl.textContent = '⏳ Applying leave and processing periods...';
 
     try {
-        const batch = db.batch();
         const now = new Date().toISOString();
+
+        // Build Firestore-safe update object for PERIOD_FACULTY
+        const pfUpdates = {}; // flat dot-notation updates for settings/periodFaculty
+        const attUpdatePromises = []; // attendance record updates
 
         // Gather period actions
         lod_pendingPeriods.forEach((p, idx) => {
@@ -20596,43 +21271,74 @@ async function lod_confirmApply() {
 
             const pfKey = p.pfKey;
             const pStr = p.period;
+            const dotPrefix = `${pfKey}.${pStr}`;
+            const dateStr = pfKey.split('_')[0];
 
             if (val === 'orphan') {
-                // Mark as orphan
-                if (!PERIOD_FACULTY[pfKey]) PERIOD_FACULTY[pfKey] = {};
-                PERIOD_FACULTY[pfKey][pStr] = {
-                    ...PERIOD_FACULTY[pfKey][pStr],
-                    ownerFaculty: null,
-                    ownerFacultyId: null,
+                // ── ORPHAN: Update PERIOD_FACULTY only (student attendance stays untouched) ──
+                const existing = (PERIOD_FACULTY[pfKey] && PERIOD_FACULTY[pfKey][pStr]) || {};
+                const updated = {
+                    ...existing,
                     ownershipStatus: 'ORPHAN',
-                    originalFaculty: p.entry.faculty,
+                    originalFaculty: p.entry.faculty || existing.faculty || '',
                     originalFacultyId: lod_pendingLeave.facultyId,
+                    originalSubject: existing.subject || p.entry.subject || '',
                     orphanedAt: now,
                     orphanReason: lod_pendingLeave.displayText
                 };
+                pfUpdates[dotPrefix] = updated;
+
+                if (!PERIOD_FACULTY[pfKey]) PERIOD_FACULTY[pfKey] = {};
+                PERIOD_FACULTY[pfKey][pStr] = updated;
+
+                // NOTE: Do NOT call lod_updateAttendanceOwnership — student attendance must stay intact
+
             } else if (val.startsWith('transfer_')) {
+                // ── TRANSFER: Update PERIOD_FACULTY only (student attendance stays untouched) ──
                 const targetId = val.replace('transfer_', '');
                 const targetName = USERS[targetId]?.name || targetId;
+                const existing = (PERIOD_FACULTY[pfKey] && PERIOD_FACULTY[pfKey][pStr]) || {};
 
-                PERIOD_FACULTY[pfKey][pStr] = {
-                    ...PERIOD_FACULTY[pfKey][pStr],
-                    ownerFaculty: targetName,
-                    ownerFacultyId: targetId,
+                // Read selected transfer subject from dropdown
+                const subSelect = document.getElementById(`lod_transferSub_${idx}`);
+                const transferSubject = subSelect ? subSelect.value : '';
+                if (!transferSubject) {
+                    alert(`⚠️ Please select a subject for the transfer of P${pStr} on ${lod_fmtDate(dateStr)} to ${targetName}.`);
+                    msgEl.style.display = 'none';
+                    return;
+                }
+
+                const updated = {
+                    ...existing,
+                    faculty: targetName,       // <── Ownership change: new faculty
+                    subject: transferSubject,   // <── Ownership change: new subject
                     ownershipStatus: 'TRANSFERRED',
-                    originalFaculty: p.entry.faculty,
+                    originalFaculty: p.entry.faculty || existing.faculty || '',
                     originalFacultyId: lod_pendingLeave.facultyId,
+                    originalSubject: existing.subject || p.entry.subject || '',
                     transferredBy: lod_pendingLeave.facultyId,
                     transferredAt: now,
-                    transferReason: lod_pendingLeave.displayText
+                    transferReason: lod_pendingLeave.displayText,
+                    takenOverSubject: transferSubject
                 };
+                pfUpdates[dotPrefix] = updated;
+
+                if (!PERIOD_FACULTY[pfKey]) PERIOD_FACULTY[pfKey] = {};
+                PERIOD_FACULTY[pfKey][pStr] = updated;
+
+                // NOTE: Do NOT call lod_updateAttendanceOwnership — student attendance must stay intact
             }
         });
 
         // Save updated PERIOD_FACULTY
-        batch.set(db.collection('settings').doc('periodFaculty'), PERIOD_FACULTY, { merge: true });
+        if (Object.keys(pfUpdates).length > 0) {
+            await db.collection('settings').doc('periodFaculty').update(pfUpdates);
+        }
+
+        // Update attendance records (run in parallel)
+        await Promise.all(attUpdatePromises);
 
         // Save Leave/OD record
-        const leaveRef = db.collection('facultyLeaveOD').doc();
         const leaveDoc = {
             facultyId: lod_pendingLeave.facultyId,
             facultyName: lod_pendingLeave.facultyName,
@@ -20646,9 +21352,7 @@ async function lod_confirmApply() {
             appliedBy: currentUser,
             periodsAffected: lod_pendingPeriods.length
         };
-        batch.set(leaveRef, leaveDoc);
-
-        await batch.commit();
+        const leaveRef = await db.collection('facultyLeaveOD').add(leaveDoc);
 
         // Update in-memory cache
         LEAVE_OD_CACHE.push({ id: leaveRef.id, ...leaveDoc });
@@ -20727,18 +21431,32 @@ async function lod_saveLeaveRecord() {
 function lod_renderMyRecords() {
     const container = document.getElementById('lod_myRecords');
     if (!container) return;
+    const titleEl = document.getElementById('lod_recordsTitle');
 
-    const myRecords = LEAVE_OD_CACHE
-        .filter(r => r.facultyId === currentUser)
+    const isAdmin = (currentUserType === 'admin');
+    const myFacultyName = USERS[currentUser]?.name || currentUser;
+
+    // Filter records: admin sees all, faculty sees only their own
+    let records = LEAVE_OD_CACHE
+        .filter(r => isAdmin ? true : (r.facultyId === currentUser || r.facultyName === myFacultyName))
         .sort((a, b) => (b.appliedAt || '').localeCompare(a.appliedAt || ''));
 
-    if (myRecords.length === 0) {
+    // Update title (preserve the collapsible arrow)
+    if (titleEl) {
+        const titleText = isAdmin ? 'All Faculty Leave / OD Records' : 'My Leave / OD Records';
+        const countBadge = records.length > 0
+            ? `<span style="background:#667eea;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">${records.length}</span>`
+            : '';
+        titleEl.innerHTML = `<span class="lod_ra">▶</span> 📋 ${titleText} ${countBadge}`;
+    }
+
+    if (records.length === 0) {
         container.innerHTML = '<p style="color:#999;font-style:italic;">No leave/OD records found.</p>';
         return;
     }
 
-    let html = '<div style="display:grid;gap:10px;">';
-    myRecords.forEach(r => {
+    // Helper to render a single record card
+    function renderCard(r) {
         const isActive = r.status === 'ACTIVE';
         const bgColor = isActive ? '#f0faf0' : '#fafafa';
         const borderColor = isActive ? '#4caf50' : '#ccc';
@@ -20746,22 +21464,82 @@ function lod_renderMyRecords() {
             ? `<span style="background:#4caf50;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">ACTIVE</span>`
             : `<span style="background:#999;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">CANCELLED</span>`;
         const typeIcon = r.type === 'Leave' ? '🏖️' : '📋';
-        const cancelBtn = isActive
-            ? `<button onclick="lod_cancelLeave('${r.id}')" style="background:#ef5350;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;">Cancel</button>`
+        // Edit button: available for active records (faculty can edit own, admin can edit any)
+        const editBtn = isActive
+            ? `<button onclick="lod_editLeave('${r.id}')" style="background:#1976d2;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;margin-right:6px;" title="Edit reason text">✏️ Edit</button>`
             : '';
+        // Cancel button: available for active records (both faculty and admin)
+        const cancelBtn = isActive
+            ? `<button onclick="lod_cancelLeave('${r.id}')" style="background:#ef5350;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;" title="Cancel this leave/OD">🗑️ Cancel</button>`
+            : '';
+        const facLabel = r.facultyName || r.facultyId || '?';
+        const appliedDate = r.appliedAt ? new Date(r.appliedAt).toLocaleDateString() : '?';
 
-        html += `<div style="background:${bgColor};border:1.5px solid ${borderColor};border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        // Fix single-day display text: "from X to X" → "on X"
+        let cardDisplayText = r.displayText || '';
+        if (r.fromDate && r.toDate && r.fromDate === r.toDate) {
+            const fmtD = lod_fmtDate(r.fromDate);
+            cardDisplayText = cardDisplayText.replace(`from ${fmtD} to ${fmtD}`, `on ${fmtD}`);
+        }
+
+        return `<div style="background:${bgColor};border:1.5px solid ${borderColor};border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
             <div>
                 <strong>${typeIcon} ${r.type}</strong> ${badge}
-                <div style="font-size:13px;color:#333;margin-top:4px;">${r.displayText}</div>
-                <div style="font-size:11px;color:#888;margin-top:2px;">Applied: ${r.appliedAt ? new Date(r.appliedAt).toLocaleDateString() : '?'}
-                    ${r.periodsAffected ? ` • ${r.periodsAffected} period(s) affected` : ''}</div>
+                ${isAdmin ? `<span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;">👤 ${facLabel}</span>` : ''}
+                <div style="font-size:13px;color:#333;margin-top:3px;">${cardDisplayText}</div>
+                <div style="font-size:11px;color:#888;margin-top:2px;">Applied: ${appliedDate}${r.periodsAffected ? ` • ${r.periodsAffected} period(s) affected` : ''}</div>
             </div>
-            <div>${cancelBtn}</div>
+            <div>${editBtn}${cancelBtn}</div>
         </div>`;
-    });
-    html += '</div>';
-    container.innerHTML = html;
+    }
+
+    if (!isAdmin) {
+        // ── Faculty: simple flat list ──
+        let html = '<div style="display:grid;gap:8px;">';
+        records.forEach(r => { html += renderCard(r); });
+        html += '</div>';
+        container.innerHTML = html;
+    } else {
+        // ── Admin: group by faculty in collapsible sections ──
+        const groups = {};
+        records.forEach(r => {
+            const key = r.facultyName || r.facultyId || 'Unknown';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(r);
+        });
+
+        // Sort groups alphabetically
+        const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+
+        let html = '<div style="display:grid;gap:10px;">';
+        sortedKeys.forEach((facName, gi) => {
+            const facRecords = groups[facName];
+            const activeCount = facRecords.filter(r => r.status === 'ACTIVE').length;
+            const totalCount = facRecords.length;
+            const activeBadge = activeCount > 0
+                ? `<span style="background:#4caf50;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">${activeCount} active</span>`
+                : `<span style="background:#999;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">none active</span>`;
+
+            html += `<div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;">
+                <div onclick="var b=document.getElementById('lod_grp_${gi}');b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.lod_ga').textContent=b.style.display==='none'?'▶':'▼';"
+                     style="background:#f5f7ff;padding:10px 14px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#1e3c72;">
+                    <span class="lod_ga">▶</span>
+                    👤 ${facName}
+                    ${activeBadge}
+                    <span style="color:#888;font-size:12px;font-weight:400;margin-left:auto;">${totalCount} record(s)</span>
+                </div>
+                <div id="lod_grp_${gi}" style="display:none;padding:10px;display:grid;gap:6px;">`;
+
+            // Initially hidden — set display:none
+            html = html.replace(`id="lod_grp_${gi}" style="display:none;padding:10px;display:grid;gap:6px;"`,
+                                `id="lod_grp_${gi}" style="display:none;padding:10px;"`);
+
+            facRecords.forEach(r => { html += renderCard(r); });
+            html += '</div></div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
 }
 
 // ── Cancel Leave/OD ──
@@ -20788,6 +21566,46 @@ async function lod_cancelLeave(docId) {
     } catch (err) {
         console.error('❌ lod_cancelLeave:', err);
         alert('❌ Failed to cancel: ' + (err.message || err));
+    }
+}
+
+// ── Edit Leave/OD reason text ──
+async function lod_editLeave(docId) {
+    const cached = LEAVE_OD_CACHE.find(r => r.id === docId);
+    if (!cached) { alert('❌ Record not found in cache.'); return; }
+    if (cached.status !== 'ACTIVE') { alert('⚠️ Only active records can be edited.'); return; }
+
+    const newReason = prompt('Edit the reason text:', cached.reason || '');
+    if (newReason === null) return; // user cancelled
+    const trimmed = newReason.trim();
+    if (!trimmed) { alert('⚠️ Reason cannot be empty.'); return; }
+
+    // Regenerate displayText using single-day "on" or multi-day "from…to"
+    const from = new Date(cached.fromDate), to = new Date(cached.toDate);
+    const days = Math.round((to - from) / (24*60*60*1000)) + 1;
+    const newDisplayText = (days === 1)
+        ? `${trimmed} on ${lod_fmtDate(cached.fromDate)}.`
+        : `${trimmed} from ${lod_fmtDate(cached.fromDate)} to ${lod_fmtDate(cached.toDate)}.`;
+
+    try {
+        await db.collection('facultyLeaveOD').doc(docId).update({
+            reason: trimmed,
+            displayText: newDisplayText,
+            editedAt: new Date().toISOString(),
+            editedBy: currentUser
+        });
+
+        // Update cache
+        cached.reason = trimmed;
+        cached.displayText = newDisplayText;
+        cached.editedAt = new Date().toISOString();
+        cached.editedBy = currentUser;
+
+        lod_renderMyRecords();
+        alert('✅ Leave/OD record updated successfully.');
+    } catch (err) {
+        console.error('❌ lod_editLeave:', err);
+        alert('❌ Failed to update: ' + (err.message || err));
     }
 }
 
@@ -20829,6 +21647,8 @@ function lod_renderOrphanPeriods() {
         return;
     }
 
+    const isAdmin = (currentUserType === 'admin');
+
     let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead><tr style="background:#fff3e0;">
             <th style="padding:8px;border:1px solid #ddd;">Date</th>
@@ -20836,27 +21656,69 @@ function lod_renderOrphanPeriods() {
             <th style="padding:8px;border:1px solid #ddd;">Subject</th>
             <th style="padding:8px;border:1px solid #ddd;">Year/Sem</th>
             <th style="padding:8px;border:1px solid #ddd;">Original Faculty</th>
-            <th style="padding:8px;border:1px solid #ddd;">Action</th>
+            <th style="padding:8px;border:1px solid #ddd;min-width:200px;">Action</th>
         </tr></thead><tbody>`;
 
     orphans.forEach((o, idx) => {
-        // Check if current user is eligible to take over
-        const eligible = lod_checkTakeoverEligibility(currentUser, o);
-
         let actionHtml = '';
-        if (eligible.canTakeOver) {
-            actionHtml = `<button onclick="lod_takeOverOrphan('${o.pfKey}','${o.period}')" style="background:#4caf50;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;">✅ Take Over</button>`;
+
+        if (isAdmin) {
+            // ── Admin view: show "Assign to" dropdown + subject dropdown ──
+            // Build faculty options for this year/sem
+            const facOptions = lod_getEligibleFacultyForOrphan(o);
+            let facSelectHtml = `<select id="lod_orphFac_${idx}" style="padding:4px;border:1px solid #ccc;border-radius:4px;font-size:11px;max-width:140px;" onchange="lod_updateOrphanSubjects(${idx},'${o.year}','${o.sem}')">
+                <option value="">-- Faculty --</option>`;
+            facOptions.forEach(f => {
+                if (f.eligible) {
+                    facSelectHtml += `<option value="${f.id}">${f.name}</option>`;
+                } else {
+                    facSelectHtml += `<option value="" disabled style="color:#999;">${f.name} (${f.reason})</option>`;
+                }
+            });
+            facSelectHtml += '</select>';
+
+            const subSelectHtml = `<select id="lod_orphSub_${idx}" style="padding:4px;border:1px solid #ccc;border-radius:4px;font-size:11px;max-width:120px;"><option value="">-- Subject --</option></select>`;
+
+            const assignBtn = `<button onclick="lod_assignOrphan(${idx},'${o.pfKey}','${o.period}')" style="background:#1565c0;color:#fff;border:none;padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;">➡️ Assign</button>`;
+
+            actionHtml = `<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${facSelectHtml}${subSelectHtml}${assignBtn}</div>`;
         } else {
-            actionHtml = `<span style="color:#999;font-size:11px;">❌ ${eligible.reason}</span>`;
+            // ── Faculty self-takeover: check eligibility, show subject dropdown ──
+            const eligible = lod_checkTakeoverEligibility(currentUser, o);
+            if (eligible.canTakeOver) {
+                // Get this faculty's subjects for this year/sem
+                const mySubjects = lod_getFacultySubjectsForYearSem(currentUser, o.year, o.sem);
+                let subSelectHtml = '';
+                if (mySubjects.length === 1) {
+                    subSelectHtml = `<input type="hidden" id="lod_orphSelfSub_${idx}" value="${mySubjects[0].code}"><span style="font-size:11px;color:#555;">${mySubjects[0].code}</span>`;
+                } else {
+                    subSelectHtml = `<select id="lod_orphSelfSub_${idx}" style="padding:4px;border:1px solid #ccc;border-radius:4px;font-size:11px;">`;
+                    mySubjects.forEach(s => {
+                        subSelectHtml += `<option value="${s.code}">${s.code}: ${s.name}</option>`;
+                    });
+                    subSelectHtml += '</select>';
+                }
+                actionHtml = `<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+                    ${subSelectHtml}
+                    <button onclick="lod_selfTakeOver(${idx},'${o.pfKey}','${o.period}')" style="background:#4caf50;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;">✅ Take Over</button>
+                </div>`;
+            } else {
+                actionHtml = `<span style="color:#999;font-size:11px;">❌ ${eligible.reason}</span>`;
+            }
         }
 
+        // Show C26 activity code if available instead of old C23 code
+        const oDisplayCode = ACTIVITY_CODES.has(o.subject) && !SUBJECTS[o.subject]
+            ? (Object.keys(SUBJECTS).find(c => /^\d{2}[A-Z]/.test(c) && c.slice(4,7) === o.subject.replace('CM-','')) || o.subject)
+            : o.subject;
+        const oDisplayName = getSubjectName(oDisplayCode);
         html += `<tr style="border-bottom:1px solid #eee;">
             <td style="padding:8px;border:1px solid #ddd;font-weight:600;">${lod_fmtDate(o.date)}</td>
             <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;">P${o.period}</td>
-            <td style="padding:8px;border:1px solid #ddd;">${o.subject}: ${o.subjectName}</td>
+            <td style="padding:8px;border:1px solid #ddd;">${oDisplayCode}: ${oDisplayName}</td>
             <td style="padding:8px;border:1px solid #ddd;text-align:center;">${o.yearSem}</td>
             <td style="padding:8px;border:1px solid #ddd;">${o.originalFaculty}</td>
-            <td style="padding:8px;border:1px solid #ddd;text-align:center;">${actionHtml}</td>
+            <td style="padding:8px;border:1px solid #ddd;">${actionHtml}</td>
         </tr>`;
     });
 
@@ -20864,15 +21726,154 @@ function lod_renderOrphanPeriods() {
     container.innerHTML = html;
 }
 
+// ── Get faculty subjects for a specific year/sem ──
+function lod_getFacultySubjectsForYearSem(facultyId, year, sem) {
+    const subjects = [];
+    const addedCodes = new Set();
+
+    // 1. Regular mapped subjects
+    Object.keys(FACULTY_MAP).forEach(code => {
+        if (FACULTY_MAP[code] === facultyId && isSubjectForYearSem(code, year, sem)) {
+            subjects.push({ code, name: getSubjectName(code) || code });
+            addedCodes.add(code);
+        }
+    });
+
+    // 2. Project Work (CM-509) — all Computer Engineering branch faculty can handle (sem 5 only)
+    if (String(sem) === '5' && !addedCodes.has(PROJECT_WORK_CODE)) {
+        if (canFacultyHandleSubject(facultyId, PROJECT_WORK_CODE, year, sem)) {
+            subjects.push({ code: PROJECT_WORK_CODE, name: getSubjectName(PROJECT_WORK_CODE) || 'Project Work' });
+            addedCodes.add(PROJECT_WORK_CODE);
+        }
+    }
+
+    // 3. Activity — any faculty who has at least one subject in this year/sem
+    //    Prefer C26 codes (e.g. 26CM100L) over C23 codes (CM-100)
+    const actNumMap = { '1': '100', '3': '300', '4': '400', '5': '500' };
+    const actNum = actNumMap[String(year) === '1' ? '1' : String(sem)];
+    if (actNum) {
+        const c26Code = Object.keys(SUBJECTS).find(code =>
+            /^\d{2}[A-Z]/.test(code) && code.slice(4, 7) === actNum
+        );
+        const c23Map = { '100': 'CM-100', '300': 'CM-300', '400': 'CM-400', '500': 'CM-500' };
+        const actCode = c26Code || c23Map[actNum];
+        if (actCode && !addedCodes.has(actCode)) {
+            if (canFacultyHandleSubject(facultyId, actCode, year, sem)) {
+                subjects.push({ code: actCode, name: getSubjectName(actCode) || 'Activity' });
+                addedCodes.add(actCode);
+            }
+        }
+    }
+
+    return subjects;
+}
+
+// ── Get eligible faculty list for an orphan (admin use) ──
+function lod_getEligibleFacultyForOrphan(orphan) {
+    const result = [];
+    const facultyList = Object.entries(USERS)
+        .filter(([, d]) => d && (d.type === 'user' || !d.type))
+        .sort(([, a], [, b]) => (a.name || '').localeCompare(b.name || ''));
+
+    facultyList.forEach(([id, data]) => {
+        const name = data.name || id;
+        const check = lod_checkTakeoverEligibility(id, orphan);
+        result.push({ id, name, eligible: check.canTakeOver, reason: check.reason });
+    });
+    return result;
+}
+
+// ── Update subject dropdown when admin selects a faculty for orphan assignment ──
+function lod_updateOrphanSubjects(idx, year, sem) {
+    const facSelect = document.getElementById(`lod_orphFac_${idx}`);
+    const subSelect = document.getElementById(`lod_orphSub_${idx}`);
+    if (!facSelect || !subSelect) return;
+
+    const facId = facSelect.value;
+    subSelect.innerHTML = '<option value="">-- Subject --</option>';
+    if (!facId) return;
+
+    const subjects = lod_getFacultySubjectsForYearSem(facId, year, sem);
+    subjects.forEach(s => {
+        subSelect.innerHTML += `<option value="${s.code}">${s.code}: ${s.name}</option>`;
+    });
+    if (subjects.length === 1) subSelect.value = subjects[0].code;
+}
+
+// ── Admin assigns an orphan period to a faculty ──
+async function lod_assignOrphan(idx, pfKey, periodStr) {
+    const facSelect = document.getElementById(`lod_orphFac_${idx}`);
+    const subSelect = document.getElementById(`lod_orphSub_${idx}`);
+    const targetFac = facSelect ? facSelect.value : '';
+    const targetSub = subSelect ? subSelect.value : '';
+
+    if (!targetFac) { alert('Please select a faculty.'); return; }
+    if (!targetSub) { alert('Please select a subject.'); return; }
+
+    const targetName = USERS[targetFac]?.name || targetFac;
+    if (!confirm(`Assign Period P${periodStr} on ${lod_fmtDate(pfKey.split('_')[0])} to ${targetName} (${targetSub})?`)) return;
+
+    try {
+        const freshDoc = await db.collection('settings').doc('periodFaculty').get();
+        const freshPF = freshDoc.exists ? freshDoc.data() : {};
+        delete freshPF._v;
+
+        const freshEntry = freshPF[pfKey]?.[periodStr];
+        if (!freshEntry || freshEntry.ownershipStatus !== 'ORPHAN') {
+            alert('⚠️ This period has already been taken/assigned.');
+            Object.assign(PERIOD_FACULTY, freshPF);
+            lod_renderOrphanPeriods();
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const dateStr = pfKey.split('_')[0];
+        const updated = {
+            ...freshEntry,
+            faculty: targetName,         // <── Direct change
+            subject: targetSub,          // <── Direct change
+            ownershipStatus: 'TRANSFERRED',
+            takenOverBy: currentUser,
+            takenOverAt: now,
+            takenOverSubject: targetSub
+        };
+
+        await db.collection('settings').doc('periodFaculty').update({
+            [`${pfKey}.${periodStr}`]: updated
+        });
+
+        if (!PERIOD_FACULTY[pfKey]) PERIOD_FACULTY[pfKey] = {};
+        PERIOD_FACULTY[pfKey][periodStr] = updated;
+
+        // NOTE: Do NOT call lod_updateAttendanceOwnership — student attendance must stay intact
+        // Only PERIOD_FACULTY tracks ownership changes
+
+        alert(`✅ Assigned to ${targetName} (${targetSub}) successfully!`);
+        lod_renderOrphanPeriods();
+    } catch (err) {
+        console.error('❌ lod_assignOrphan:', err);
+        alert('❌ Failed: ' + (err.message || err));
+    }
+}
+
 // ── Check if a faculty can take over an orphan period ──
 function lod_checkTakeoverEligibility(facultyId, orphan) {
     const [tgtY, tgtS] = orphan.yearSem.split('-');
 
-    // Rule 1: Faculty must have a subject in that year/sem
-    const hasSubject = Object.keys(FACULTY_MAP).some(code =>
-        FACULTY_MAP[code] === facultyId && isSubjectForYearSem(code, tgtY, tgtS)
-    );
-    if (!hasSubject) return { canTakeOver: false, reason: `Not assigned in ${orphan.yearSem}` };
+    // Rule 1: Faculty must be able to handle a subject in that year/sem
+    // For Activity/Project Work: use canFacultyHandleSubject (shared subjects, special rules)
+    // For regular subjects: faculty must have a mapped subject in FACULTY_MAP
+    const orphanSubject = orphan.subject || '';
+    const isSharedSubject = ACTIVITY_CODES.has(orphanSubject) || orphanSubject === PROJECT_WORK_CODE;
+    let canHandle;
+    if (isSharedSubject) {
+        canHandle = canFacultyHandleSubject(facultyId, orphanSubject, tgtY, tgtS);
+    } else {
+        canHandle = Object.keys(FACULTY_MAP).some(code =>
+            FACULTY_MAP[code] === facultyId && isSubjectForYearSem(code, tgtY, tgtS)
+        );
+    }
+    if (!canHandle) return { canTakeOver: false, reason: `Not assigned in ${orphan.yearSem}` };
 
     // Rule 2: Not on Leave/OD
     const leaveCheck = lod_checkFacultyOnLeave(facultyId, orphan.date);
@@ -20885,12 +21886,15 @@ function lod_checkTakeoverEligibility(facultyId, orphan) {
     return { canTakeOver: true, reason: '' };
 }
 
-// ── Take over an orphan period (with race condition protection) ──
-async function lod_takeOverOrphan(pfKey, periodStr) {
-    if (!confirm(`Take over Period ${periodStr} on ${lod_fmtDate(pfKey.split('_')[0])}?`)) return;
+// ── Faculty self-takeover with subject selection ──
+async function lod_selfTakeOver(idx, pfKey, periodStr) {
+    const subSelect = document.getElementById(`lod_orphSelfSub_${idx}`);
+    const selectedSubject = subSelect ? subSelect.value : '';
+    if (!selectedSubject) { alert('Please select a subject.'); return; }
+
+    if (!confirm(`Take over Period P${periodStr} on ${lod_fmtDate(pfKey.split('_')[0])} as ${selectedSubject}?`)) return;
 
     try {
-        // Re-read PERIOD_FACULTY from Firestore to prevent race condition
         const freshDoc = await db.collection('settings').doc('periodFaculty').get();
         const freshPF = freshDoc.exists ? freshDoc.data() : {};
         delete freshPF._v;
@@ -20898,15 +21902,14 @@ async function lod_takeOverOrphan(pfKey, periodStr) {
         const freshEntry = freshPF[pfKey]?.[periodStr];
         if (!freshEntry || freshEntry.ownershipStatus !== 'ORPHAN') {
             alert('⚠️ This period has already been taken over by another faculty.');
-            // Refresh in-memory data
             Object.assign(PERIOD_FACULTY, freshPF);
             lod_renderOrphanPeriods();
             return;
         }
 
-        // Re-check eligibility with fresh data
+        // Re-check eligibility
         const parts = pfKey.split('_');
-        const dateStr = parts[0], y = parts[1], s = parts[2];
+        const dateStr = parts[0];
         const clash = lod_checkPeriodClash(currentUser, dateStr, parseInt(periodStr));
         if (clash.hasClash) {
             alert(`⚠️ Cannot take over: ${clash.detail}`);
@@ -20916,25 +21919,29 @@ async function lod_takeOverOrphan(pfKey, periodStr) {
         const currentFacultyName = USERS[currentUser]?.name || currentUser;
         const now = new Date().toISOString();
 
-        // Update the entry
-        freshPF[pfKey][periodStr] = {
+        const updated = {
             ...freshEntry,
-            ownerFaculty: currentFacultyName,
-            ownerFacultyId: currentUser,
+            faculty: currentFacultyName,    // <── Direct change
+            subject: selectedSubject,        // <── Direct change
             ownershipStatus: 'TRANSFERRED',
             takenOverBy: currentUser,
-            takenOverAt: now
+            takenOverAt: now,
+            takenOverSubject: selectedSubject
         };
 
-        await db.collection('settings').doc('periodFaculty').set(freshPF, { merge: true });
+        await db.collection('settings').doc('periodFaculty').update({
+            [`${pfKey}.${periodStr}`]: updated
+        });
 
-        // Update in-memory
-        PERIOD_FACULTY = freshPF;
+        PERIOD_FACULTY[pfKey][periodStr] = updated;
 
-        alert(`✅ Period ${periodStr} taken over successfully!`);
+        // NOTE: Do NOT call lod_updateAttendanceOwnership — student attendance must stay intact
+        // Only PERIOD_FACULTY tracks ownership changes
+
+        alert(`✅ Period P${periodStr} taken over as ${selectedSubject} successfully!`);
         lod_renderOrphanPeriods();
     } catch (err) {
-        console.error('❌ lod_takeOverOrphan:', err);
+        console.error('❌ lod_selfTakeOver:', err);
         alert('❌ Failed: ' + (err.message || err));
     }
 }
@@ -20985,6 +21992,48 @@ function lod_doesFacultyOwnPeriod(facultyId, facultyName, pfKey, periodStr) {
     }
     // ASSIGNED — original poster owns it
     return entry.faculty === facultyName;
+}
+
+// ── Directly update attendance records when ownership changes ──
+// Changes faculty (and optionally subject) for a specific period on a date
+// across ALL student records in Firestore AND in-memory cache.
+async function lod_updateAttendanceOwnership(date, periodStr, newFaculty, newSubject) {
+    try {
+        const attDocRef = db.collection('attendance').doc(date);
+        const attDoc = await attDocRef.get();
+        if (!attDoc.exists) return;
+        const attData = attDoc.data();
+
+        // Build dot-notation updates for every student's period entry
+        const updates = {};
+        Object.keys(attData).forEach(pin => {
+            if (attData[pin] && typeof attData[pin] === 'object' && attData[pin][periodStr]) {
+                updates[`${pin}.${periodStr}.faculty`] = newFaculty;
+                if (newSubject !== undefined && newSubject !== null) {
+                    updates[`${pin}.${periodStr}.subject`] = newSubject;
+                }
+            }
+        });
+
+        if (Object.keys(updates).length > 0) {
+            await attDocRef.update(updates);
+
+            // Also update in-memory ATTENDANCE_CACHE
+            const cacheKey = `att_${date}`;
+            if (ATTENDANCE_CACHE[cacheKey]) {
+                Object.keys(ATTENDANCE_CACHE[cacheKey]).forEach(pin => {
+                    if (ATTENDANCE_CACHE[cacheKey][pin] && ATTENDANCE_CACHE[cacheKey][pin][periodStr]) {
+                        ATTENDANCE_CACHE[cacheKey][pin][periodStr].faculty = newFaculty;
+                        if (newSubject !== undefined && newSubject !== null) {
+                            ATTENDANCE_CACHE[cacheKey][pin][periodStr].subject = newSubject;
+                        }
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        console.error(`lod_updateAttendanceOwnership failed for ${date} P${periodStr}:`, err);
+    }
 }
 
 // ╔══════════════════════════════════════════════════════════════════╗
