@@ -6912,8 +6912,10 @@
                 <th>Actions</th>
             </tr></thead><tbody></tbody>`;
 
+            let rowNum = 0;
             stu.forEach((st) => {
-                const i = allStu.indexOf(st);   // real index in STUDENTS[y][s]
+                rowNum++;
+                const i = allStu.indexOf(st);   // real index in STUDENTS[y][s] — used for Delete/Edit
                 // Default scholarship = true if not explicitly set to false
                 const isScholar  = st.scholarship !== false;
                 const mobile     = st.parentMobile || '';
@@ -6952,7 +6954,7 @@
                 }
 
                 row.innerHTML = `
-                    <td style="text-align:center;">${i + 1}</td>
+                    <td style="text-align:center;">${rowNum}</td>
                     <td>
                         <span class="editable" onclick="editPIN('${y}','${s}',${i},'${st.pin}')">${st.pin}</span>
                         ${APP_CONFIG.detectSchemeFromPIN(st.pin) === 'C26'
