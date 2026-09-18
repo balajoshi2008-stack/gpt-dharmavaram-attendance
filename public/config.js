@@ -3,7 +3,7 @@
 //  Smart Attendance Management System — GPT Dharmavaram
 //
 //  SCHEME HISTORY:
-//  C25 (≤ 2025): PIN = 25170-CM-001   Subject = CM-101   Branch = Computer Engineering
+//  C23 (≤ 2025): PIN = 25170-CM-001   Subject = CM-101   Branch = Computer Engineering
 //  C26 (≥ 2026): PIN = 26170CM001     Subject = 26CM101T Branch = Computer Science & Engineering
 //
 //  SUBJECT TYPE SUFFIXES (C26 only):
@@ -13,7 +13,7 @@
 //  A = Audit     → Unit Marks tab ❌   Lab Assessment ❌  (attendance only)
 //  P = Project   → Unit Marks tab ❌   Lab Assessment ❌  (already handled)
 //
-//  C25 subjects (CM-xxx): existing logic UNCHANGED for all tabs
+//  C23 subjects (CM-xxx): existing logic UNCHANGED for all tabs
 //  ATTENDANCE TAB: ALL subjects appear — no change for any type
 // ═══════════════════════════════════════════════════════════════════
 
@@ -30,13 +30,13 @@ const APP_CONFIG = {
     branch: {
         name:      "Computer Science & Engineering",  // C26 name
         shortName: "CSE",
-        code:      "CM"   // same in both C25 and C26
+        code:      "CM"   // same in both C23 and C26
     },
 
     schemeChangeYear: 2026,   // admission year 2026 = C26 scheme
 
     schemes: {
-        C25: {
+        C23: {
             maxAdmissionYear: 2025,
             pinSeparator:     "-",
             rollDigits:       3,
@@ -56,7 +56,7 @@ const APP_CONFIG = {
         }
     },
 
-    // Subject type definitions — C26 only (C25 uses Theory/Practical as before)
+    // Subject type definitions — C26 only (C23 uses Theory/Practical as before)
     subjectTypes: {
         T: {
             label:           "Theory",
@@ -121,17 +121,17 @@ const APP_CONFIG = {
 // ─────────────────────────────────────────────────────────────────
 
 APP_CONFIG.getScheme = function(admissionYear) {
-    return parseInt(admissionYear) >= this.schemeChangeYear ? 'C26' : 'C25';
+    return parseInt(admissionYear) >= this.schemeChangeYear ? 'C26' : 'C23';
 };
 
-// PIN with dashes = C25 ("25170-CM-001"), without dashes = C26 ("26170CM001")
+// PIN with dashes = C23 ("25170-CM-001"), without dashes = C26 ("26170CM001")
 APP_CONFIG.detectSchemeFromPIN = function(pin) {
-    return String(pin || '').includes('-') ? 'C25' : 'C26';
+    return String(pin || '').includes('-') ? 'C23' : 'C26';
 };
 
-// Subject code starting with 2 digits then letters = C26 ("26CM101T"); else C25 ("CM-101")
+// Subject code starting with 2 digits then letters = C26 ("26CM101T"); else C23 ("CM-101")
 APP_CONFIG.detectSchemeFromSubject = function(code) {
-    return /^\d{2}[A-Z]/.test(String(code || '')) ? 'C26' : 'C25';
+    return /^\d{2}[A-Z]/.test(String(code || '')) ? 'C26' : 'C23';
 };
 
 APP_CONFIG.getBranchName = function(admissionYear) {
@@ -144,8 +144,8 @@ APP_CONFIG.getBranchName = function(admissionYear) {
 
 /**
  * Generate PIN — correct scheme chosen automatically from admissionYear.
- *   generatePIN(2025, 1)   → "25170-CM-001"   (C25 — with dashes, unchanged)
- *   generatePIN(2024, 5)   → "24170-CM-005"   (C25 — with dashes, unchanged)
+ *   generatePIN(2025, 1)   → "25170-CM-001"   (C23 — with dashes, unchanged)
+ *   generatePIN(2024, 5)   → "24170-CM-005"   (C23 — with dashes, unchanged)
  *   generatePIN(2026, 1)   → "26170CM001"     (C26 — no dashes)
  *   generatePIN(2027, 15)  → "27170CM015"     (C26 — no dashes)
  */
@@ -162,13 +162,13 @@ APP_CONFIG.generatePIN = function(admissionYear, rollNo) {
 
 APP_CONFIG.validatePIN = function(pin) {
     const p = String(pin || '').trim();
-    return /^\d{5}-[A-Z]{2}-\d{3}$/.test(p) ||    // C25: 25170-CM-001
+    return /^\d{5}-[A-Z]{2}-\d{3}$/.test(p) ||    // C23: 25170-CM-001
            /^\d{2}\d{3}[A-Z]{2}\d{3}$/.test(p);   // C26: 26170CM001
 };
 
 APP_CONFIG.extractRollFromPIN = function(pin) {
     return String(pin || '').includes('-')
-        ? parseInt(String(pin).split('-').pop())       // C25
+        ? parseInt(String(pin).split('-').pop())       // C23
         : parseInt(String(pin).slice(-3));             // C26
 };
 
@@ -181,7 +181,7 @@ APP_CONFIG.extractRollFromPIN = function(pin) {
  *   generateSubjectCode(2026, 101, 'T') → "26CM101T"
  *   generateSubjectCode(2026, 107, 'L') → "26CM107L"
  *   generateSubjectCode(2026, 106, 'A') → "26CM106A"
- * C25 subjects keep their existing CM-xxx codes — no generation needed.
+ * C23 subjects keep their existing CM-xxx codes — no generation needed.
  */
 APP_CONFIG.generateSubjectCode = function(admissionYear, number, type) {
     const yr = String(admissionYear).slice(-2);
@@ -207,15 +207,15 @@ APP_CONFIG.c26NumberToYearSemLabel = function(num) {
 };
 
 // ─────────────────────────────────────────────────────────────────
-//  SUBJECT CODE PARSING (handles both C25 and C26)
+//  SUBJECT CODE PARSING (handles both C23 and C26)
 // ─────────────────────────────────────────────────────────────────
 
 /**
- * Parse a subject code — returns unified info for C25 and C26.
+ * Parse a subject code — returns unified info for C23 and C26.
  *
  * parseSubjectCode("26CM101T") → { scheme:'C26', type:'T', showInUnitMarks:true, ... }
  * parseSubjectCode("26CM107L") → { scheme:'C26', type:'L', showInLabAssess:true, ... }
- * parseSubjectCode("CM-101")   → { scheme:'C25', type:null, showInUnitMarks:true, ... }
+ * parseSubjectCode("CM-101")   → { scheme:'C23', type:null, showInUnitMarks:true, ... }
  */
 APP_CONFIG.parseSubjectCode = function(code) {
     const c = String(code || '').trim();
@@ -245,16 +245,16 @@ APP_CONFIG.parseSubjectCode = function(code) {
             tabInfo:         td.tabInfo
         };
     } else {
-        // ── C25: BC-NUM (e.g. "CM-101") — existing behaviour ─────
+        // ── C23: BC-NUM (e.g. "CM-101") — existing behaviour ─────
         return {
-            scheme:          'C25',
+            scheme:          'C23',
             branch:          c.split('-')[0] || '',
             number:          parseInt(c.split('-')[1]) || 0,
             yearSem:         null,
             type:            null,
             typeLabel:       null,
-            showInUnitMarks: true,   // C25: all show in Unit Marks (unchanged)
-            showInLabAssess: false,  // C25: Lab Assessment uses existing logic (unchanged)
+            showInUnitMarks: true,   // C23: all show in Unit Marks (unchanged)
+            showInLabAssess: false,  // C23: Lab Assessment uses existing logic (unchanged)
             attendanceOnly:  false,
             isElective:      false,
             isAudit:         false,
@@ -262,7 +262,7 @@ APP_CONFIG.parseSubjectCode = function(code) {
             color:           '#1F3864',
             bgColor:         '#EFF6FF',
             badgeStyle:      'background:#1F3864;color:#fff;',
-            tabInfo:         'C25 — existing behaviour unchanged'
+            tabInfo:         'C23 — existing behaviour unchanged'
         };
     }
 };
@@ -274,15 +274,15 @@ APP_CONFIG.parseSubjectCode = function(code) {
 /**
  * Should this subject appear in Unit Marks tab?
  *
- * TRUE  → C25 all (unchanged), C26 type T, C26 type E
+ * TRUE  → C23 all (unchanged), C26 type T, C26 type E
  * FALSE → C26 type L, C26 type A, C26 type P
  *
  * @param {object|string} subjectDoc — value from SUBJECTS[code]
  */
 APP_CONFIG.showInUnitMarks = function(subjectDoc) {
     if (!subjectDoc) return false;
-    if (typeof subjectDoc === 'string') return true;       // legacy string — C25, show all
-    if (subjectDoc.scheme !== 'C26') return true;          // C25 object — show all (unchanged)
+    if (typeof subjectDoc === 'string') return true;       // legacy string — C23, show all
+    if (subjectDoc.scheme !== 'C26') return true;          // C23 object — show all (unchanged)
     const td = this.subjectTypes[subjectDoc.type];
     return td ? td.showInUnitMarks : true;
 };
@@ -291,14 +291,14 @@ APP_CONFIG.showInUnitMarks = function(subjectDoc) {
  * Should this subject appear in Lab Assessment tab?
  *
  * TRUE  → C26 type L only (assigned to that faculty)
- * FALSE → C25 (C25 Lab Assessment uses existing isLabSubject logic), C26 T/E/A/P
+ * FALSE → C23 (C23 Lab Assessment uses existing isLabSubject logic), C26 T/E/A/P
  *
  * @param {object|string} subjectDoc — value from SUBJECTS[code]
  */
 APP_CONFIG.showInLabAssessment = function(subjectDoc) {
     if (!subjectDoc) return false;
-    if (typeof subjectDoc === 'string') return false;      // C25 legacy string — use old logic
-    if (subjectDoc.scheme !== 'C26') return false;         // C25 object — use old isLabSubject logic
+    if (typeof subjectDoc === 'string') return false;      // C23 legacy string — use old logic
+    if (subjectDoc.scheme !== 'C26') return false;         // C23 object — use old isLabSubject logic
     const td = this.subjectTypes[subjectDoc.type];
     return td ? td.showInLabAssess : false;
 };

@@ -2148,7 +2148,7 @@
                     <div class="form-group">
                         <label>Scheme / Admission Year</label>
                         <select id="sub_year" onchange="sub_onYearChange()">
-                            <option value="2025">2025 (C25 — old format: CM-101)</option>
+                            <option value="2025">2025 (C23 — old format: CM-101)</option>
                             <option value="2026" selected>2026 (C26 — new format: 26CM101T)</option>
                             <option value="2027">2027 (C26)</option>
                             <option value="2028">2028 (C26)</option>
@@ -2156,11 +2156,11 @@
                     </div>
                 </div>
 
-                <!-- C25 block: manual code dropdown (existing behaviour) -->
-                <div id="sub_c25Block" style="display:none;">
+                <!-- C23 block: manual code dropdown (existing behaviour) -->
+                <div id="sub_C23Block" style="display:none;">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Subject Code (C25)</label>
+                            <label>Subject Code (C23)</label>
                             <select id="subCode"></select>
                         </div>
                         <div class="form-group">
@@ -2314,9 +2314,9 @@
                         <label>Admission Year</label>
                         <select id="admYear" onchange="admYear_onChange()">
                             <option value="26" selected>2026 (C26 — 26170CM001)</option>
-                            <option value="25">2025 (C25 — 25170-CM-001)</option>
-                            <option value="24">2024 (C25 — 24170-CM-001)</option>
-                            <option value="23">2023 (C25 — 23170-CM-001)</option>
+                            <option value="25">2025 (C23 — 25170-CM-001)</option>
+                            <option value="24">2024 (C23 — 24170-CM-001)</option>
+                            <option value="23">2023 (C23 — 23170-CM-001)</option>
                         </select>
                     </div>
                 </div>
@@ -4555,7 +4555,7 @@
                 return prefixToYS[numPrefix] === ysKey;
             }
 
-            // ── C25 subject codes (CM-xxx) — existing logic unchanged ────────
+            // ── C23 subject codes (CM-xxx) — existing logic unchanged ────────
             const prefix = getYearSemPrefix(y, s);
             if (!prefix) return false;
             // Activity codes: CM-100 for yr1, CM-300 for sem3, CM-400 for sem4, CM-500 for sem5
@@ -4570,7 +4570,7 @@
             if (code === PROJECT_WORK_CODE) {
                 return s == 5;
             }
-            // Regular C25 subjects: code starts with CM-{prefix}
+            // Regular C23 subjects: code starts with CM-{prefix}
             const num = parseInt(code.replace('CM-', ''));
             return Math.floor(num / 100) === parseInt(prefix);
         }
@@ -4901,7 +4901,7 @@
             if (sub && typeof sub === 'object' && sub.scheme === 'C26') {
                 return sub.type === 'T' || sub.type === 'E';
             }
-            // C25: existing logic unchanged
+            // C23: existing logic unchanged
             return getSubjectType(code) === 'Theory';
         }
 
@@ -6244,11 +6244,11 @@
                     attendanceOnly:  td.attendanceOnly
                 };
             } else {
-                // ── C25: manual code from dropdown (existing behaviour) ───────
+                // ── C23: manual code from dropdown (existing behaviour) ───────
                 code = document.getElementById('subCode')?.value;
                 const type = document.getElementById('subType')?.value || 'Theory';
                 if (!code) { alert('Select a subject code'); return; }
-                subjectData = { name, type };   // C25: keep simple {name, type} format
+                subjectData = { name, type };   // C23: keep simple {name, type} format
             }
 
             // Save to in-memory SUBJECTS and Firestore
@@ -6293,14 +6293,14 @@
         function sub_onYearChange() {
             const yr    = parseInt(document.getElementById('sub_year').value);
             const isC26 = yr >= 2026;
-            document.getElementById('sub_c25Block').style.display = isC26 ? 'none'  : 'block';
+            document.getElementById('sub_C23Block').style.display = isC26 ? 'none'  : 'block';
             document.getElementById('sub_c26Block').style.display = isC26 ? 'block' : 'none';
             sub_preview();
         }
 
         function sub_preview() {
             const yr   = parseInt(document.getElementById('sub_year').value || 2026);
-            if (yr < 2026) return;   // C25 — no preview
+            if (yr < 2026) return;   // C23 — no preview
             const num  = document.getElementById('sub_num')?.value;
             const type = document.getElementById('sub_type')?.value || 'T';
             const prev = document.getElementById('sub_codePreview');
@@ -6338,7 +6338,7 @@
                     const ysLabel = sub.yearSem ? ` <span style="background:#E3E8FF;color:#1F3864;padding:2px 6px;border-radius:3px;font-size:10px;margin-left:4px;">${sub.yearSem}</span>` : '';
                     typeBadge += ysLabel;
                 } else {
-                    // C25: existing Theory/Practical badge
+                    // C23: existing Theory/Practical badge
                     typeBadge = getSubjectType(code) === 'Theory'
                         ? '<span style="background:#4CAF50;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">Theory</span>'
                         : '<span style="background:#FF9800;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">Practical</span>';
@@ -6592,7 +6592,7 @@
             // Convert 2-digit year ("26") to 4-digit (2026) for scheme detection
             const fullYear = 2000 + parseInt(admYear);
             return APP_CONFIG.generatePIN(fullYear, rollNo);
-            // C25 (≤2025): returns "25170-CM-001"  (with dashes, unchanged)
+            // C23 (≤2025): returns "25170-CM-001"  (with dashes, unchanged)
             // C26 (≥2026): returns "26170CM001"     (no dashes, new format)
         }
 
@@ -6603,7 +6603,7 @@
             const isC26   = fullYr >= 2026;
             const sample  = APP_CONFIG.generatePIN(fullYr, 1).replace(/\d{3}$/, 'XXX');
             const branch  = APP_CONFIG.getBranchName(fullYr);
-            const scheme  = isC26 ? 'C26' : 'C25';
+            const scheme  = isC26 ? 'C26' : 'C23';
             const badgeBg = isC26 ? '#E8F5E9' : '#EFF6FF';
             const badgeFg = isC26 ? '#2E7D32' : '#1565C0';
             const infoEl  = document.getElementById('pinFormatInfo');
@@ -6959,7 +6959,7 @@
                         <span class="editable" onclick="editPIN('${y}','${s}',${i},'${st.pin}')">${st.pin}</span>
                         ${APP_CONFIG.detectSchemeFromPIN(st.pin) === 'C26'
                             ? '<span style="background:#E8F5E9;color:#2E7D32;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C26</span>'
-                            : '<span style="background:#EFF6FF;color:#1565C0;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C25</span>'}
+                            : '<span style="background:#EFF6FF;color:#1565C0;border-radius:8px;padding:.1rem .4rem;font-size:.68rem;font-weight:700;margin-left:.3rem;">C23</span>'}
                     </td>
                     <td>
                         <span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span>${adm_getAdmBadge(st)}
@@ -9602,7 +9602,7 @@
             }
 
             // Get Unit Marks subjects that faculty handles
-            // C25: Theory subjects (unchanged). C26: T (Theory) and E (Elective) types.
+            // C23: Theory subjects (unchanged). C26: T (Theory) and E (Elective) types.
             let theorySubjects = [];
 
             if (currentUserType === 'admin') {
@@ -16794,7 +16794,7 @@
             if (sub && typeof sub === 'object' && sub.scheme === 'C26') {
                 return sub.type === 'L';
             }
-            // C25: existing logic unchanged
+            // C23: existing logic unchanged
             const t = getSubjectType(code).toLowerCase();
             return t === 'practical' || t === 'lab';
         }
