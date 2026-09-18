@@ -1821,6 +1821,25 @@
 
             </div>
 
+            <!-- STUDENT STATISTICS TAB (Admin only) -->
+            <div id="studentstats" class="tab-content">
+                <div style="max-width:900px;margin:0 auto;padding:10px 0 40px;">
+                    <!-- Header -->
+                    <div style="background:linear-gradient(135deg,#1a237e 0%,#283593 50%,#3949ab 100%);border-radius:16px;padding:22px 28px 18px;margin-bottom:24px;box-shadow:0 8px 32px rgba(26,35,126,0.2);">
+                        <div style="display:flex;align-items:center;gap:14px;">
+                            <span style="font-size:38px;">📊</span>
+                            <div>
+                                <h2 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Student Statistics</h2>
+                                <p style="color:rgba(255,255,255,0.75);margin:4px 0 0;font-size:13px;">Gender-wise & class-wise breakdown of all active students</p>
+                            </div>
+                            <button onclick="loadStatistics()" style="margin-left:auto;padding:8px 18px;background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">🔄 Refresh</button>
+                        </div>
+                    </div>
+                    <!-- Stats content injected here -->
+                    <div id="statsContent" style="min-height:120px;"></div>
+                </div>
+            </div>
+
             <!-- LEAVE / OD TAB (Faculty + PowerUser) -->
             <div id="leaveod" class="tab-content">
                 <h2 style="color:#2a5298;margin-bottom:6px;">🏖️ Faculty Leave / OD</h2>
@@ -5319,6 +5338,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'adminResults\'); initAdminResultsTab();">📋 Results</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'leaveod\'); lod_initTab();">🏖️ Leave/OD</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'studentstats\'); loadStatistics();">📊 Stu. Statistics</button>';
             } else if (currentUserType === 'powerUser') {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'dashboard\')">📊 Dashboard</button>';
                 // ── Attendance right after Dashboard for quick access ──
@@ -6886,11 +6906,17 @@
             const scholarCount = activeStu.filter(st => st.scholarship !== false).length;
             const transferredCount = allStu.filter(st => st.status === 'transferred').length;
             const tcCount = allStu.filter(st => st.status === 'tc_issued').length;
+            const longAbsentCount = activeStu.filter(st => st.longAbsent === true).length;
+            const maleCount = activeStu.filter(st => st.gender === 'M').length;
+            const femaleCount = activeStu.filter(st => st.gender === 'F').length;
 
             let summaryHtml = `<p style="margin-bottom:10px;color:#555;">
                 <strong>Active: ${activeStu.length}</strong> &nbsp;|&nbsp;
                 🎓 Scholarship: <strong style="color:#2a5298;">${scholarCount}</strong> &nbsp;|&nbsp;
-                Non-Scholar: <strong style="color:#dc3545;">${activeStu.length - scholarCount}</strong>`;
+                Non-Scholar: <strong style="color:#dc3545;">${activeStu.length - scholarCount}</strong> &nbsp;|&nbsp;
+                ♂ Male: <strong style="color:#1565C0;">${maleCount}</strong> &nbsp;|&nbsp;
+                ♀ Female: <strong style="color:#AD1457;">${femaleCount}</strong>`;
+            if (longAbsentCount) summaryHtml += ` &nbsp;|&nbsp; <span style="color:#E65100;">⏸ Long Absent: <strong>${longAbsentCount}</strong></span>`;
             if (transferredCount) summaryHtml += ` &nbsp;|&nbsp; <span style="color:#E65100;">🔄 Transferred: <strong>${transferredCount}</strong></span>`;
             if (tcCount)          summaryHtml += ` &nbsp;|&nbsp; <span style="color:#C62828;">📄 TC Issued: <strong>${tcCount}</strong></span>`;
             summaryHtml += `</p>`;
@@ -6909,6 +6935,7 @@
                 <th>Name</th>
                 <th>📱 Parent Mobile</th>
                 <th style="text-align:center;">🎓 Scholarship</th>
+                <th style="text-align:center;">⚥ Gender</th>
                 <th>Actions</th>
             </tr></thead><tbody></tbody>`;
 
@@ -6940,11 +6967,33 @@
                 const safePin  = st.pin.replace(/'/g, "\'");
                 const safeName = (st.name || '').replace(/'/g, "\'");
                 let actionBtns = '';
+                // Gender toggle
+                const gender = st.gender || '';
+                const genderBtn = isActive
+                    ? `<button onclick="toggleGender('${y}','${s}',${i})"
+                            title="Click to change gender"
+                            style="padding:3px 10px;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:13px;
+                                   background:${gender==='M'?'#BBDEFB':gender==='F'?'#FCE4EC':'#f0f0f0'};
+                                   color:${gender==='M'?'#1565C0':gender==='F'?'#AD1457':'#999'};">
+                           ${gender==='M'?'♂ M':gender==='F'?'♀ F':'—'}
+                       </button>`
+                    : `<span style="color:#aaa;font-size:12px;">${gender==='M'?'♂ M':gender==='F'?'♀ F':'—'}</span>`;
+
+                // Long Absent badge (only for active)
+                const longAbsentBadge = (isActive && st.longAbsent)
+                    ? `<span style="display:inline-block;background:#FFF3E0;color:#E65100;border:1px solid #FF9800;border-radius:8px;padding:.1rem .45rem;font-size:.68rem;font-weight:700;margin-left:4px;">⏸ Long Absent</span>` : '';
+
                 if (isActive) {
+                    const laLabel = st.longAbsent ? '▶ Remove Long Absent' : '⏸ Long Absent';
+                    const laColor = st.longAbsent ? '#F57C00' : '#795548';
                     actionBtns = `<button class="btn btn-danger" onclick="deleteStu('${y}','${s}',${i})" style="padding:6px 12px;">Delete</button>
                         <button onclick="admin_st_showInactiveModal('${safePin}','${safeName}','${y}-${s}')"
                                 style="padding:5px 10px;background:#C62828;color:white;border:none;border-radius:6px;font-size:.75rem;cursor:pointer;font-weight:600;margin-left:4px;">
                             ⚠️ TC/Transfer
+                        </button>
+                        <button onclick="toggleLongAbsent('${y}','${s}',${i})"
+                                style="padding:5px 10px;background:${laColor};color:white;border:none;border-radius:6px;font-size:.75rem;cursor:pointer;font-weight:600;margin-left:4px;">
+                            ${laLabel}
                         </button>`;
                 } else {
                     actionBtns = `<button onclick="admin_st_showReactivateModal('${safePin}','${safeName}','${y}','${s}')"
@@ -6965,7 +7014,7 @@
                         <span class="editable" onclick="editName('${y}','${s}',${i},'${st.name}')">${st.name}</span>${adm_getAdmBadge(st)}
                         ${(String(y) === '1' && !st.admissionDate) ? `<span onclick="editAdmissionDate('${y}','${s}',${i})" style="cursor:pointer;font-size:.7rem;color:#2E75B6;margin-left:6px;" title="Set admission date">📅+</span>` : ''}
                         ${(String(y) === '1' && st.admissionDate) ? `<span onclick="editAdmissionDate('${y}','${s}',${i})" style="cursor:pointer;font-size:.65rem;color:#888;margin-left:4px;" title="Edit admission date">✏️</span>` : ''}
-                        ${badge}${inactiveNote}
+                        ${badge}${longAbsentBadge}${inactiveNote}
                     </td>
                     <td><span class="editable" onclick="editParentMobile('${y}','${s}',${i},'${mobile}')" style="color:${mobile ? '#1565c0' : '#aaa'};">${mobile || '+ Add mobile'}</span></td>
                     <td style="text-align:center;">
@@ -6977,6 +7026,7 @@
                             ${isScholar ? '✓ Yes' : '✗ No'}
                         </span>
                     </td>
+                    <td style="text-align:center;">${genderBtn}</td>
                     <td>${actionBtns}</td>
                 `;
             });
@@ -6990,6 +7040,128 @@
             STUDENTS[y][s][idx].scholarship = checked;
             saveStudents(y);
             viewStudents(); // refresh to update counts
+        }
+
+        function toggleGender(y, s, idx) {
+            const cur = STUDENTS[y][s][idx].gender || '';
+            STUDENTS[y][s][idx].gender = cur === 'M' ? 'F' : cur === 'F' ? '' : 'M';
+            saveStudents(y);
+            viewStudents();
+        }
+
+        async function toggleLongAbsent(y, s, idx) {
+            const st = STUDENTS[y][s][idx];
+            if (st.longAbsent) {
+                // Remove flag
+                delete STUDENTS[y][s][idx].longAbsent;
+                delete STUDENTS[y][s][idx].longAbsentSince;
+                await db.collection('students').doc(String(y)).set(STUDENTS[y] || {});
+                viewStudents();
+                return;
+            }
+            // Set flag - ask for start date
+            const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+            const since = prompt(`Mark "${st.name}" as Long Absent from which date?\n(YYYY-MM-DD format)`, todayStr);
+            if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since)) { alert('Invalid date. Please use YYYY-MM-DD format.'); return; }
+
+            STUDENTS[y][s][idx].longAbsent = true;
+            STUDENTS[y][s][idx].longAbsentSince = since;
+            await db.collection('students').doc(String(y)).set(STUDENTS[y] || {});
+
+            // Show progress indicator
+            const infoEl = document.getElementById('studentList');
+            const oldHtml = infoEl.innerHTML;
+            infoEl.innerHTML = `<div style="padding:20px;text-align:center;color:#E65100;">
+                <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+                <strong>Marking past attendance as Absent for ${st.name}...</strong>
+                <p style="color:#888;font-size:13px;">Updating records from ${since} to today. Please wait.</p>
+            </div>`;
+
+            try {
+                const updated = await retroMarkLongAbsent(y, s, st.pin, since);
+                infoEl.innerHTML = `<div style="padding:12px 16px;background:#FFF3E0;border-left:4px solid #FF9800;border-radius:8px;margin-bottom:12px;">
+                    ✅ <strong>${st.name}</strong> marked as Long Absent from <strong>${since}</strong>.
+                    ${updated > 0 ? `<br>📋 <strong>${updated}</strong> past attendance date(s) updated with auto-Absent.` : '<br>No past attendance records found to update.'}
+                </div>`;
+                setTimeout(() => viewStudents(), 2500);
+            } catch(e) {
+                console.error('retroMarkLongAbsent error:', e);
+                infoEl.innerHTML = oldHtml;
+                viewStudents();
+                alert('⚠️ Marked Long Absent but retroactive update may have partially failed. Check attendance.');
+            }
+        }
+
+        // Retroactively mark 'A' for a long-absent student for all class periods
+        // submitted from `since` date onwards. Returns count of dates updated.
+        async function retroMarkLongAbsent(y, s, pin, since) {
+            const today = new Date().toLocaleDateString('en-CA');
+            const classStu = (STUDENTS[y]?.[s] || []).filter(st => st.pin !== pin);
+            if (!classStu.length) return 0;
+
+            // Fetch all attendance documents in date range
+            let docsToProcess = [];
+            try {
+                const snap = await db.collection('attendance')
+                    .where(firebase.firestore.FieldPath.documentId(), '>=', since)
+                    .where(firebase.firestore.FieldPath.documentId(), '<=', today)
+                    .get();
+                snap.forEach(doc => docsToProcess.push({ id: doc.id, data: doc.data() }));
+            } catch(e) {
+                console.warn('Range query failed, using cache:', e);
+                // Fallback: use cache
+                Object.keys(ATTENDANCE_CACHE || {}).forEach(key => {
+                    const date = key.replace('att_', '');
+                    if (date.length === 10 && date >= since && date <= today)
+                        docsToProcess.push({ id: date, data: ATTENDANCE_CACHE[key] });
+                });
+            }
+
+            let updatedCount = 0;
+            let batch = db.batch();
+            let batchCount = 0;
+
+            for (const { id: dateStr, data: attData } of docsToProcess) {
+                // Skip Sundays
+                if (new Date(dateStr).getDay() === 0) continue;
+
+                // Find all periods posted for this class on this date (from other students)
+                const periodsPosted = new Set();
+                classStu.forEach(st => {
+                    if (attData[st.pin]) Object.keys(attData[st.pin]).forEach(p => periodsPosted.add(p));
+                });
+                if (!periodsPosted.size) continue;
+
+                // Only write periods NOT already recorded for this student
+                const existingAtt = attData[pin] || {};
+                const toWrite = {};
+                periodsPosted.forEach(p => {
+                    if (!existingAtt[p]) {
+                        toWrite[`${pin}.${p}`] = { status: 'A', faculty: 'system', subject: '-', longAbsent: true };
+                    }
+                });
+                if (!Object.keys(toWrite).length) continue;
+
+                // Update local cache
+                if (!attData[pin]) attData[pin] = {};
+                Object.entries(toWrite).forEach(([k, v]) => {
+                    const p = k.split('.')[1];
+                    attData[pin][p] = v;
+                });
+                if (ATTENDANCE_CACHE) ATTENDANCE_CACHE['att_' + dateStr] = attData;
+
+                batch.update(db.collection('attendance').doc(dateStr), toWrite);
+                batchCount++;
+                updatedCount++;
+
+                if (batchCount >= 490) {
+                    await batch.commit();
+                    batch = db.batch();
+                    batchCount = 0;
+                }
+            }
+            if (batchCount > 0) await batch.commit();
+            return updatedCount;
         }
 
         function editPIN(y, s, idx, oldPin) {
@@ -7395,21 +7567,20 @@
 
             const allStuList = STUDENTS[y]?.[s] || [];
             // Date-aware filter: show inactive (TC/Tr) students only for dates BEFORE their leave date.
-            // If faculty selects a past date when the student was still in college — they appear.
+            // Long Absent students are excluded from the live attendance form (auto-marked 'A' on submit).
             const stu = allStuList.filter(st => {
                 const status = st.status;
                 if (!status || status === 'active') {
-                    // Year 1 admission date filter
+                    if (st.longAbsent === true) return false; // Long Absent: not shown in attendance
                     if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
                     return true;
                 }
                 const isInactive = status === 'transferred' || status === 'tc_issued';
                 if (isInactive && st.inactiveDate) {
-                    // Show only if the selected date is BEFORE their leave date
                     if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
                     return date < st.inactiveDate;
                 }
-                return false; // inactive without a date — hide
+                return false;
             });
 
             // Show info if Year 1 students excluded due to admission date
@@ -7565,14 +7736,17 @@
             const y = document.getElementById('year').value;
             const s = (y == 1) ? '1' : document.getElementById('sem').value;
             const date = document.getElementById('date').value;
-            // Date-aware filter: mirrors the filter in loadStudents — show inactive only if date < inactiveDate
+            // Date-aware filter: mirrors loadStudents — long-absent excluded (auto-marked below)
             const stu = (STUDENTS[y]?.[s] || []).filter(st => {
-                // Year 1 admission date filter
                 if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
-                if (!st.status || st.status === 'active') return true;
+                if (!st.status || st.status === 'active') return st.longAbsent !== true;
                 const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
                 return isInactive && st.inactiveDate && date < st.inactiveDate;
             });
+            // Long-absent students (active but flagged) — will auto-receive 'A'
+            const longAbsentStu = (STUDENTS[y]?.[s] || []).filter(st =>
+                (!st.status || st.status === 'active') && st.longAbsent === true
+            );
             const tbody = document.getElementById('tbody');
             const subCode = tbody.dataset.subCode;
             const periods = tbody.dataset.periods;
@@ -7640,6 +7814,22 @@
                         lockRecord.auditedByName = currentUserName || currentUser;
                     }
                     PERIOD_FACULTY[facultyKey][pKey] = lockRecord;
+                });
+            });
+
+            // ── Auto-mark 'A' for long-absent students (not shown in form) ──
+            longAbsentStu.forEach(st => {
+                if (!todayAttendance[st.pin]) todayAttendance[st.pin] = {};
+                periodList.forEach(period => {
+                    const pKey = String(period);
+                    if (!todayAttendance[st.pin][pKey]) { // don't overwrite existing record
+                        todayAttendance[st.pin][pKey] = {
+                            status: 'A',
+                            faculty: effFacName,
+                            subject: subCode,
+                            longAbsent: true
+                        };
+                    }
                 });
             });
 
@@ -10872,8 +11062,9 @@
             }
             // Date-aware filter: same rule as mark attendance
             // Inactive (TC/Tr) students shown only for dates BEFORE their inactiveDate
+            // Long-absent students excluded (they get auto-A, not shown in edit form)
             const students = allStuEdit.filter(st => {
-                if (!st.status || st.status === 'active') return true;
+                if (!st.status || st.status === 'active') return st.longAbsent !== true;
                 const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
                 return isInactive && st.inactiveDate && date < st.inactiveDate;
             });
@@ -11009,7 +11200,7 @@
 
             // Date-aware filter: same as loadEditStudentsShared — only show/save eligible students
             const students = (STUDENTS[y]?.[s] || []).filter(st => {
-                if (!st.status || st.status === 'active') return true;
+                if (!st.status || st.status === 'active') return st.longAbsent !== true;
                 const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
                 return isInactive && st.inactiveDate && date < st.inactiveDate;
             });
@@ -11836,6 +12027,125 @@
             if (!dateStr) return '';
             const [yr, mo, dy] = dateStr.split('-');
             return `${dy}/${mo}/${yr}`;
+        }
+
+        // -- STUDENT STATISTICS ----------------------------------------------
+        function loadStatistics() {
+            const el = document.getElementById('statsContent');
+            if (!el) return;
+
+            // Collect per-class stats (active only — excludes TC/Tr)
+            const classes = [
+                { label: 'Year 1', y: '1', s: '1' },
+                { label: 'Sem 3',  y: '2', s: '3' },
+                { label: 'Sem 4',  y: '2', s: '4' },
+                { label: 'Sem 5',  y: '3', s: '5' },
+                { label: 'Sem 6',  y: '3', s: '6' },
+            ];
+
+            let grandTotal = 0, grandMale = 0, grandFemale = 0, grandLongAbsent = 0, grandUnset = 0;
+            const classData = [];
+
+            classes.forEach(cls => {
+                const all = STUDENTS[cls.y]?.[cls.s] || [];
+                const active = all.filter(st => !st.status || st.status === 'active');
+                if (!active.length) return;
+
+                const male       = active.filter(st => st.gender === 'M').length;
+                const female     = active.filter(st => st.gender === 'F').length;
+                const unset      = active.filter(st => !st.gender).length;
+                const longAbsent = active.filter(st => st.longAbsent === true).length;
+                const total      = active.length;
+
+                grandTotal      += total;
+                grandMale       += male;
+                grandFemale     += female;
+                grandLongAbsent += longAbsent;
+                grandUnset      += unset;
+
+                classData.push({ ...cls, total, male, female, unset, longAbsent });
+            });
+
+            if (!classData.length) {
+                el.innerHTML = '<p style="color:#888;padding:20px;">No student data found.</p>';
+                return;
+            }
+
+            // Bar helper: returns a styled % bar HTML
+            function bar(value, total, color) {
+                const pct = total ? Math.round((value / total) * 100) : 0;
+                return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
+                    <div style="flex:1;background:#f0f0f0;border-radius:20px;height:10px;overflow:hidden;">
+                        <div style="width:${pct}%;background:${color};height:100%;border-radius:20px;transition:width .4s;"></div>
+                    </div>
+                    <span style="min-width:40px;font-size:12px;color:#555;">${pct}%</span>
+                </div>`;
+            }
+
+            // Per-class cards in a responsive grid
+            let cardsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:24px;">';
+
+            classData.forEach(cls => {
+                const mPct = cls.total ? Math.round(cls.male   / cls.total * 100) : 0;
+                const fPct = cls.total ? Math.round(cls.female / cls.total * 100) : 0;
+                cardsHtml += `
+                <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(42,82,152,0.09);border:1px solid #e8eef8;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <h3 style="margin:0;font-size:16px;color:#1e3c72;">${cls.label}</h3>
+                        <span style="background:#E8EAF6;color:#283593;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;">${cls.total} Students</span>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-bottom:14px;">
+                        <div style="flex:1;background:#E3F2FD;border-radius:10px;padding:10px 12px;text-align:center;">
+                            <div style="font-size:22px;font-weight:800;color:#1565C0;">${cls.male}</div>
+                            <div style="font-size:11px;color:#1976D2;font-weight:600;">♂ Male (${mPct}%)</div>
+                        </div>
+                        <div style="flex:1;background:#FCE4EC;border-radius:10px;padding:10px 12px;text-align:center;">
+                            <div style="font-size:22px;font-weight:800;color:#AD1457;">${cls.female}</div>
+                            <div style="font-size:11px;color:#C2185B;font-weight:600;">♀ Female (${fPct}%)</div>
+                        </div>
+                    </div>
+                    ${bar(cls.male,   cls.total, 'linear-gradient(90deg,#1565C0,#42A5F5)')}
+                    ${bar(cls.female, cls.total, 'linear-gradient(90deg,#AD1457,#F06292)')}
+                    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0;display:flex;gap:8px;flex-wrap:wrap;">
+                        ${cls.longAbsent ? `<span style="background:#FFF3E0;color:#E65100;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:600;">⏸ Long Absent: ${cls.longAbsent}</span>` : ''}
+                        ${cls.unset      ? `<span style="background:#F5F5F5;color:#757575;border-radius:12px;padding:2px 10px;font-size:11px;">Gender not set: ${cls.unset}</span>` : ''}
+                    </div>
+                </div>`;
+            });
+            cardsHtml += '</div>';
+
+            // Grand total card
+            const gMPct = grandTotal ? Math.round(grandMale   / grandTotal * 100) : 0;
+            const gFPct = grandTotal ? Math.round(grandFemale / grandTotal * 100) : 0;
+            const grandCard = `
+            <div style="background:linear-gradient(135deg,#1a237e,#3949ab);border-radius:16px;padding:24px 28px;color:#fff;box-shadow:0 4px 24px rgba(26,35,126,0.25);">
+                <h3 style="margin:0 0 16px;font-size:18px;color:#fff;opacity:.9;">🏆 Grand Total — All Classes</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:18px;">
+                    <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:14px 16px;text-align:center;">
+                        <div style="font-size:32px;font-weight:900;">${grandTotal}</div>
+                        <div style="font-size:12px;opacity:.85;margin-top:2px;">Total Students</div>
+                    </div>
+                    <div style="background:rgba(66,165,245,0.3);border-radius:12px;padding:14px 16px;text-align:center;">
+                        <div style="font-size:32px;font-weight:900;">${grandMale}</div>
+                        <div style="font-size:12px;opacity:.85;margin-top:2px;">♂ Male (${gMPct}%)</div>
+                    </div>
+                    <div style="background:rgba(240,98,146,0.3);border-radius:12px;padding:14px 16px;text-align:center;">
+                        <div style="font-size:32px;font-weight:900;">${grandFemale}</div>
+                        <div style="font-size:12px;opacity:.85;margin-top:2px;">♀ Female (${gFPct}%)</div>
+                    </div>
+                    ${grandLongAbsent ? `<div style="background:rgba(255,152,0,0.3);border-radius:12px;padding:14px 16px;text-align:center;">
+                        <div style="font-size:32px;font-weight:900;">${grandLongAbsent}</div>
+                        <div style="font-size:12px;opacity:.85;margin-top:2px;">⏸ Long Absent</div>
+                    </div>` : ''}
+                </div>
+                <div style="margin-bottom:6px;font-size:12px;opacity:.7;">Male distribution</div>
+                ${bar(grandMale, grandTotal, 'linear-gradient(90deg,#42A5F5,#90CAF9)')}
+                <div style="margin-top:8px;margin-bottom:6px;font-size:12px;opacity:.7;">Female distribution</div>
+                ${bar(grandFemale, grandTotal, 'linear-gradient(90deg,#F06292,#F48FB1)')}
+                ${grandUnset ? `<p style="margin:12px 0 0;font-size:12px;opacity:.6;">⚠️ ${grandUnset} student(s) have gender not yet set. Go to Students tab to fill in.</p>` : ''}
+            </div>`;
+
+            el.innerHTML = cardsHtml + grandCard;
         }
 
         // -- SHOW MARK INACTIVE MODAL -------------------------------------
