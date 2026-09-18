@@ -1912,6 +1912,9 @@
                     // Skip today if we are still within college hours (before 4:30 PM)
                     if (date === todayStrMR && !afterCutoffMR) continue;
 
+                    // Skip dates before admission date for Year 1
+                    if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate && date < currentStudent.admissionDate) continue;
+
                     // Skip Sundays, 2nd Saturdays and holidays — they are not working days
                     if (isStudentSunday(date) || isStudentSecondSaturday(date) || holidaySet.has(date)) continue;
 
@@ -2175,6 +2178,13 @@
                 startStr = `${academicStartYear}-07-01`;
             }
 
+            // Year 1 phase-wise admission date check
+            if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate) {
+                if (currentStudent.admissionDate > startStr) {
+                    startStr = currentStudent.admissionDate;
+                }
+            }
+
             let totalWorkingDays = 0;
             let totalPresentDays = 0;
 
@@ -2209,6 +2219,25 @@
             document.getElementById('cumulativePercentage').textContent = percentage + '%';
             document.getElementById('cumulativeStats').textContent =
                 `${totalPresentDays} Present / ${totalWorkingDays} Working Days`;
+
+            // Display joining date info banner if applicable
+            let bannerEl = document.getElementById('admissionBanner');
+            if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate) {
+                if (!bannerEl) {
+                    bannerEl = document.createElement('div');
+                    bannerEl.id = 'admissionBanner';
+                    bannerEl.style.fontSize = '12px';
+                    bannerEl.style.marginTop = '10px';
+                    bannerEl.style.color = '#fff';
+                    bannerEl.style.opacity = '0.9';
+                    document.getElementById('cumulativeStats').parentNode.appendChild(bannerEl);
+                }
+                const [y, m, d] = currentStudent.admissionDate.split('-');
+                bannerEl.textContent = `Your attendance is calculated from your joining date: ${d}/${m}/${y}`;
+                bannerEl.style.display = 'block';
+            } else if (bannerEl) {
+                bannerEl.style.display = 'none';
+            }
         }
 
         // Allow Enter key to login

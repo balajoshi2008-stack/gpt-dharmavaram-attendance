@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html><head><title>Repair v3</title></head><body>
+<h2>Attendance Data Repair v3</h2>
+<p>Sign in as admin first, then run repair.</p>
+<div id="authBox">
+<input id="user" placeholder="Admin username" style="padding:8px;margin:4px;">
+<input id="pass" type="password" placeholder="Password" style="padding:8px;margin:4px;">
+<button onclick="doLogin()">Sign In</button>
+</div>
+<div id="repairBox" style="display:none">
+<p style="color:green" id="authMsg"></p>
+<button id="btn" onclick="runRepair()">Run Repair</button>
+</div>
+<pre id="log" style="background:#f0f0f0;padding:10px;max-height:600px;overflow:auto;font-size:11px;"></pre>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyC9nMFnZGdnOm5zXgpSMKiTFpzEBTuPfRM",authDomain:"gpt-dharmavaram-attendance.firebaseapp.com",projectId:"gpt-dharmavaram-attendance"});
+const db=firebase.firestore();
+const logEl=document.getElementById('log');
+function log(m){logEl.textContent+=m+'\n';logEl.scrollTop=logEl.scrollHeight;}
+
+async function doLogin(){
+    const u=document.getElementById('user').value.trim();
+    const p=document.getElementById('pass').value;
+    if(!u||!p){alert('Enter username and password');return;}
+    try{
+        await firebase.auth().signInWithEmailAndPassword(u+'@dharmavaram.com',p);
+        document.getElementById('authBox').style.display='none';
+        document.getElementById('repairBox').style.display='block';
+        document.getElementById('authMsg').textContent='Signed in as: '+u;
+    }catch(e){alert('Login failed: '+e.message);}
+}
+
+function subjectToYearSem(code) {
+    if (!code) return null;
+    const ACT = {'CM-100':'1_1','CM-300':'2_3','CM-400':'2_4','CM-500':'3_5'};
+    if (ACT[code]) return ACT[code];
+    if (code === 'CM-509') return '3_5';
+    const num = parseInt(code.replace('CM-',''));
+    if (isNaN(num)) return null;
+    const h = Math.floor(num/100);
+    if (h===1) return '1_1';
+    if (h===3) return '2_3';
+    if (h===4) return '2_4';
+    if (h===5) return '3_5';
+    return null;
+}
+
+async function batchUpdate(docRef, updates) {
+    const keys = Object.keys(updates);
+    for (let i = 0; i < keys.length; i += 200) {
+        const chunk = {};
+        keys.slice(i, i+200).forEach(k => { chunk[k] = updates[k]; });
+        await docRef.update(chunk);
+    }
+}
+
+async function runRepair(){
+    document.getElementById('btn').disabled=true;
+    log('Loading data...');
+    const pf = await db.collection('settings').doc('periodFaculty').get();
+    const pfData = pf.exists ? pf.data() : {};
+    const sm = await db.collection('settings').doc('subjectMapping').get();
+    const smData = sm.exists ? sm.data() : {};
+    const usersSnap = await db.collection('users').get();
+    const users = {};
+    usersSnap.forEach(d => { users[d.id] = d.data(); });
+
+    const affected = {};
+    Object.keys(pfData).forEach(k => {
+        const e = pfData[k];
+        if (!e || typeof e !== 'object') return;
+        const dt = k.split('_')[0];
+        Object.keys(e).forEach(p => {
+            const pe = e[p];
+            if (pe && (pe.ownershipStatus === 'ORPHAN' || pe.ownershipStatus === 'TRANSFERRED')) {
+                if (!affected[dt]) affected[dt] = new Set();
+                affected[dt].add(p);
+            }
+        });
+    });
+    log('Affected dates: ' + Object.keys(affected).length + '\n');
+
+    let totalFixed = 0;
+    for (const date of Object.keys(affected).sort()) {
+        const ap = affected[date];
+        log('--- ' + date + ' (P' + [...ap].join(',P') + ') ---');
+        try {
+            const attDoc = await db.collection('attendance').doc(date).get();
+            if (!attDoc.exists) { log('  No doc'); continue; }
+            const ad = attDoc.data();
+            const updates = {};
+
+            Object.keys(ad).forEach(pin => {
+                const pinData = ad[pin];
+                if (!pinData || typeof pinData !== 'object') return;
+                ap.forEach(pStr => {
+                    const pe = pinData[pStr];
+                    if (!pe || typeof pe !== 'object' || !pe.subject) return;
+                    const ys = subjectToYearSem(pe.subject);
+                    if (!ys) return;
+                    const pfKey = date + '_' + ys;
+                    const pfEntry = pfData[pfKey] && pfData[pfKey][pStr];
+                    let correctFac = '';
+                    if (pfEntry) {
+                        correctFac = pfEntry.ownershipStatus === 'ORPHAN' ? (pfEntry.originalFaculty||'') : (pfEntry.faculty||'');
+                    }
+                    if (!correctFac && smData[pe.subject]) {
+                        const fid = smData[pe.subject];
+                        correctFac = users[fid] ? users[fid].name : '';
+                    }
+                    if (correctFac && pe.faculty !== correctFac) {
+                        updates[pin + '.' + pStr + '.faculty'] = correctFac;
+                    }
+                });
+            });
+
+            const cnt = Object.keys(updates).length;
+            if (cnt > 0) {
+                const summary = {};
+                Object.entries(updates).forEach(([k, v]) => {
+                    const p = k.split('.')[1];
+                    summary['P'+p+' -> '+v] = (summary['P'+p+' -> '+v]||0)+1;
+                });
+                Object.entries(summary).forEach(([k, c]) => log('  ' + k + ' (' + c + ' students)'));
+                await batchUpdate(db.collection('attendance').doc(date), updates);
+                totalFixed += cnt;
+                log('  FIXED ' + cnt + ' fields');
+            } else {
+                log('  OK');
+            }
+        } catch(err) { log('  ERROR: ' + err.message); }
+    }
+    log('\n=== DONE. Total fixed: ' + totalFixed + ' ===');
+    log('Hard refresh main app (Ctrl+F5) to see corrected logbooks.');
+}
+</script></body></html>

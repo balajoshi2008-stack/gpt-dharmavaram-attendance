@@ -2,6 +2,9 @@
 .firebase/
 firebase-debug.log
 
+# Node
+node_modules/
+
 # OS
 Thumbs.db
 .DS_Store
