@@ -12051,11 +12051,12 @@
                 const active = all.filter(st => !st.status || st.status === 'active');
                 if (!active.length) return;
 
-                const male       = active.filter(st => st.gender === 'M').length;
-                const female     = active.filter(st => st.gender === 'F').length;
-                const unset      = active.filter(st => !st.gender).length;
-                const longAbsent = active.filter(st => st.longAbsent === true).length;
-                const total      = active.length;
+                const male             = active.filter(st => st.gender === 'M').length;
+                const female           = active.filter(st => st.gender === 'F').length;
+                const unset            = active.filter(st => !st.gender).length;
+                const longAbsentList   = active.filter(st => st.longAbsent === true);
+                const longAbsent       = longAbsentList.length;
+                const total            = active.length;
 
                 grandTotal      += total;
                 grandMale       += male;
@@ -12063,7 +12064,7 @@
                 grandLongAbsent += longAbsent;
                 grandUnset      += unset;
 
-                classData.push({ ...cls, total, male, female, unset, longAbsent });
+                classData.push({ ...cls, total, male, female, unset, longAbsent, longAbsentList });
             });
 
             if (!classData.length) {
@@ -12071,7 +12072,7 @@
                 return;
             }
 
-            // Bar helper: returns a styled % bar HTML
+            // Bar helper
             function bar(value, total, color) {
                 const pct = total ? Math.round((value / total) * 100) : 0;
                 return `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
@@ -12082,12 +12083,41 @@
                 </div>`;
             }
 
-            // Per-class cards in a responsive grid
-            let cardsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:24px;">';
+            // Format date helper DD/MM/YYYY
+            function fmtDate(d) {
+                if (!d) return '—';
+                const [yy, mm, dd] = d.split('-');
+                return `${dd}/${mm}/${yy}`;
+            }
+
+            // Per-class cards
+            let cardsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px;">';
 
             classData.forEach(cls => {
                 const mPct = cls.total ? Math.round(cls.male   / cls.total * 100) : 0;
                 const fPct = cls.total ? Math.round(cls.female / cls.total * 100) : 0;
+
+                // Long absent student rows
+                let laRows = '';
+                if (cls.longAbsentList && cls.longAbsentList.length > 0) {
+                    laRows = `<div style="margin-top:10px;padding:10px;background:#FFF8E1;border-radius:8px;border-left:3px solid #FF9800;">
+                        <div style="font-size:11px;font-weight:700;color:#E65100;margin-bottom:6px;">⏸ Long Absent Students (${cls.longAbsent})</div>
+                        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                            <tr style="color:#888;">
+                                <th style="text-align:left;padding:2px 4px;">PIN</th>
+                                <th style="text-align:left;padding:2px 4px;">Name</th>
+                                <th style="text-align:left;padding:2px 4px;">Since</th>
+                            </tr>`;
+                    cls.longAbsentList.forEach(st => {
+                        laRows += `<tr style="border-top:1px solid #FFE082;">
+                            <td style="padding:3px 4px;color:#1565C0;font-weight:600;">${st.pin}</td>
+                            <td style="padding:3px 4px;color:#333;">${st.name}</td>
+                            <td style="padding:3px 4px;color:#E65100;">${fmtDate(st.longAbsentSince)}</td>
+                        </tr>`;
+                    });
+                    laRows += '</table></div>';
+                }
+
                 cardsHtml += `
                 <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(42,82,152,0.09);border:1px solid #e8eef8;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -12106,19 +12136,15 @@
                     </div>
                     ${bar(cls.male,   cls.total, 'linear-gradient(90deg,#1565C0,#42A5F5)')}
                     ${bar(cls.female, cls.total, 'linear-gradient(90deg,#AD1457,#F06292)')}
-                    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0;display:flex;gap:8px;flex-wrap:wrap;">
-                        ${cls.longAbsent ? `<span style="background:#FFF3E0;color:#E65100;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:600;">⏸ Long Absent: ${cls.longAbsent}</span>` : ''}
-                        ${cls.unset      ? `<span style="background:#F5F5F5;color:#757575;border-radius:12px;padding:2px 10px;font-size:11px;">Gender not set: ${cls.unset}</span>` : ''}
-                    </div>
+                    ${laRows}
+                    ${cls.unset ? `<div style="margin-top:8px;font-size:11px;color:#999;">⚠️ Gender not set: ${cls.unset}</div>` : ''}
                 </div>`;
             });
             cardsHtml += '</div>';
 
             // Grand total card
-            const gMPct = grandTotal ? Math.round(grandMale   / grandTotal * 100) : 0;
-            const gFPct = grandTotal ? Math.round(grandFemale / grandTotal * 100) : 0;
             const grandCard = `
-            <div style="background:linear-gradient(135deg,#1a237e,#3949ab);border-radius:16px;padding:24px 28px;color:#fff;box-shadow:0 4px 24px rgba(26,35,126,0.25);">
+            <div style="background:linear-gradient(135deg,#1a237e,#3949ab);border-radius:16px;padding:24px 28px;color:#fff;box-shadow:0 4px 24px rgba(26,35,126,0.25);margin-bottom:20px;">
                 <h3 style="margin:0 0 16px;font-size:18px;color:#fff;opacity:.9;">🏆 Grand Total — All Classes</h3>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:18px;">
                     <div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:14px 16px;text-align:center;">
@@ -12127,25 +12153,155 @@
                     </div>
                     <div style="background:rgba(66,165,245,0.3);border-radius:12px;padding:14px 16px;text-align:center;">
                         <div style="font-size:32px;font-weight:900;">${grandMale}</div>
-                        <div style="font-size:12px;opacity:.85;margin-top:2px;">♂ Male (${gMPct}%)</div>
+                        <div style="font-size:12px;opacity:.85;margin-top:2px;">♂ Male</div>
                     </div>
                     <div style="background:rgba(240,98,146,0.3);border-radius:12px;padding:14px 16px;text-align:center;">
                         <div style="font-size:32px;font-weight:900;">${grandFemale}</div>
-                        <div style="font-size:12px;opacity:.85;margin-top:2px;">♀ Female (${gFPct}%)</div>
+                        <div style="font-size:12px;opacity:.85;margin-top:2px;">♀ Female</div>
                     </div>
                     ${grandLongAbsent ? `<div style="background:rgba(255,152,0,0.3);border-radius:12px;padding:14px 16px;text-align:center;">
                         <div style="font-size:32px;font-weight:900;">${grandLongAbsent}</div>
                         <div style="font-size:12px;opacity:.85;margin-top:2px;">⏸ Long Absent</div>
                     </div>` : ''}
                 </div>
-                <div style="margin-bottom:6px;font-size:12px;opacity:.7;">Male distribution</div>
-                ${bar(grandMale, grandTotal, 'linear-gradient(90deg,#42A5F5,#90CAF9)')}
-                <div style="margin-top:8px;margin-bottom:6px;font-size:12px;opacity:.7;">Female distribution</div>
-                ${bar(grandFemale, grandTotal, 'linear-gradient(90deg,#F06292,#F48FB1)')}
-                ${grandUnset ? `<p style="margin:12px 0 0;font-size:12px;opacity:.6;">⚠️ ${grandUnset} student(s) have gender not yet set. Go to Students tab to fill in.</p>` : ''}
+                ${grandUnset ? `<p style="margin:4px 0 0;font-size:12px;opacity:.6;">⚠️ ${grandUnset} student(s) have gender not yet set. Go to Students tab to fill in.</p>` : ''}
             </div>`;
 
-            el.innerHTML = cardsHtml + grandCard;
+            // PDF download button
+            const pdfBtn = `<div style="text-align:right;margin-bottom:16px;">
+                <button onclick="downloadStatsPDF()" style="padding:9px 22px;background:linear-gradient(135deg,#d32f2f,#b71c1c);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;box-shadow:0 3px 10px rgba(211,47,47,0.3);">
+                    📄 Download PDF Report
+                </button>
+            </div>`;
+
+            el.innerHTML = pdfBtn + cardsHtml + grandCard;
+
+            // Store classData globally for PDF use
+            el._classData = classData;
+            el._grandTotal = grandTotal; el._grandMale = grandMale;
+            el._grandFemale = grandFemale; el._grandLongAbsent = grandLongAbsent;
+        }
+
+        function downloadStatsPDF() {
+            const el = document.getElementById('statsContent');
+            if (!el || !el._classData) { alert('Please open Statistics tab first.'); return; }
+
+            const classData      = el._classData;
+            const grandTotal     = el._grandTotal;
+            const grandMale      = el._grandMale;
+            const grandFemale    = el._grandFemale;
+            const grandLongAbsent = el._grandLongAbsent;
+
+            const today = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+            // Build long-absent rows across all classes
+            let allLongAbsent = [];
+            classData.forEach(cls => {
+                if (cls.longAbsentList) cls.longAbsentList.forEach(st => {
+                    allLongAbsent.push({ ...st, classLabel: cls.label });
+                });
+            });
+
+            function fmtDate(d) {
+                if (!d) return '—';
+                const [yy, mm, dd] = d.split('-');
+                return `${dd}/${mm}/${yy}`;
+            }
+
+            // Main stats table rows
+            let tableRows = '';
+            classData.forEach((cls, idx) => {
+                tableRows += `<tr>
+                    <td>${idx + 1}</td>
+                    <td>${cls.label}</td>
+                    <td>${cls.male}</td>
+                    <td>${cls.female}</td>
+                    <td><strong>${cls.total}</strong></td>
+                </tr>`;
+            });
+
+            // Grand total row
+            tableRows += `<tr style="background:#f0f4ff;font-weight:700;border-top:2px solid #1a237e;">
+                <td colspan="2" style="text-align:center;">Grand Total</td>
+                <td>${grandMale}</td>
+                <td>${grandFemale}</td>
+                <td>${grandTotal}</td>
+            </tr>`;
+
+            // Long absent table
+            let laSection = '';
+            if (allLongAbsent.length > 0) {
+                let laRows = allLongAbsent.map((st, i) => `<tr>
+                    <td>${i + 1}</td>
+                    <td>${st.pin}</td>
+                    <td>${st.name}</td>
+                    <td>${st.classLabel}</td>
+                    <td>${fmtDate(st.longAbsentSince)}</td>
+                </tr>`).join('');
+
+                laSection = `
+                <h3 style="margin-top:32px;color:#E65100;border-bottom:2px solid #FF9800;padding-bottom:6px;">
+                    ⏸ Long Absent Students (${allLongAbsent.length})
+                </h3>
+                <table>
+                    <thead><tr>
+                        <th>Sl.No</th><th>PIN</th><th>Name</th><th>Class</th><th>Long Absent Since</th>
+                    </tr></thead>
+                    <tbody>${laRows}</tbody>
+                </table>`;
+            }
+
+            const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>Student Statistics Report</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 30px; color: #222; font-size: 13px; }
+  .header { text-align: center; margin-bottom: 24px; border-bottom: 3px double #1a237e; padding-bottom: 14px; }
+  .header h1 { margin: 0 0 4px; font-size: 20px; color: #1a237e; }
+  .header h2 { margin: 0 0 4px; font-size: 15px; color: #283593; font-weight: 600; }
+  .header p  { margin: 2px 0; font-size: 12px; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th { background: #1a237e; color: #fff; padding: 8px 10px; text-align: center; font-size: 13px; }
+  td { padding: 7px 10px; border: 1px solid #ccc; text-align: center; }
+  td:nth-child(2) { text-align: left; }
+  tr:nth-child(even) { background: #f5f7ff; }
+  .footer { margin-top: 28px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 10px; }
+  @media print { body { margin: 15px; } button { display:none; } }
+</style>
+</head><body>
+<div class="header">
+  <h1>Government Polytechnic College, Dharmavaram</h1>
+  <h2>Department of Computer Engineering</h2>
+  <p>Student Statistics Report</p>
+  <p>Date: ${today}</p>
+</div>
+
+<h3 style="color:#1a237e;margin-bottom:6px;border-bottom:2px solid #1a237e;padding-bottom:4px;">
+    Gender-wise Student Strength
+</h3>
+<table>
+  <thead>
+    <tr><th>Sl.No</th><th style="text-align:left;">Class</th><th>Male</th><th>Female</th><th>Total</th></tr>
+  </thead>
+  <tbody>${tableRows}</tbody>
+</table>
+
+${laSection}
+
+<div class="footer">
+  GPT Dharmavaram — Computer Engineering Attendance System &nbsp;|&nbsp; Generated on ${today}
+</div>
+
+<div style="text-align:center;margin-top:20px;">
+  <button onclick="window.print()" style="padding:10px 30px;background:#1a237e;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;">🖨️ Print / Save as PDF</button>
+</div>
+</body></html>`;
+
+            const win = window.open('', '_blank', 'width=900,height=700');
+            win.document.write(html);
+            win.document.close();
+            win.focus();
+            setTimeout(() => win.print(), 600);
         }
 
         // -- SHOW MARK INACTIVE MODAL -------------------------------------
