@@ -2946,6 +2946,8 @@
                                     <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Name</th>
                                     <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Marks (0-40)
                                     </th>
+                                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Assign/Activity<br><small style="font-weight:400;opacity:0.85;">(Max 10)</small></th>
+                                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Final Marks<br><small style="font-weight:400;opacity:0.85;">(20M)</small></th>
                                 </tr>
                             </thead>
                             <tbody id="unitMarkTableBody"></tbody>
@@ -7475,7 +7477,10 @@
                             if (fetched.exists) { attDoc = fetched.data(); ATTENDANCE_CACHE['att_' + date] = attDoc; }
                         } catch(e) { console.warn('[loadStudents] Firestore fetch failed:', e); }
                     }
-                    const firstStudent = (STUDENTS[y]?.[s] || [])[0];
+                    const firstStudent = (STUDENTS[y]?.[s] || []).find(st => {
+                        if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
+                        return true;
+                    }) || (STUDENTS[y]?.[s] || [])[0];
                     const attExists = firstStudent && alreadyPosted.some(p => attDoc?.[firstStudent.pin]?.[String(p)]);
 
                     const postedSubjects = [...new Set(alreadyPosted.map(p => postedData[p]?.subject || ''))].join(', ');
@@ -7548,7 +7553,10 @@
                             if (fetched2.exists) { attDoc2 = fetched2.data(); ATTENDANCE_CACHE['att_' + date] = attDoc2; }
                         } catch(e) { console.warn('[loadStudents other] Firestore fetch failed:', e); }
                     }
-                    const firstStu2 = (STUDENTS[y]?.[s] || [])[0];
+                    const firstStu2 = (STUDENTS[y]?.[s] || []).find(st => {
+                        if (y === '1' && !adm_hasStudentJoined(st, date, CALENDAR_DATES['1-1']?.start || '')) return false;
+                        return true;
+                    }) || (STUDENTS[y]?.[s] || [])[0];
                     const attExists2 = firstStu2 && alreadyPosted2.some(p => attDoc2?.[firstStu2.pin]?.[String(p)]);
                     const postedSubjects2 = [...new Set(alreadyPosted2.map(p => postedData2[p]?.subject || ''))].join(', ');
                     const postedBy2 = [...new Set(alreadyPosted2.map(p => postedData2[p]?.faculty || ''))].join(', ');
@@ -8706,6 +8714,18 @@
             // Total working days across all months
             const totalWorkingDays = validMonths.reduce((sum, m) => sum + m.workingDays, 0);
 
+            // ── Determine last admission month (Year 1 only) ──
+            // Used to decide which month columns show per-student working days in ()
+            let lastAdmMonth = ''; // 'YYYY-MM' format
+            if (y === '1') {
+                stu.forEach(st => {
+                    if (st.admissionDate) {
+                        const admYM = st.admissionDate.substring(0, 7); // 'YYYY-MM'
+                        if (admYM > lastAdmMonth) lastAdmMonth = admYM;
+                    }
+                });
+            }
+
             const classLabel = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
 
             // Format yesterday's date as DD/MM/YYYY
@@ -8758,19 +8778,27 @@
                 const row = [rowNum, st.pin, nameCell];
                 let totalPresent = 0;
 
-                let studentWorkingDays = totalWorkingDays;
-                if (y === '1' && st.admissionDate) {
-                    studentWorkingDays = 0;
-                    validMonths.forEach(({ dates }) => {
-                        studentWorkingDays += dates.filter(d => d >= st.admissionDate).reduce((count, d) => {
+                // Calculate per-student working days per month
+                let studentWorkingDays = 0;
+                const studentMonthWD = []; // per-student working days for each validMonth
+
+                validMonths.forEach(({ dates, workingDays, year, month }) => {
+                    let stMonthWD = workingDays; // default: same as class
+                    if (y === '1' && st.admissionDate) {
+                        // Count only working days on/after student's admission date
+                        stMonthWD = 0;
+                        dates.forEach(d => {
+                            if (d < st.admissionDate) return;
                             const att = getAttData(d);
                             const posted = stu.some(s => att[s.pin] && Object.keys(att[s.pin]).length > 0);
-                            return count + (posted ? 1 : 0);
-                        }, 0);
-                    });
-                }
+                            if (posted) stMonthWD++;
+                        });
+                    }
+                    studentMonthWD.push(stMonthWD);
+                    studentWorkingDays += stMonthWD;
+                });
 
-                validMonths.forEach(({ dates, workingDays }) => {
+                validMonths.forEach(({ dates, workingDays, year, month }, idx) => {
                     let daysPresent = 0;
                     dates.forEach(ds => {
                         // For inactive students, don't count days on/after inactiveDate
@@ -8784,11 +8812,23 @@
                         }
                         if (hasAtt && periodsPresent >= MIN_PERIODS_FOR_PRESENT) daysPresent++;
                     });
-                    row.push(daysPresent);
+
+                    // Show present(workingDays) for months up to last admission month
+                    const monthYM = `${year}-${String(month).padStart(2, '0')}`;
+                    if (lastAdmMonth && monthYM <= lastAdmMonth && studentMonthWD[idx] !== workingDays) {
+                        row.push(`${daysPresent}(${studentMonthWD[idx]})`);
+                    } else {
+                        row.push(daysPresent);
+                    }
                     totalPresent += daysPresent;
                 });
 
-                row.push(totalPresent);
+                // Total column: show total(studentWorkingDays) if different from class total
+                if (lastAdmMonth && studentWorkingDays !== totalWorkingDays) {
+                    row.push(`${totalPresent}(${studentWorkingDays})`);
+                } else {
+                    row.push(totalPresent);
+                }
                 const pct = studentWorkingDays > 0
                     ? ((totalPresent / studentWorkingDays) * 100).toFixed(2) + '%'
                     : '0.00%';
@@ -9909,7 +9949,14 @@
                 const tr = document.createElement('tr');
                 tr.style.borderBottom = '1px solid #ddd';
 
-                const mark = existingMarks[st.pin] !== undefined ? existingMarks[st.pin] : '';
+                const mark = existingMarks[st.pin] !== undefined && existingMarks[st.pin] !== null ? existingMarks[st.pin] : '';
+                const assignVal = existingMarks[st.pin + '_assign'] !== undefined && existingMarks[st.pin + '_assign'] !== null
+                    ? existingMarks[st.pin + '_assign'] : 10; // default 10
+
+                // Calculate final marks: ceil((marks + assign) / 2.5), max 20
+                const markNum = mark !== '' ? parseInt(mark) : 0;
+                const assignNum = parseInt(assignVal) || 0;
+                const finalMarks = (mark !== '') ? Math.min(Math.ceil((markNum + assignNum) / 2.5), 20) : '';
 
                 tr.innerHTML = `
                     <td style="padding: 10px; border: 1px solid #ddd;">${idx + 1}</td>
@@ -9919,14 +9966,93 @@
                         <input type="number" 
                                id="mark_${idx}" 
                                data-pin="${st.pin}"
+                               data-field="marks"
                                value="${mark}"
                                min="0" 
                                max="40" 
-
                                style="width: 80px; padding: 8px; text-align: center; border: 1px solid #ccc; border-radius: 4px;">
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                        <input type="number" 
+                               id="assign_${idx}" 
+                               data-pin="${st.pin}"
+                               data-field="assign"
+                               value="${assignVal}"
+                               min="0" 
+                               max="10" 
+                               style="width: 80px; padding: 8px; text-align: center; border: 1px solid #ccc; border-radius: 4px;">
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                        <span id="final_${idx}" style="font-weight:600;color:#2a5298;font-size:15px;">${finalMarks}</span>
                     </td>
                 `;
                 tbody.appendChild(tr);
+            });
+
+            // ── Auto-save & auto-calculate for Marks and Assign/Activity ──
+            let _umAutoSaveTimer = null;
+            const autoSaveUnitMarks = () => {
+                clearTimeout(_umAutoSaveTimer);
+                _umAutoSaveTimer = setTimeout(() => {
+                    const marks = {};
+                    let hasData = false;
+                    document.querySelectorAll('#unitMarkTableBody input[data-field="marks"]').forEach(inp => {
+                        const pin = inp.dataset.pin;
+                        const val = inp.value.trim();
+                        if (val !== '') {
+                            const m = parseInt(val);
+                            if (m >= 0 && m <= 40) { marks[pin] = m; hasData = true; }
+                        } else {
+                            marks[pin] = null;
+                        }
+                    });
+                    document.querySelectorAll('#unitMarkTableBody input[data-field="assign"]').forEach(inp => {
+                        const pin = inp.dataset.pin;
+                        const val = inp.value.trim();
+                        const a = val !== '' ? Math.min(Math.max(parseInt(val) || 0, 0), 10) : 10;
+                        marks[pin + '_assign'] = a;
+                    });
+                    if (hasData) {
+                        UNIT_MARKS[markKey] = marks;
+                        UNIT_MARKS[markKey + '_meta'] = {
+                            submittedBy: USERS[currentUser]?.name || currentUser,
+                            submittedOn: new Date().toISOString().split('T')[0],
+                            subject: getSubjectName(subCode),
+                            subjectCode: subCode,
+                            unit: unit,
+                            year: y,
+                            sem: s
+                        };
+                        db.collection('unitMarks').doc(markKey).set(marks).catch(e => console.error('❌ unitMarks auto-save:', e));
+                        db.collection('unitMarks').doc(markKey + '_meta').set(UNIT_MARKS[markKey + '_meta']).catch(e => console.error('❌ unitMarks meta save:', e));
+                        // Flash save indicator
+                        const msg = document.getElementById('unitMarkMsg');
+                        msg.textContent = '✅ Marks auto-saved!';
+                        msg.classList.remove('hidden');
+                        setTimeout(() => msg.classList.add('hidden'), 2000);
+                    }
+                }, 800); // 800ms debounce
+            };
+
+            const recalcFinal = (idx) => {
+                const markInp = document.getElementById('mark_' + idx);
+                const assignInp = document.getElementById('assign_' + idx);
+                const finalSpan = document.getElementById('final_' + idx);
+                if (!markInp || !assignInp || !finalSpan) return;
+                const mv = markInp.value.trim();
+                const av = assignInp.value.trim();
+                if (mv === '') { finalSpan.textContent = ''; return; }
+                const m = parseInt(mv) || 0;
+                const a = av !== '' ? (parseInt(av) || 0) : 10;
+                finalSpan.textContent = Math.min(Math.ceil((m + a) / 2.5), 20);
+            };
+
+            // Attach listeners
+            students.forEach((st, idx) => {
+                const markInp = document.getElementById('mark_' + idx);
+                const assignInp = document.getElementById('assign_' + idx);
+                if (markInp) markInp.addEventListener('input', () => { recalcFinal(idx); autoSaveUnitMarks(); });
+                if (assignInp) assignInp.addEventListener('input', () => { recalcFinal(idx); autoSaveUnitMarks(); });
             });
         }
 
@@ -9946,8 +10072,7 @@
             let hasData = false;
 
             // Collect marks from inputs
-            const inputs = document.querySelectorAll('#unitMarkTableBody input[type="number"]');
-            inputs.forEach(input => {
+            document.querySelectorAll('#unitMarkTableBody input[data-field="marks"]').forEach(input => {
                 const pin = input.dataset.pin;
                 const value = input.value.trim();
 
@@ -9962,6 +10087,14 @@
                 } else {
                     marks[pin] = null; // Not submitted
                 }
+            });
+
+            // Collect assign/activity marks
+            document.querySelectorAll('#unitMarkTableBody input[data-field="assign"]').forEach(input => {
+                const pin = input.dataset.pin;
+                const value = input.value.trim();
+                const a = value !== '' ? Math.min(Math.max(parseInt(value) || 0, 0), 10) : 10;
+                marks[pin + '_assign'] = a;
             });
 
             if (!hasData) {
@@ -10103,7 +10236,7 @@
 
             theorySubjects.forEach(code => {
                 const subName = getSubjectName(code);
-                html += `<th style="padding: 12px; text-align: center; border: 1px solid #ddd; min-width: 120px;">${code}<br><small style="font-size: 11px;">${subName}</small></th>`;
+                html += `<th style="padding: 12px; text-align: center; border: 1px solid #ddd; min-width: 180px;">${code}<br><small style="font-size: 11px;">${subName}</small><br><small style="font-size:10px;opacity:0.8;">Marks | Assign | Final(20)</small></th>`;
             });
 
             html += '</tr></thead><tbody>';
@@ -10119,16 +10252,18 @@
                     const markKey = `${y}-${s}_${code}_UNIT-${unit}`;
                     const marks = UNIT_MARKS[markKey] || {};
                     const mark = marks[st.pin];
+                    const assign = marks[st.pin + '_assign'] !== undefined && marks[st.pin + '_assign'] !== null ? marks[st.pin + '_assign'] : 10;
 
                     let displayMark = 'NA';
                     let bgColor = '#fff8e1';
 
                     if (mark !== undefined && mark !== null) {
-                        displayMark = mark;
-                        bgColor = mark >= 30 ? '#e8f5e9' : mark >= 20 ? '#fff3e0' : '#ffebee';
+                        const finalM = Math.min(Math.ceil((mark + assign) / 2.5), 20);
+                        displayMark = `${mark} | ${assign} | <strong>${finalM}</strong>`;
+                        bgColor = finalM >= 12 ? '#e8f5e9' : finalM >= 8 ? '#fff3e0' : '#ffebee';
                     }
 
-                    html += `<td style="padding: 10px; border: 1px solid #ddd; text-align: center; background: ${bgColor};">${displayMark}</td>`;
+                    html += `<td style="padding: 10px; border: 1px solid #ddd; text-align: center; background: ${bgColor}; font-size:13px;">${displayMark}</td>`;
                 });
 
                 html += '</tr>';
@@ -10170,8 +10305,8 @@
             });
             theorySubjects.sort();
 
-            // Build Excel data
-            const totalCols = 3 + theorySubjects.length; // Sl.No + PIN + Name + subjects
+            // Build Excel data — 3 columns per subject: Marks(40), Assign(10), Final(20M)
+            const totalCols = 3 + theorySubjects.length * 3; // Sl.No + PIN + Name + 3 per subject
 
             // Build a human-readable class label
             const unitLabel = unit === 'I' ? 'Unit Test - I' : unit === 'II' ? 'Unit Test - II' : 'Unit Test - III';
@@ -10189,19 +10324,26 @@
             for (let i = 1; i < totalCols; i++) titleRow.push('');
             data.push(titleRow);
 
-            // Header row 1: Subject codes
+            // Header row 1: Subject codes (each spans 3 columns)
             const header1 = ['Sl.No', 'PIN', 'Name'];
             theorySubjects.forEach(code => {
-                header1.push(code);
+                header1.push(code, '', '');
             });
             data.push(header1);
 
-            // Header row 2: Subject names
+            // Header row 2: Subject names (each spans 3 columns)
             const header2 = ['', '', ''];
             theorySubjects.forEach(code => {
-                header2.push(getSubjectName(code));
+                header2.push(getSubjectName(code), '', '');
             });
             data.push(header2);
+
+            // Header row 3: Sub-headers for each subject
+            const header3 = ['', '', ''];
+            theorySubjects.forEach(() => {
+                header3.push('Marks(40)', 'Assign(10)', 'Final(20)');
+            });
+            data.push(header3);
 
             // Student data rows
             students.forEach((st, idx) => {
@@ -10211,7 +10353,14 @@
                     const markKey = `${y}-${s}_${code}_UNIT-${unit}`;
                     const marks = UNIT_MARKS[markKey] || {};
                     const mark = marks[st.pin];
-                    row.push(mark !== undefined && mark !== null ? mark : 'NA');
+                    const assign = marks[st.pin + '_assign'] !== undefined && marks[st.pin + '_assign'] !== null ? marks[st.pin + '_assign'] : 10;
+
+                    if (mark !== undefined && mark !== null) {
+                        const finalM = Math.min(Math.ceil((mark + assign) / 2.5), 20);
+                        row.push(mark, assign, finalM);
+                    } else {
+                        row.push('NA', '', '');
+                    }
                 });
 
                 data.push(row);
@@ -10222,19 +10371,27 @@
             theorySubjects.forEach(code => {
                 const markKey = `${y}-${s}_${code}_UNIT-${unit}`;
                 const meta = UNIT_MARKS[markKey + '_meta'];
-                facultyRow.push(meta ? meta.submittedBy : '-');
+                facultyRow.push(meta ? meta.submittedBy : '-', '', '');
             });
             data.push(facultyRow);
 
             // Create workbook
             const ws = XLSX.utils.aoa_to_sheet(data);
 
-            // Merge the title row across all columns (row 0, col 0 → col totalCols-1)
-            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }];
+            // Merges: title row + subject code headers (each spans 3 cols) + subject name headers
+            const merges = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }];
+            theorySubjects.forEach((_, i) => {
+                const startCol = 3 + i * 3;
+                merges.push({ s: { r: 1, c: startCol }, e: { r: 1, c: startCol + 2 } }); // subject code
+                merges.push({ s: { r: 2, c: startCol }, e: { r: 2, c: startCol + 2 } }); // subject name
+            });
+            ws['!merges'] = merges;
 
             // Column widths
             ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }];
-            theorySubjects.forEach(() => ws['!cols'].push({ wch: 12 }));
+            theorySubjects.forEach(() => {
+                ws['!cols'].push({ wch: 10 }, { wch: 10 }, { wch: 10 });
+            });
 
             const wb = XLSX.utils.book_new();
             const semText = y == 1 ? 'Year 1' : `Year ${y} Sem ${s}`;
@@ -19653,11 +19810,22 @@ async function attPct_load() {
         });
 
         const monthName = monthStart.toLocaleString('default', { month: 'long' });
-        return { monthName, dates, workingDays };
+        return { year, month, monthName, dates, workingDays };
     });
 
     const validMonths      = monthData.filter(m => m.dates.length > 0);
     const totalWorkingDays = validMonths.reduce((s, m) => s + m.workingDays, 0);
+
+    // ── Determine last admission month (Year 1 only) ──
+    let lastAdmMonth = ''; // 'YYYY-MM' format
+    if (y === '1') {
+        stu.forEach(st => {
+            if (st.admissionDate) {
+                const admYM = st.admissionDate.substring(0, 7);
+                if (admYM > lastAdmMonth) lastAdmMonth = admYM;
+            }
+        });
+    }
 
     // Class label
     const classLabels = { '1-1':'1st Year', '2-3':'2nd Year – Sem 3', '2-4':'2nd Year – Sem 4', '3-5':'3rd Year – Sem 5' };
@@ -19691,11 +19859,30 @@ async function attPct_load() {
         const displayName  = st.name + statusLabel;
         const mobile       = st.parentMobile || '';
 
+        // Calculate per-student working days per month (Year 1 only)
+        let studentWorkingDays = 0;
+        const studentMonthWD = [];
+
+        validMonths.forEach(({ dates, workingDays, year, month }) => {
+            let stMonthWD = workingDays; // default: same as class
+            if (y === '1' && st.admissionDate) {
+                stMonthWD = 0;
+                dates.forEach(d => {
+                    if (d < st.admissionDate) return;
+                    const att = getAttData(d);
+                    if (stu.some(s => att[s.pin] && Object.keys(att[s.pin]).length > 0)) stMonthWD++;
+                });
+            }
+            studentMonthWD.push(stMonthWD);
+            studentWorkingDays += stMonthWD;
+        });
+
         let totalPresent = 0;
-        const monthCells = validMonths.map(({ dates }) => {
+        const monthCells = validMonths.map(({ dates, workingDays, year, month }, idx) => {
             let dp = 0;
             dates.forEach(ds => {
                 if (inactiveDate && ds >= inactiveDate) return;
+                if (y === '1' && st.admissionDate && ds < st.admissionDate) return;
                 const att = getAttData(ds);
                 const sa  = att[st.pin] || {};
                 let pp = 0, hasAtt = false;
@@ -19705,10 +19892,16 @@ async function attPct_load() {
                 if (hasAtt && pp >= MIN_PERIODS_FOR_PRESENT) dp++;
             });
             totalPresent += dp;
+
+            // Show present(workingDays) for months up to last admission month if different
+            const monthYM = `${year}-${String(month).padStart(2, '0')}`;
+            if (lastAdmMonth && monthYM <= lastAdmMonth && studentMonthWD[idx] !== workingDays) {
+                return `${dp}<br><small style="color:#888;font-size:10px;">(${studentMonthWD[idx]})</small>`;
+            }
             return dp;
         });
 
-        const pctVal = totalWorkingDays > 0 ? (totalPresent / totalWorkingDays) * 100 : 0;
+        const pctVal = studentWorkingDays > 0 ? (totalPresent / studentWorkingDays) * 100 : 0;
         const pctStr = pctVal.toFixed(2) + '%';
         let pctClass = 'atp-pct-red';
         if (pctVal >= 75)      { pctClass = 'atp-pct-green';  cntGreen++;  }
@@ -19719,12 +19912,17 @@ async function attPct_load() {
             ? `<a href="tel:${mobile}" title="Call ${mobile}">📞 ${mobile}</a>`
             : `<span class="atp-no-mobile">—</span>`;
 
+        // Total column: show total(studentWorkingDays) if different from class total
+        const totalDisplay = (lastAdmMonth && studentWorkingDays !== totalWorkingDays)
+            ? `${totalPresent}<br><small style="color:#888;font-size:10px;">(${studentWorkingDays})</small>`
+            : `${totalPresent}`;
+
         tbodyHtml += `<tr>
             <td class="atp-slno">${rowNum}</td>
             <td class="atp-pin-col">${st.pin}</td>
             <td class="atp-name-col atp-left">${displayName}</td>
             ${monthCells.map(v => `<td class="atp-day-cell">${v}</td>`).join('')}
-            <td class="atp-total-col">${totalPresent}</td>
+            <td class="atp-total-col">${totalDisplay}</td>
             <td class="${pctClass}">${pctStr}</td>
             <td class="atp-mobile-cell">${mobileCell}</td>
         </tr>`;

@@ -1938,18 +1938,49 @@
                     }
                 }
 
+                // Also count class-level working days for Year 1 (dates where any student has data)
+                let classWorkingDays = 0;
+                if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate) {
+                    for (const date of dates) {
+                        if (date === todayStrMR && !afterCutoffMR) continue;
+                        if (isStudentSunday(date) || isStudentSecondSaturday(date) || holidaySet.has(date)) continue;
+                        const attData = allAttendance[date] || {};
+                        if (Object.keys(attData).length > 0) classWorkingDays++;
+                    }
+                }
+
                 if (workingDays === 0) {
                     document.getElementById('monthlyLoading').classList.add('hidden');
                     document.getElementById('monthlyNoData').classList.remove('hidden');
                     return;
                 }
 
-                // Update stats
-                document.getElementById('workingDays').textContent = workingDays;
+                // Update stats — show class context for Year 1 late joiners
+                if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate && classWorkingDays > workingDays) {
+                    document.getElementById('workingDays').innerHTML = `${workingDays} <span style="font-size:11px;color:#888;">(Class: ${classWorkingDays})</span>`;
+                } else {
+                    document.getElementById('workingDays').textContent = workingDays;
+                }
                 document.getElementById('daysPresent').textContent = presentDays;
                 document.getElementById('daysAbsent').textContent = workingDays - presentDays;
                 const percentage = Math.round((presentDays / workingDays) * 100);
                 document.getElementById('percentage').textContent = percentage + '%';
+
+                // Admission date info banner in monthly tab
+                let monthlyAdmBanner = document.getElementById('monthlyAdmBanner');
+                if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate && classWorkingDays > workingDays) {
+                    if (!monthlyAdmBanner) {
+                        monthlyAdmBanner = document.createElement('div');
+                        monthlyAdmBanner.id = 'monthlyAdmBanner';
+                        monthlyAdmBanner.style.cssText = 'font-size:11px;color:#667eea;margin-top:8px;text-align:center;';
+                        document.getElementById('percentage').parentNode.insertBefore(monthlyAdmBanner, document.getElementById('percentage'));
+                    }
+                    const [ay, am, ad] = currentStudent.admissionDate.split('-');
+                    monthlyAdmBanner.textContent = `📅 Your working days are counted from your joining date: ${ad}/${am}/${ay}`;
+                    monthlyAdmBanner.style.display = 'block';
+                } else if (monthlyAdmBanner) {
+                    monthlyAdmBanner.style.display = 'none';
+                }
 
                 // Build calendar — pass holidaySet so holidays show '-' not 'A'
                 buildCalendar(year, mon, dayStatus, holidaySet);
@@ -2188,6 +2219,9 @@
             let totalWorkingDays = 0;
             let totalPresentDays = 0;
 
+            // ── Track month-wise stats for Year 1 breakdown ──
+            const monthlyStats = {}; // { 'YYYY-MM': { present: N, working: N, name: 'Jul' } }
+
             // ── Iterate from sem start → cutoff date (inclusive) ──
             const startDate = new Date(startStr + 'T00:00:00');
             for (let d = new Date(startDate); toLocalDateStr(d) <= cutoffStr; d.setDate(d.getDate() + 1)) {
@@ -2202,7 +2236,19 @@
                         const pData = dayPeriods[String(p)];
                         if (pData && pData.status === 'P') presentCount++;
                     }
-                    if (presentCount >= MIN_PERIODS_FOR_PRESENT) totalPresentDays++;
+                    const isPresent = presentCount >= MIN_PERIODS_FOR_PRESENT;
+                    if (isPresent) totalPresentDays++;
+
+                    // Track per month
+                    if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate) {
+                        const ym = dateStr.substring(0, 7); // 'YYYY-MM'
+                        if (!monthlyStats[ym]) {
+                            const mDate = new Date(parseInt(ym.split('-')[0]), parseInt(ym.split('-')[1]) - 1, 1);
+                            monthlyStats[ym] = { present: 0, working: 0, name: mDate.toLocaleString('default', { month: 'short' }) };
+                        }
+                        monthlyStats[ym].working++;
+                        if (isPresent) monthlyStats[ym].present++;
+                    }
                 }
             }
 
@@ -2219,6 +2265,25 @@
             document.getElementById('cumulativePercentage').textContent = percentage + '%';
             document.getElementById('cumulativeStats').textContent =
                 `${totalPresentDays} Present / ${totalWorkingDays} Working Days`;
+
+            // Display month-wise breakdown for Year 1 late joiners
+            let breakdownEl = document.getElementById('monthBreakdown');
+            if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate && Object.keys(monthlyStats).length > 0) {
+                if (!breakdownEl) {
+                    breakdownEl = document.createElement('div');
+                    breakdownEl.id = 'monthBreakdown';
+                    breakdownEl.style.cssText = 'font-size:11px;color:#fff;opacity:0.9;margin-top:6px;';
+                    document.getElementById('cumulativeStats').parentNode.appendChild(breakdownEl);
+                }
+                const parts = Object.keys(monthlyStats).sort().map(ym => {
+                    const ms = monthlyStats[ym];
+                    return `${ms.name}: ${ms.present}/${ms.working}`;
+                });
+                breakdownEl.textContent = parts.join(' | ');
+                breakdownEl.style.display = 'block';
+            } else if (breakdownEl) {
+                breakdownEl.style.display = 'none';
+            }
 
             // Display joining date info banner if applicable
             let bannerEl = document.getElementById('admissionBanner');
