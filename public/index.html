@@ -1819,6 +1819,59 @@
                 </div>
                 <!-- ── END: Date-wise Merged Logbook section ── -->
 
+                <!-- ══════════════════════════════════════════════════════════════
+                     NEW SECTION: Consolidate Syllabus Covered
+                     DO NOT remove or edit the sections above — this is ADDITIVE ONLY
+                ══════════════════════════════════════════════════════════════ -->
+                <div id="consolidateSyllabusSection"
+                     style="border-top:2px dashed #a7f3d0;margin-top:2rem;padding-top:1.5rem;">
+
+                    <h3 style="color:#065f46;margin-bottom:6px;font-size:16px;">📊 Consolidate Syllabus Covered <span style="font-weight:400;font-size:13px;color:#6b7280;">(Monthly Summary)</span></h3>
+                    <p style="color:#6b7280;font-size:12.5px;margin-bottom:16px;">
+                        Generates a monthly breakdown of <strong>periods engaged, remaining, and % syllabus covered</strong> for each subject.
+                        Subjects are grouped by Year/Semester.
+                    </p>
+
+                    <div style="background:#f0fdf4;border-radius:12px;padding:20px;border:1px solid #bbf7d0;margin-bottom:16px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Up to Month (To Date)</label>
+                                <input type="date" id="cs_toDate"
+                                       style="padding:10px;border:2px solid #d1d5db;border-radius:8px;font-size:14px;width:100%;" />
+                            </div>
+                        </div>
+
+                        <div style="background:#ECFDF5;border-left:3px solid #059669;padding:.65rem 1rem;
+                                    border-radius:0 8px 8px 0;font-size:12px;color:#065f46;margin:14px 0;">
+                            💡 Months are auto-computed from each subject's semester start date (Academic Calendar).
+                            Only subjects with <strong>Total Periods</strong> set are included.
+                        </div>
+
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+                            <button onclick="viewConsolidateSyllabus()"
+                                    style="background:linear-gradient(135deg,#059669,#047857);color:white;
+                                           padding:.75rem 1.4rem;border:none;border-radius:8px;
+                                           font-size:.9rem;font-weight:700;cursor:pointer;flex:1;min-width:200px;">
+                                👁️ View Consolidate Syllabus
+                            </button>
+                            <button onclick="downloadConsolidateSyllabusPDF()"
+                                    style="background:linear-gradient(135deg,#065f46,#047857);color:white;
+                                           padding:.75rem 1.4rem;border:none;border-radius:8px;
+                                           font-size:.9rem;font-weight:700;cursor:pointer;flex:1;min-width:220px;">
+                                📋 Download Consolidate Syllabus PDF
+                            </button>
+                        </div>
+                        <div id="csMsg" style="display:none;margin-top:10px;font-size:13px;"></div>
+                    </div>
+
+                    <!-- Consolidate table preview area -->
+                    <div id="csTableArea" style="display:none;margin-top:18px;">
+                        <h3 style="color:#065f46;margin-bottom:12px;">📊 Consolidate Syllabus Preview</h3>
+                        <div id="csTableContainer" style="overflow-x:auto;"></div>
+                    </div>
+                </div>
+                <!-- ── END: Consolidate Syllabus Covered section ── -->
+
             </div>
 
             <!-- STUDENT STATISTICS TAB (Admin only) -->
@@ -2226,6 +2279,12 @@
                     <div class="form-group">
                         <label>Subject Name *</label>
                         <input type="text" id="subName" placeholder="e.g. English Communication">
+                    </div>
+                    <div class="form-group">
+                        <label>Total No. of Periods Allotted *</label>
+                        <input type="number" id="subTotalPeriods" min="1" max="999"
+                               placeholder="e.g. 75"
+                               style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;" />
                     </div>
                 </div>
 
@@ -6237,8 +6296,13 @@
             const schemeYear = parseInt(document.getElementById('sub_year')?.value || 2025);
             const isC26      = schemeYear >= 2026;
             const name       = document.getElementById('subName').value.trim();
+            const totalPeriodsVal = document.getElementById('subTotalPeriods')?.value;
 
             if (!name) { alert('Enter subject name'); return; }
+            if (!totalPeriodsVal || parseInt(totalPeriodsVal) <= 0) {
+                alert('Enter Total No. of Periods Allotted (must be > 0)'); return;
+            }
+            const totalPeriods = parseInt(totalPeriodsVal);
 
             let code, subjectData;
 
@@ -6263,14 +6327,15 @@
                     yearSem:         APP_CONFIG.c26NumberToYearSem(num),
                     showInUnitMarks: td.showInUnitMarks,
                     showInLabAssess: td.showInLabAssess,
-                    attendanceOnly:  td.attendanceOnly
+                    attendanceOnly:  td.attendanceOnly,
+                    totalPeriods:    totalPeriods
                 };
             } else {
                 // ── C23: manual code from dropdown (existing behaviour) ───────
                 code = document.getElementById('subCode')?.value;
                 const type = document.getElementById('subType')?.value || 'Theory';
                 if (!code) { alert('Select a subject code'); return; }
-                subjectData = { name, type };   // C23: keep simple {name, type} format
+                subjectData = { name, type, totalPeriods };   // C23: keep simple format + totalPeriods
             }
 
             // Save to in-memory SUBJECTS and Firestore
@@ -6297,6 +6362,7 @@
             document.getElementById('subMsg').textContent = `✓ Added: ${code} — ${name} [${typeLabel}]`;
             document.getElementById('subMsg').classList.remove('hidden');
             document.getElementById('subName').value = '';
+            document.getElementById('subTotalPeriods').value = '';
             if (isC26) {
                 document.getElementById('sub_num').value = '';
                 document.getElementById('sub_codePreview').textContent = '— enter number & type —';
@@ -6366,12 +6432,42 @@
                         : '<span style="background:#FF9800;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:8px;">Practical</span>';
                 }
 
+                // Total Periods badge
+                const tp = sub?.totalPeriods;
+                const periodsBadge = tp
+                    ? ` <span style="background:#059669;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:4px;">${tp} periods</span>`
+                    : ` <span style="background:#dc2626;color:white;padding:2px 8px;border-radius:3px;font-size:11px;margin-left:4px;">⚠ No periods set</span>`;
+
                 div.innerHTML = `
-                    <span><strong>${code}</strong>: ${getSubjectName(code)} ${typeBadge}</span>
-                    <button class="btn btn-danger" onclick="deleteSubject('${code}')" style="padding: 6px 12px;">Delete</button>
+                    <span><strong>${code}</strong>: ${getSubjectName(code)} ${typeBadge}${periodsBadge}</span>
+                    <span>
+                        <button class="btn" onclick="editSubjectTotalPeriods('${code}')" style="padding:6px 12px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;margin-right:6px;font-size:12px;">✏️ Edit Periods</button>
+                        <button class="btn btn-danger" onclick="deleteSubject('${code}')" style="padding: 6px 12px;">Delete</button>
+                    </span>
                 `;
                 list.appendChild(div);
             });
+        }
+
+        // ── Edit Total Periods for an existing subject ───────────────────
+        function editSubjectTotalPeriods(code) {
+            const sub = SUBJECTS[code];
+            if (!sub) { alert('Subject not found: ' + code); return; }
+            const current = sub.totalPeriods || '';
+            const newVal = prompt(
+                `Edit Total No. of Periods Allotted for ${code} — ${getSubjectName(code)}\n\nCurrent: ${current || '(not set)'}`,
+                current
+            );
+            if (newVal === null) return; // cancelled
+            const parsed = parseInt(newVal);
+            if (!parsed || parsed <= 0) {
+                alert('Please enter a valid number greater than 0.'); return;
+            }
+            sub.totalPeriods = parsed;
+            SUBJECTS[code] = sub;
+            saveSettings('subjects', SUBJECTS);
+            displaySubjects();
+            alert(`✅ ${code} — Total Periods updated to ${parsed}`);
         }
 
         function deleteSubject(code) {
@@ -16584,6 +16680,591 @@ ${laSection}
         }
 
         // ── END: Date-wise Merged Logbook ─────────────────────────────────
+
+        // ════════════════════════════════════════════════════════════════
+        //  CONSOLIDATE SYLLABUS COVERED MODULE (Faculty)
+        // ════════════════════════════════════════════════════════════════
+
+        const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        /**
+         * Build consolidate syllabus data: monthly summary per subject.
+         * Returns { subjects: [{code, name, yearSem, totalPeriods, months: [{month, year, engaged, remaining, pct, cumPct}]}], monthList: [...] }
+         */
+        async function buildConsolidateSyllabusData(toDate) {
+            const myFacultyName = USERS[currentUser]?.name || currentUser;
+
+            // ── Step 1: Collect all subject codes this faculty teaches ──
+            const mySubjectCodes = Object.keys(FACULTY_MAP).filter(
+                code => FACULTY_MAP[code] === currentUser && SUBJECTS[code]
+            );
+            // Include TRANSFERRED subjects
+            Object.values(PERIOD_FACULTY).forEach(pfData => {
+                if (!pfData || typeof pfData !== 'object') return;
+                Object.values(pfData).forEach(pe => {
+                    if (!pe || pe.ownershipStatus !== 'TRANSFERRED') return;
+                    if ((pe.faculty === myFacultyName || pe.faculty === currentUser) &&
+                        pe.subject && !mySubjectCodes.includes(pe.subject)) {
+                        mySubjectCodes.push(pe.subject);
+                    }
+                });
+            });
+
+            // Filter: only subjects with totalPeriods set
+            const validSubjects = mySubjectCodes.filter(code => {
+                const sub = SUBJECTS[code];
+                return sub && sub.totalPeriods && sub.totalPeriods > 0;
+            });
+            if (validSubjects.length === 0) return null;
+
+            // ── Step 2: Detect yearSem per subject (same logic as datewise logbook) ──
+            const subjectYearSem = {};
+            const pfKeys = Object.keys(PERIOD_FACULTY);
+            validSubjects.forEach(subCode => {
+                let ysKey = null;
+                for (const pfKey of pfKeys) {
+                    const pfData = PERIOD_FACULTY[pfKey];
+                    if (!pfData) continue;
+                    const found = Object.values(pfData).some(e =>
+                        e && e.subject === subCode &&
+                        (e.faculty === myFacultyName || e.faculty === currentUser)
+                    );
+                    if (found) {
+                        const parts = pfKey.split('_');
+                        if (parts.length >= 3) {
+                            const y = parts[1], s = parts[2];
+                            ysKey = (y === '1') ? '1-1' : `${y}-${s}`;
+                            break;
+                        }
+                    }
+                }
+                if (!ysKey) {
+                    const m = subCode.match(/CM-(\d)/);
+                    if (m) {
+                        const p = m[1];
+                        if (p === '1') ysKey = '1-1';
+                        else if (p === '3') ysKey = '2-3';
+                        else if (p === '4') ysKey = '2-4';
+                        else if (p === '5') ysKey = '3-5';
+                    }
+                    // C26 subjects: use yearSem from SUBJECTS data
+                    if (!ysKey && SUBJECTS[subCode]?.yearSem) {
+                        ysKey = SUBJECTS[subCode].yearSem;
+                    }
+                }
+                subjectYearSem[subCode] = ysKey;
+            });
+
+            // ── Step 3: Get semester start per subject ──
+            const semStart = {};
+            validSubjects.forEach(subCode => {
+                const ys = subjectYearSem[subCode];
+                semStart[subCode] = (ys && CALENDAR_DATES[ys]) ? CALENDAR_DATES[ys].start : null;
+            });
+
+            // ── Step 4: Count periods per date per subject ──
+            // periodsByDate[subCode][date] = count
+            const periodsByDate = {};
+            validSubjects.forEach(c => { periodsByDate[c] = {}; });
+
+            // Regular attendance
+            Object.keys(ATTENDANCE_CACHE).forEach(cacheKey => {
+                if (!cacheKey.startsWith('att_')) return;
+                const date = cacheKey.slice(4);
+                const attDoc = ATTENDANCE_CACHE[cacheKey];
+                if (!attDoc || typeof attDoc !== 'object') return;
+
+                validSubjects.forEach(subCode => {
+                    const myPeriods = new Set();
+                    Object.values(attDoc).forEach(pinData => {
+                        if (!pinData || typeof pinData !== 'object') return;
+                        Object.keys(pinData).forEach(pStr => {
+                            const pEntry = pinData[pStr];
+                            if (!pEntry) return;
+                            if (pEntry.subject === subCode &&
+                                (pEntry.faculty === myFacultyName || pEntry.faculty === currentUser)) {
+                                myPeriods.add(parseInt(pStr));
+                            }
+                        });
+                    });
+
+                    // PERIOD_FACULTY overrides
+                    Object.keys(PERIOD_FACULTY).forEach(pfKey => {
+                        if (!pfKey.startsWith(date + '_')) return;
+                        const pfData = PERIOD_FACULTY[pfKey];
+                        if (!pfData) return;
+                        Object.keys(pfData).forEach(pStr => {
+                            const pf = pfData[pStr];
+                            if (!pf) return;
+                            const pNum = parseInt(pStr);
+                            if (pf.ownershipStatus === 'TRANSFERRED') {
+                                if (pf.subject === subCode &&
+                                    (pf.faculty === myFacultyName || pf.faculty === currentUser)) {
+                                    myPeriods.add(pNum);
+                                } else if (pf.originalFacultyId === currentUser) {
+                                    myPeriods.delete(pNum);
+                                }
+                            } else if (pf.ownershipStatus === 'ORPHAN') {
+                                if (pf.originalFacultyId === currentUser) {
+                                    myPeriods.delete(pNum);
+                                }
+                            }
+                        });
+                    });
+
+                    if (myPeriods.size > 0) {
+                        periodsByDate[subCode][date] = (periodsByDate[subCode][date] || 0) + myPeriods.size;
+                    }
+                });
+            });
+
+            // Extra classes
+            for (const subCode of validSubjects) {
+                try {
+                    const extraSnap = await db.collection('extraClasses')
+                        .where('subject', '==', subCode)
+                        .where('faculty', '==', currentUser)
+                        .get();
+                    extraSnap.forEach(doc => {
+                        const e = doc.data();
+                        const count = e.numberOfPeriods || 1;
+                        periodsByDate[subCode][e.date] = (periodsByDate[subCode][e.date] || 0) + count;
+                    });
+                } catch (err) {
+                    console.warn('[CS] extraClasses fetch error for', subCode, err.message);
+                }
+            }
+
+            // ── Step 5: Build monthly summaries per subject ──
+            const toDateObj = new Date(toDate + 'T00:00:00');
+            const toMonth = toDateObj.getMonth();
+            const toYear  = toDateObj.getFullYear();
+
+            // Determine the global month range (earliest sem start to toDate)
+            // and per-subject month range
+            const subjectResults = [];
+
+            // Sort order: 1-1 first, then 2-3, 2-4, 3-5, etc.
+            const ysOrder = ['1-1', '2-3', '2-4', '3-5', '3-6'];
+            validSubjects.sort((a, b) => {
+                const ysA = subjectYearSem[a] || '9-9';
+                const ysB = subjectYearSem[b] || '9-9';
+                const idxA = ysOrder.indexOf(ysA) >= 0 ? ysOrder.indexOf(ysA) : 99;
+                const idxB = ysOrder.indexOf(ysB) >= 0 ? ysOrder.indexOf(ysB) : 99;
+                if (idxA !== idxB) return idxA - idxB;
+                return a.localeCompare(b);
+            });
+
+            // Collect ALL unique months across all subjects for column merging
+            const allMonthKeys = new Set(); // "YYYY-MM"
+
+            validSubjects.forEach(subCode => {
+                const sub = SUBJECTS[subCode];
+                const tp  = sub.totalPeriods;
+                const ss  = semStart[subCode];
+                if (!ss) return; // skip if no semester start
+
+                const ssDate  = new Date(ss + 'T00:00:00');
+                const ssMonth = ssDate.getMonth();
+                const ssYear  = ssDate.getFullYear();
+
+                // Generate month list from semStart to toDate
+                const months = [];
+                let mYear = ssYear, mMonth = ssMonth;
+                while (mYear < toYear || (mYear === toYear && mMonth <= toMonth)) {
+                    months.push({ month: mMonth, year: mYear, key: `${mYear}-${String(mMonth).padStart(2,'0')}` });
+                    allMonthKeys.add(`${mYear}-${String(mMonth).padStart(2,'0')}`);
+                    mMonth++;
+                    if (mMonth > 11) { mMonth = 0; mYear++; }
+                }
+
+                // Sum periods by month
+                let cumulative = 0;
+                const monthData = months.map(m => {
+                    let monthEngaged = 0;
+                    Object.keys(periodsByDate[subCode]).forEach(date => {
+                        const d = new Date(date + 'T00:00:00');
+                        if (d.getMonth() === m.month && d.getFullYear() === m.year &&
+                            date >= ss && date <= toDate) {
+                            monthEngaged += periodsByDate[subCode][date];
+                        }
+                    });
+                    cumulative += monthEngaged;
+                    return {
+                        monthKey:   m.key,
+                        monthLabel: MONTH_NAMES[m.month],
+                        year:       m.year,
+                        engaged:    monthEngaged,
+                        remaining:  tp - cumulative,
+                        pct:        ((monthEngaged / tp) * 100).toFixed(2),
+                        cumPct:     ((cumulative / tp) * 100).toFixed(2)
+                    };
+                });
+
+                subjectResults.push({
+                    code:    subCode,
+                    name:    getSubjectName(subCode),
+                    yearSem: subjectYearSem[subCode] || '',
+                    totalPeriods: tp,
+                    months:  monthData
+                });
+            });
+
+            // Build ordered unique month list
+            const sortedMonthKeys = Array.from(allMonthKeys).sort();
+            const monthList = sortedMonthKeys.map(k => {
+                const [y, m] = k.split('-');
+                return { key: k, label: MONTH_NAMES[parseInt(m)], year: parseInt(y) };
+            });
+
+            return { subjects: subjectResults, monthList };
+        }
+
+        /**
+         * View Consolidate Syllabus on-screen (preview table).
+         */
+        async function viewConsolidateSyllabus() {
+            const toDate = (document.getElementById('cs_toDate').value || '').trim();
+            const msgEl  = document.getElementById('csMsg');
+
+            document.getElementById('csTableArea').style.display = 'none';
+            document.getElementById('csTableContainer').innerHTML = '';
+
+            if (!toDate) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '⚠️ Please select the To Date.';
+                return;
+            }
+
+            msgEl.style.display = 'block';
+            msgEl.style.color   = '#065f46';
+            msgEl.textContent   = '⏳ Building consolidate syllabus data…';
+
+            try {
+                const data = await buildConsolidateSyllabusData(toDate);
+
+                if (!data || data.subjects.length === 0) {
+                    msgEl.style.color = '#c62828';
+                    msgEl.textContent = '⚠️ No subjects with Total Periods found, or no semester start dates set.';
+                    return;
+                }
+
+                msgEl.style.display = 'none';
+                displayConsolidateTable(data);
+            } catch (e) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '❌ ' + e.message;
+            }
+        }
+
+        /**
+         * Render the Consolidate Syllabus table on-screen.
+         * Month column uses rowspan to merge across all subjects active in that month.
+         */
+        function displayConsolidateTable(data) {
+            const area      = document.getElementById('csTableArea');
+            const container = document.getElementById('csTableContainer');
+            area.style.display = 'block';
+
+            // Build flat rows: [{monthKey, monthLabel, code, totalPeriods, engaged, remaining, pct, cumPct}]
+            // Grouped by month, then by subject
+            const flatRows = [];
+            data.monthList.forEach(m => {
+                const subjectsInMonth = [];
+                data.subjects.forEach(subj => {
+                    const md = subj.months.find(md => md.monthKey === m.key);
+                    if (md) {
+                        subjectsInMonth.push({
+                            monthKey:     m.key,
+                            monthLabel:   m.label,
+                            monthYear:    m.year,
+                            code:         subj.code,
+                            totalPeriods: subj.totalPeriods,
+                            engaged:      md.engaged,
+                            remaining:    md.remaining,
+                            pct:          md.pct,
+                            cumPct:       md.cumPct,
+                            _subCount:    0  // will be set below
+                        });
+                    }
+                });
+                subjectsInMonth.forEach((r, i) => {
+                    r._subCount = (i === 0) ? subjectsInMonth.length : 0; // rowspan for first row
+                    flatRows.push(r);
+                });
+            });
+
+            let html = `<table style="width:100%;border-collapse:collapse;font-size:13px;background:white;">
+                <thead>
+                    <tr style="background:linear-gradient(135deg,#065f46,#059669);color:white;">
+                        <th style="padding:10px 8px;border:1px solid #333;min-width:70px;">Month</th>
+                        <th style="padding:10px 8px;border:1px solid #333;min-width:110px;">Sub. Code<br>(Total Periods)</th>
+                        <th style="padding:10px 8px;border:1px solid #333;min-width:80px;">No. of prds.<br>engaged</th>
+                        <th style="padding:10px 8px;border:1px solid #333;min-width:80px;">No. of prds.<br>Remaining</th>
+                        <th style="padding:10px 8px;border:1px solid #333;min-width:80px;">% Syllabus<br>Covered</th>
+                        <th style="padding:10px 8px;border:1px solid #333;min-width:100px;">Cumulative %<br>Syllabus Covered</th>
+                        <th style="padding:10px 8px;border:1px solid #333;min-width:70px;">Signature</th>
+                    </tr>
+                </thead><tbody>`;
+
+            flatRows.forEach((r, idx) => {
+                const isEvenMonth = (data.monthList.findIndex(m => m.key === r.monthKey) % 2 === 0);
+                const rowBg = isEvenMonth ? '' : 'background:#f0fdf4;';
+
+                let monthCell = '';
+                if (r._subCount > 0) {
+                    monthCell = `<td rowspan="${r._subCount}"
+                        style="padding:10px 8px;border:1px solid #ccc;text-align:center;
+                               vertical-align:middle;font-weight:700;font-size:14px;color:#065f46;">
+                        ${r.monthLabel}
+                    </td>`;
+                }
+
+                html += `<tr style="border-bottom:1px solid #e0e0e0;${rowBg}">
+                    ${monthCell}
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:600;">
+                        ${r.code}<br><span style="font-size:11px;color:#666;">(${r.totalPeriods})</span>
+                    </td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;color:#1F3864;">${r.engaged}</td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;">${r.remaining}</td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;">${r.pct}%</td>
+                    <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;color:#059669;">${r.cumPct}%</td>
+                    <td style="padding:8px;border:1px solid #ddd;"></td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        /**
+         * Download Consolidate Syllabus Covered as a separate landscape PDF.
+         */
+        async function downloadConsolidateSyllabusPDF() {
+            const toDate = (document.getElementById('cs_toDate').value || '').trim();
+            const msgEl  = document.getElementById('csMsg');
+
+            if (!toDate) {
+                msgEl.style.display = 'block';
+                msgEl.style.color   = '#c62828';
+                msgEl.textContent   = '⚠️ Please select the To Date.';
+                return;
+            }
+
+            msgEl.style.display = 'block';
+            msgEl.style.color   = '#065f46';
+            msgEl.textContent   = '⏳ Building consolidate syllabus data…';
+
+            try {
+                const data = await buildConsolidateSyllabusData(toDate);
+
+                if (!data || data.subjects.length === 0) {
+                    msgEl.style.color = '#c62828';
+                    msgEl.textContent = '⚠️ No subjects with Total Periods found.';
+                    return;
+                }
+
+                msgEl.textContent = '🖨️ Generating PDF…';
+
+                const facultyName = currentUserName || currentUser;
+                const { jsPDF }   = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                const pageW  = doc.internal.pageSize.width;   // ~297mm
+                const pageH  = doc.internal.pageSize.height;  // ~210mm
+                const margin = 10;
+
+                // ── Header ──
+                doc.setFontSize(14).setFont(undefined, 'bold');
+                doc.text('GOVT. POLYTECHNIC, DHARMAVARAM', pageW / 2, 14, { align: 'center' });
+
+                doc.setFontSize(12).setFont(undefined, 'bold');
+                doc.text('CONSOLIDATE SYLLABUS COVERED', pageW / 2, 22, { align: 'center' });
+
+                doc.setFontSize(9).setFont(undefined, 'normal');
+                doc.text(`Name of Staff: ${facultyName}`, margin, 30);
+                const toDateFmt = toDate.split('-').reverse().join('/');
+                doc.text(`Up to: ${toDateFmt}`, pageW - margin, 30, { align: 'right' });
+
+                // ── Build table rows with merge info ──
+                // Flat rows grouped by month; Month column uses rowspan
+                const tableBody = [];
+                const monthRowSpans = []; // index → rowspan count (0 = continuation)
+
+                data.monthList.forEach(m => {
+                    const subjectsInMonth = [];
+                    data.subjects.forEach(subj => {
+                        const md = subj.months.find(md => md.monthKey === m.key);
+                        if (md) {
+                            subjectsInMonth.push({ subj, md });
+                        }
+                    });
+
+                    subjectsInMonth.forEach((item, i) => {
+                        tableBody.push([
+                            i === 0 ? m.label : '',
+                            `${item.subj.code} (${item.subj.totalPeriods})`,
+                            String(item.md.engaged),
+                            String(item.md.remaining),
+                            item.md.pct + '%',
+                            item.md.cumPct + '%',
+                            ''   // Signature
+                        ]);
+                        monthRowSpans.push(i === 0 ? subjectsInMonth.length : 0);
+                    });
+                });
+
+                // Track merge geometry
+                const csRowCellInfo = {};
+                const csMergeActive = {};
+
+                doc.autoTable({
+                    startY: 36,
+                    head: [[
+                        { content: 'Month',                          styles: { halign: 'center' } },
+                        { content: 'Sub. Code\n(Total Periods)',     styles: { halign: 'center' } },
+                        { content: 'No. of prds.\nengaged',         styles: { halign: 'center' } },
+                        { content: 'No. of prds.\nRemaining',       styles: { halign: 'center' } },
+                        { content: '% Syllabus\nCovered',           styles: { halign: 'center' } },
+                        { content: 'Cumulative %\nSyllabus Covered', styles: { halign: 'center' } },
+                        { content: 'Signature',                      styles: { halign: 'center' } }
+                    ]],
+                    body: tableBody,
+                    theme: 'grid',
+                    styles: {
+                        fontSize:    9,
+                        cellPadding: 3,
+                        lineColor:   [0, 0, 0],
+                        lineWidth:   0.3,
+                        valign:      'middle'
+                    },
+                    headStyles: {
+                        fillColor:     [6, 95, 70],
+                        textColor:     [255, 255, 255],
+                        fontStyle:     'bold',
+                        fontSize:      9,
+                        halign:        'center',
+                        valign:        'middle',
+                        minCellHeight: 12,
+                        lineColor:     [0, 0, 0],
+                        lineWidth:     0.3
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' },
+                        1: { cellWidth: 45, halign: 'center' },
+                        2: { cellWidth: 35, halign: 'center', fontStyle: 'bold' },
+                        3: { cellWidth: 35, halign: 'center' },
+                        4: { cellWidth: 35, halign: 'center' },
+                        5: { cellWidth: 50, halign: 'center', fontStyle: 'bold' },
+                        6: { cellWidth: 47, halign: 'center' }
+                    },
+                    alternateRowStyles: { fillColor: [255, 255, 255] },
+                    margin: { top: 38, bottom: 25, left: margin, right: margin },
+                    tableWidth: pageW - margin * 2,
+
+                    willDrawCell: (cellData) => {
+                        if (cellData.section !== 'body') return;
+                        const rowIdx = cellData.row.index;
+                        const colIdx = cellData.column.index;
+
+                        if (colIdx === 0) {
+                            // Month column: hide text for continuation rows (rowspan=0)
+                            if (monthRowSpans[rowIdx] === 0) {
+                                csMergeActive[rowIdx] = true;
+                                cellData.cell.text = [];
+                            }
+                        }
+                    },
+
+                    didDrawCell: (cellData) => {
+                        if (cellData.section !== 'body') return;
+                        const rowIdx = cellData.row.index;
+                        const colIdx = cellData.column.index;
+
+                        if (colIdx !== 0) return;
+
+                        // Record geometry
+                        csRowCellInfo[rowIdx] = {
+                            x: cellData.cell.x, y: cellData.cell.y,
+                            width: cellData.cell.width, height: cellData.cell.height,
+                            page: cellData.doc.internal.getCurrentPageInfo().pageNumber
+                        };
+
+                        if (!csMergeActive[rowIdx]) return;
+                        // Overdraw top border with white to visually join merged cells
+                        const { x, y, width } = cellData.cell;
+                        cellData.doc.setDrawColor(255, 255, 255);
+                        cellData.doc.setLineWidth(0.7);
+                        cellData.doc.line(x, y, x + width, y);
+                        cellData.doc.setDrawColor(0, 0, 0);
+                        cellData.doc.setLineWidth(0.3);
+                    },
+
+                    didDrawPage: (pageData) => {
+                        if (pageData.pageNumber > 1) {
+                            doc.setFontSize(12).setFont(undefined, 'bold');
+                            doc.text('CONSOLIDATE SYLLABUS COVERED (Continued…)', pageW / 2, 14, { align: 'center' });
+                        }
+                        // Footer
+                        if (pageData.pageNumber === doc.internal.getNumberOfPages()) {
+                            doc.setFontSize(10).setFont(undefined, 'bold');
+                            doc.text('H.O.D', margin, pageH - 12);
+                            doc.text('Principal', pageW - margin, pageH - 12, { align: 'right' });
+                        }
+                    }
+                });
+
+                // ── Post-process: redraw month text vertically centred in merged cells ──
+                let i = 0;
+                while (i < tableBody.length) {
+                    const span = monthRowSpans[i];
+                    if (span > 1) {
+                        const leaderCell = csRowCellInfo[i];
+                        if (leaderCell) {
+                            let totalH = leaderCell.height;
+                            let allSamePage = true;
+                            for (let j = i + 1; j < i + span; j++) {
+                                const ci = csRowCellInfo[j];
+                                if (!ci || ci.page !== leaderCell.page) { allSamePage = false; break; }
+                                totalH += ci.height;
+                            }
+                            if (allSamePage) {
+                                doc.setPage(leaderCell.page);
+                                const cx = leaderCell.x, cy = leaderCell.y, cw = leaderCell.width;
+                                doc.setFillColor(255, 255, 255);
+                                doc.rect(cx + 0.2, cy + 0.2, cw - 0.4, totalH - 0.4, 'F');
+                                doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
+                                doc.line(cx, cy, cx, cy + totalH);
+                                doc.line(cx + cw, cy, cx + cw, cy + totalH);
+                                doc.line(cx, cy, cx + cw, cy);
+                                const midY = cy + totalH / 2 + 1;
+                                doc.setFontSize(9).setFont(undefined, 'bold');
+                                doc.text(tableBody[i][0], cx + cw / 2, midY, { align: 'center' });
+                            }
+                        }
+                    }
+                    i += (span > 0 ? span : 1);
+                }
+
+                doc.setPage(doc.internal.getNumberOfPages());
+
+                // ── Save ──
+                const safeName = facultyName.replace(/\s+/g, '_');
+                doc.save(`Consolidate_Syllabus_${safeName}_upto_${toDate}.pdf`);
+
+                msgEl.style.color = '#166534';
+                msgEl.textContent = '✅ Consolidate Syllabus PDF downloaded!';
+                setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+
+            } catch (err) {
+                console.error('[CS PDF]', err);
+                msgEl.style.color = '#c62828';
+                msgEl.textContent = '❌ Error: ' + err.message;
+            }
+        }
+
+        // ── END: Consolidate Syllabus Covered ─────────────────────────────
 
         // ════════════════════════════════════════════════════════════════
         //  CLASS LOG BOOK MODULE (Admin only)
