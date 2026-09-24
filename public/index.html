@@ -16474,7 +16474,8 @@ ${laSection}
                     body: tableBody,
                     theme: 'grid',
                     styles: {
-                        fontSize:    8,
+                        fontSize:    12,
+                        fontStyle:   'bold',
                         cellPadding: 2.5,
                         lineColor:   [0, 0, 0],
                         lineWidth:   0.3,
@@ -16484,7 +16485,7 @@ ${laSection}
                         fillColor:     [89, 102, 184],
                         textColor:     [255, 255, 255],
                         fontStyle:     'bold',
-                        fontSize:      8,
+                        fontSize:      12,
                         halign:        'center',
                         valign:        'middle',
                         minCellHeight: 10,
@@ -16586,7 +16587,7 @@ ${laSection}
 
                                     // Draw centered leave text
                                     const leaveText = rows[rowIdx].topic || '';
-                                    data.doc.setFontSize(8).setFont(undefined, 'bold');
+                                    data.doc.setFontSize(12).setFont(undefined, 'bold');
                                     data.doc.setTextColor(0, 0, 0);
                                     const textY = mergeY + mergeH / 2 + 1;
                                     data.doc.text(leaveText, mergeX + mergeW / 2, textY, { align: 'center' });
@@ -16624,7 +16625,7 @@ ${laSection}
 
                         // Footer on LAST page: H.O.D / Principal (space above = table bottom margin)
                         if (data.pageNumber === doc.internal.getNumberOfPages()) {
-                            doc.setFontSize(10).setFont(undefined, 'bold');
+                            doc.setFontSize(12).setFont(undefined, 'bold');
                             doc.text('H.O.D',     margin,         pageH - 12);
                             doc.text('Principal', pageW - margin, pageH - 12, { align: 'right' });
                         }
@@ -16679,7 +16680,7 @@ ${laSection}
                     const day_ = DAY3[d.getDay()];
                     const midY = cy + totalH / 2;
 
-                    doc.setFontSize(8).setFont(undefined, 'bold');
+                    doc.setFontSize(12).setFont(undefined, 'bold');
                     doc.text(`${dd_}/${mm_}/${yy_}`, cx + cw / 2, midY - 1.5, { align: 'center' });
                     doc.text(day_,                   cx + cw / 2, midY + 2.5, { align: 'center' });
                 });
@@ -17156,7 +17157,8 @@ ${laSection}
                     body: tableBody,
                     theme: 'grid',
                     styles: {
-                        fontSize:    9,
+                        fontSize:    12,
+                        fontStyle:   'bold',
                         cellPadding: 3,
                         lineColor:   [0, 0, 0],
                         lineWidth:   0.3,
@@ -17166,7 +17168,7 @@ ${laSection}
                         fillColor:     [6, 95, 70],
                         textColor:     [255, 255, 255],
                         fontStyle:     'bold',
-                        fontSize:      9,
+                        fontSize:      12,
                         halign:        'center',
                         valign:        'middle',
                         minCellHeight: 12,
@@ -17232,7 +17234,7 @@ ${laSection}
                         }
                         // Footer
                         if (pageData.pageNumber === doc.internal.getNumberOfPages()) {
-                            doc.setFontSize(10).setFont(undefined, 'bold');
+                            doc.setFontSize(12).setFont(undefined, 'bold');
                             doc.text('H.O.D', margin, pageH - 12);
                             doc.text('Principal', pageW - margin, pageH - 12, { align: 'right' });
                         }
@@ -17265,7 +17267,7 @@ ${laSection}
                                     doc.line(cx, cy, cx + cw, cy);
                                     if (colNum === 0) {
                                         const midY = cy + totalH / 2 + 1;
-                                        doc.setFontSize(9).setFont(undefined, 'bold');
+                                        doc.setFontSize(12).setFont(undefined, 'bold');
                                         doc.text(tableBody[i][0], cx + cw / 2, midY, { align: 'center' });
                                     }
                                 }
