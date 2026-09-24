@@ -1815,6 +1815,12 @@
                     <div id="dwTableArea" style="display:none;margin-top:18px;">
                         <h3 style="color:#1F3864;margin-bottom:12px;">📋 Date-wise Logbook Preview</h3>
                         <div id="dwTableContainer" style="overflow-x:auto;"></div>
+                        <div style="text-align:center;margin-top:14px;">
+                            <button onclick="document.getElementById('dwTableArea').style.display='none';document.getElementById('dwPreview').style.display='none';"
+                                    style="padding:10px 28px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+                                ✕ Close Preview
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <!-- ── END: Date-wise Merged Logbook section ── -->
@@ -1868,6 +1874,12 @@
                     <div id="csTableArea" style="display:none;margin-top:18px;">
                         <h3 style="color:#065f46;margin-bottom:12px;">📊 Consolidate Syllabus Preview</h3>
                         <div id="csTableContainer" style="overflow-x:auto;"></div>
+                        <div style="text-align:center;margin-top:14px;">
+                            <button onclick="document.getElementById('csTableArea').style.display='none';"
+                                    style="padding:10px 28px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+                                ✕ Close Preview
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <!-- ── END: Consolidate Syllabus Covered section ── -->
@@ -4475,6 +4487,8 @@
             <!-- ══════════════ ADMIN RESULTS TAB ══════════════ -->
             <div id="adminResults" class="tab-content">
                 <div style="max-width:800px;margin:0 auto;padding:10px 0 40px;">
+                    <!-- Admin-only: Upload sections (hidden for faculty) -->
+                    <div class="res-admin-only">
                     <!-- Header -->
                     <div style="background:linear-gradient(135deg,#1e3c72 0%,#2a5298 60%,#667eea 100%);border-radius:16px;padding:22px 28px 18px;margin-bottom:22px;box-shadow:0 8px 32px rgba(30,60,114,0.18);">
                         <div style="display:flex;align-items:center;gap:14px;">
@@ -4547,8 +4561,10 @@
                         </div>
                         <div id="res_statusBox" style="margin-top:12px;display:none;padding:14px;border-radius:10px;font-weight:600;font-size:14px;"></div>
                     </div>
+                    </div>
+                    <!-- END admin-only upload sections -->
 
-                    <!-- Result Analysis Button -->
+                    <!-- Result Analysis Button (visible to ALL users) -->
                     <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 4px 16px rgba(102,126,234,0.3);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="openResultAnalysis()">
                         <div style="display:flex;align-items:center;gap:14px;">
                             <span style="font-size:32px;">📊</span>
@@ -4560,6 +4576,8 @@
                         <span style="color:#fff;font-size:24px;">→</span>
                     </div>
 
+                    <!-- Admin-only: Uploaded Results Summary (hidden for faculty) -->
+                    <div class="res-admin-only">
                     <!-- Existing Results in Firestore -->
                     <div style="background:#fff;border-radius:14px;padding:22px 24px;box-shadow:0 2px 12px rgba(42,82,152,0.08);border:1px solid #e8eef8;">
                         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
@@ -4567,6 +4585,7 @@
                             <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Uploaded Results Summary</h3>
                         </div>
                         <div id="res_summaryArea" style="font-size:13px;color:#666;">Click the tab to load summary...</div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -5412,7 +5431,7 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'facTimetable\'); renderFacTimetable();">🗓️ Time Table</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'extraclass\'); initExtraClassTab();">📚 Extra Class</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'profile\'); loadProfile();">👤 Profile</button>';
-                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Percentage</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'formgen\'); formGen_onTabOpen();">📋 Form Generator</button>';
             } else {
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
@@ -5428,6 +5447,10 @@
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'formgen\'); formGen_onTabOpen();">📋 Form Generator</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'leaveod\'); lod_initTab();">🏖️ Leave/OD</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'attpercentage\'); attPct_onTabOpen();">📊 Att.Percentage</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'download\')">📥 Download</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'statuslog\')">📊 Status</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'adminResults\'); initAdminResultsTab();">📋 Results</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'studentstats\'); loadStatistics();">📊 Stu. Statistics</button>';
             }
             navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logout\')">🚪 Logout</button>';
         }
@@ -17031,7 +17054,7 @@ ${laSection}
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;">${r.remaining}</td>
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;">${r.pct}%</td>
                     <td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:700;color:#059669;">${r.cumPct}%</td>
-                    <td style="padding:8px;border:1px solid #ddd;"></td>
+                    ${r._subCount > 0 ? `<td rowspan="${r._subCount}" style="padding:8px;border:1px solid #ddd;vertical-align:middle;"></td>` : ''}
                 </tr>`;
             });
 
@@ -17168,8 +17191,8 @@ ${laSection}
                         const rowIdx = cellData.row.index;
                         const colIdx = cellData.column.index;
 
-                        if (colIdx === 0) {
-                            // Month column: hide text for continuation rows (rowspan=0)
+                        if (colIdx === 0 || colIdx === 6) {
+                            // Month & Signature columns: hide text for continuation rows
                             if (monthRowSpans[rowIdx] === 0) {
                                 csMergeActive[rowIdx] = true;
                                 cellData.cell.text = [];
@@ -17182,10 +17205,11 @@ ${laSection}
                         const rowIdx = cellData.row.index;
                         const colIdx = cellData.column.index;
 
-                        if (colIdx !== 0) return;
+                        if (colIdx !== 0 && colIdx !== 6) return;
 
-                        // Record geometry
-                        csRowCellInfo[rowIdx] = {
+                        // Record geometry per column
+                        if (!csRowCellInfo[rowIdx]) csRowCellInfo[rowIdx] = {};
+                        csRowCellInfo[rowIdx][colIdx] = {
                             x: cellData.cell.x, y: cellData.cell.y,
                             width: cellData.cell.width, height: cellData.cell.height,
                             page: cellData.doc.internal.getCurrentPageInfo().pageNumber
@@ -17215,37 +17239,41 @@ ${laSection}
                     }
                 });
 
-                // ── Post-process: redraw month text vertically centred in merged cells ──
-                let i = 0;
-                while (i < tableBody.length) {
-                    const span = monthRowSpans[i];
-                    if (span > 1) {
-                        const leaderCell = csRowCellInfo[i];
-                        if (leaderCell) {
-                            let totalH = leaderCell.height;
-                            let allSamePage = true;
-                            for (let j = i + 1; j < i + span; j++) {
-                                const ci = csRowCellInfo[j];
-                                if (!ci || ci.page !== leaderCell.page) { allSamePage = false; break; }
-                                totalH += ci.height;
-                            }
-                            if (allSamePage) {
-                                doc.setPage(leaderCell.page);
-                                const cx = leaderCell.x, cy = leaderCell.y, cw = leaderCell.width;
-                                doc.setFillColor(255, 255, 255);
-                                doc.rect(cx + 0.2, cy + 0.2, cw - 0.4, totalH - 0.4, 'F');
-                                doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
-                                doc.line(cx, cy, cx, cy + totalH);
-                                doc.line(cx + cw, cy, cx + cw, cy + totalH);
-                                doc.line(cx, cy, cx + cw, cy);
-                                const midY = cy + totalH / 2 + 1;
-                                doc.setFontSize(9).setFont(undefined, 'bold');
-                                doc.text(tableBody[i][0], cx + cw / 2, midY, { align: 'center' });
+                // ── Post-process: redraw merged cells for Month (col 0) and Signature (col 6) ──
+                [0, 6].forEach(colNum => {
+                    let i = 0;
+                    while (i < tableBody.length) {
+                        const span = monthRowSpans[i];
+                        if (span > 1) {
+                            const leaderCell = csRowCellInfo[i]?.[colNum];
+                            if (leaderCell) {
+                                let totalH = leaderCell.height;
+                                let allSamePage = true;
+                                for (let j = i + 1; j < i + span; j++) {
+                                    const ci = csRowCellInfo[j]?.[colNum];
+                                    if (!ci || ci.page !== leaderCell.page) { allSamePage = false; break; }
+                                    totalH += ci.height;
+                                }
+                                if (allSamePage) {
+                                    doc.setPage(leaderCell.page);
+                                    const cx = leaderCell.x, cy = leaderCell.y, cw = leaderCell.width;
+                                    doc.setFillColor(255, 255, 255);
+                                    doc.rect(cx + 0.2, cy + 0.2, cw - 0.4, totalH - 0.4, 'F');
+                                    doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
+                                    doc.line(cx, cy, cx, cy + totalH);
+                                    doc.line(cx + cw, cy, cx + cw, cy + totalH);
+                                    doc.line(cx, cy, cx + cw, cy);
+                                    if (colNum === 0) {
+                                        const midY = cy + totalH / 2 + 1;
+                                        doc.setFontSize(9).setFont(undefined, 'bold');
+                                        doc.text(tableBody[i][0], cx + cw / 2, midY, { align: 'center' });
+                                    }
+                                }
                             }
                         }
+                        i += (span > 0 ? span : 1);
                     }
-                    i += (span > 0 ? span : 1);
-                }
+                });
 
                 doc.setPage(doc.internal.getNumberOfPages());
 
@@ -21781,6 +21809,10 @@ async function formGen_download() {
 let resParsedData = null; // holds parsed student data ready for Firestore
 
 function initAdminResultsTab() {
+    // Hide admin-only upload & summary sections for non-admin users (faculty)
+    document.querySelectorAll('.res-admin-only').forEach(el => {
+        el.style.display = (currentUserType === 'admin') ? '' : 'none';
+    });
     resLoadSummary();
 }
 
