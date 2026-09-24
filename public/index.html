@@ -16497,7 +16497,7 @@ ${laSection}
                         lineWidth:     0.3
                     },
                     columnStyles: {
-                        0: { cellWidth: 20, halign: 'center', fontStyle: 'normal' },
+                        0: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
                         1: { cellWidth: 18, halign: 'center' },
                         2: { cellWidth: 28, halign: 'center' },
                         3: { cellWidth: 84, halign: 'left'   },
@@ -16709,7 +16709,7 @@ ${laSection}
                     const day_ = DAY3[d.getDay()];
                     const midY = cy + totalH / 2;
 
-                    doc.setFontSize(12).setFont(undefined, 'normal');
+                    doc.setFontSize(12).setFont(undefined, 'bold');
                     doc.text(`${dd_}/${mm_}/${yy_}`, cx + cw / 2, midY - 1.5, { align: 'center' });
                     doc.text(day_,                   cx + cw / 2, midY + 2.5, { align: 'center' });
                 });
