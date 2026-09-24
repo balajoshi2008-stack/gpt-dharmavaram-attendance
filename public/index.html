@@ -16387,14 +16387,16 @@ ${laSection}
 
                 // ── Header drawn on every page ────────────────────────────
                 function dwDrawHeader(pageNum) {
-                    doc.setFontSize(13).setFont(undefined, 'bold');
+                    doc.setFontSize(14).setFont(undefined, 'bold');
                     doc.text('GOVT. POLYTECHNIC, DHARMAVARAM', pageW / 2, 14, { align: 'center' });
-                    doc.setFontSize(9).setFont(undefined, 'normal');
-                    doc.text(`Name of Staff: ${facultyName}`, margin, 22);
-                    doc.text(`AY: ${academicYear}`, pageW - margin, 22, { align: 'right' });
-                    doc.text(`Period: ${dwFormatDate(fromDate)} to ${dwFormatDate(toDate)}`, margin, 28);
+                    doc.setFontSize(13).setFont(undefined, 'bold');
+                    doc.text('BRANCH :- COMPUTER ENGINEERING', pageW / 2, 20, { align: 'center' });
+                    doc.setFontSize(12).setFont(undefined, 'bold');
+                    doc.text(`Name of Staff: ${facultyName}`, margin, 28);
+                    doc.text(`AY: ${academicYear}`, pageW - margin, 28, { align: 'right' });
+                    doc.text(`Period: ${dwFormatDate(fromDate)} to ${dwFormatDate(toDate)}`, margin, 34);
                     if (pageNum > 1) {
-                        doc.text('(Continued…)', pageW - margin, 28, { align: 'right' });
+                        doc.text('(Continued…)', pageW - margin, 34, { align: 'right' });
                     }
                 }
 
@@ -16414,6 +16416,8 @@ ${laSection}
                 const rowPageMap  = {}; // rowIndex → page number it was drawn on
                 const mergeActive = {}; // rowIndex → bool (visual merge applied)
                 const rowCellInfo = {}; // rowIndex → { x, y, width, height, page } for col 0
+                const col5CellInfo = {}; // rowIndex → { x, y, width, height, page } for col 5 (Staff Sign)
+                const col5MergeActive = {}; // rowIndex → bool (col 5 visual merge applied)
 
                 // ── Build table body ──────────────────────────────────────
                 const tableBody = rows.map((r, idx) => {
@@ -16462,7 +16466,7 @@ ${laSection}
 
                 // ── AutoTable ─────────────────────────────────────────────
                 doc.autoTable({
-                    startY: 34,
+                    startY: 40,
                     head: [[
                         { content: 'Date/Day',            styles: { halign: 'center' } },
                         { content: 'Period\nNos.',        styles: { halign: 'center' } },
@@ -16493,7 +16497,7 @@ ${laSection}
                         lineWidth:     0.3
                     },
                     columnStyles: {
-                        0: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+                        0: { cellWidth: 20, halign: 'center', fontStyle: 'normal' },
                         1: { cellWidth: 18, halign: 'center' },
                         2: { cellWidth: 28, halign: 'center' },
                         3: { cellWidth: 84, halign: 'left'   },
@@ -16501,7 +16505,7 @@ ${laSection}
                         5: { cellWidth: 18, halign: 'center' }
                     },
                     alternateRowStyles: { fillColor: [255, 255, 255] },
-                    margin: { top: 35, bottom: 28, left: margin, right: margin },
+                    margin: { top: 41, bottom: 28, left: margin, right: margin },
                     tableWidth: pageW - margin * 2,
 
                     // ── Decide per cell: merge or restore date text ────────
@@ -16529,22 +16533,31 @@ ${laSection}
                             return;
                         }
 
-                        // ── Regular date group merging (col 0 only) ──
-                        if (colIdx !== 0) return;
+                        // ── Regular date group merging (col 0 and col 5 – Staff Sign) ──
+                        if (colIdx !== 0 && colIdx !== 5) return;
                         if (!info || !info.isContinuation) return;
 
                         const leaderPage = rowPageMap[info.groupLeader];
                         if (leaderPage === curPage) {
-                            mergeActive[rowIdx] = true;
-                            data.cell.text = [];
+                            if (colIdx === 0) {
+                                mergeActive[rowIdx] = true;
+                                data.cell.text = [];
+                            } else {
+                                col5MergeActive[rowIdx] = true;
+                                data.cell.text = [];
+                            }
                         } else {
-                            mergeActive[rowIdx] = false;
-                            const r2  = rows[rowIdx];
-                            const d2  = new Date(r2.date + 'T00:00:00');
-                            const dd2 = String(d2.getDate()).padStart(2, '0');
-                            const mm2 = String(d2.getMonth() + 1).padStart(2, '0');
-                            const yy2 = String(d2.getFullYear()).slice(-2);
-                            data.cell.text = [`${dd2}/${mm2}/${yy2}`, DAY3[d2.getDay()]];
+                            if (colIdx === 0) {
+                                mergeActive[rowIdx] = false;
+                                const r2  = rows[rowIdx];
+                                const d2  = new Date(r2.date + 'T00:00:00');
+                                const dd2 = String(d2.getDate()).padStart(2, '0');
+                                const mm2 = String(d2.getMonth() + 1).padStart(2, '0');
+                                const yy2 = String(d2.getFullYear()).slice(-2);
+                                data.cell.text = [`${dd2}/${mm2}/${yy2}`, DAY3[d2.getDay()]];
+                            } else {
+                                col5MergeActive[rowIdx] = false;
+                            }
                         }
                     },
 
@@ -16587,7 +16600,7 @@ ${laSection}
 
                                     // Draw centered leave text
                                     const leaveText = rows[rowIdx].topic || '';
-                                    data.doc.setFontSize(12).setFont(undefined, 'bold');
+                                    data.doc.setFontSize(12).setFont(undefined, 'normal');
                                     data.doc.setTextColor(0, 0, 0);
                                     const textY = mergeY + mergeH / 2 + 1;
                                     data.doc.text(leaveText, mergeX + mergeW / 2, textY, { align: 'center' });
@@ -16597,24 +16610,40 @@ ${laSection}
                             return;
                         }
 
-                        // ── Regular date merging (col 0 only) ──
-                        if (colIdx !== 0) return;
+                        // ── Regular date merging (col 0 and col 5 – Staff Sign) ──
+                        if (colIdx === 0) {
+                            // Always record geometry so post-process can use it
+                            rowCellInfo[rowIdx] = {
+                                x: data.cell.x, y: data.cell.y,
+                                width: data.cell.width, height: data.cell.height,
+                                page: curPage
+                            };
 
-                        // Always record geometry so post-process can use it
-                        rowCellInfo[rowIdx] = {
-                            x: data.cell.x, y: data.cell.y,
-                            width: data.cell.width, height: data.cell.height,
-                            page: curPage
-                        };
+                            if (!mergeActive[rowIdx]) return;
+                            // Overdraw top border with white to visually join merged cells
+                            const { x, y, width } = data.cell;
+                            data.doc.setDrawColor(255, 255, 255);
+                            data.doc.setLineWidth(0.7);
+                            data.doc.line(x, y, x + width, y);
+                            data.doc.setDrawColor(0, 0, 0);
+                            data.doc.setLineWidth(0.3);
+                        } else if (colIdx === 5) {
+                            // Record geometry for col 5 (Staff Sign)
+                            col5CellInfo[rowIdx] = {
+                                x: data.cell.x, y: data.cell.y,
+                                width: data.cell.width, height: data.cell.height,
+                                page: curPage
+                            };
 
-                        if (!mergeActive[rowIdx]) return;
-                        // Overdraw top border with white to visually join merged cells
-                        const { x, y, width } = data.cell;
-                        data.doc.setDrawColor(255, 255, 255);
-                        data.doc.setLineWidth(0.7);
-                        data.doc.line(x, y, x + width, y);
-                        data.doc.setDrawColor(0, 0, 0);
-                        data.doc.setLineWidth(0.3);
+                            if (!col5MergeActive[rowIdx]) return;
+                            // Overdraw top border with white to visually join merged cells
+                            const { x, y, width } = data.cell;
+                            data.doc.setDrawColor(255, 255, 255);
+                            data.doc.setLineWidth(0.7);
+                            data.doc.line(x, y, x + width, y);
+                            data.doc.setDrawColor(0, 0, 0);
+                            data.doc.setLineWidth(0.3);
+                        }
                     },
 
                     didDrawPage: (data) => {
@@ -16680,9 +16709,44 @@ ${laSection}
                     const day_ = DAY3[d.getDay()];
                     const midY = cy + totalH / 2;
 
-                    doc.setFontSize(12).setFont(undefined, 'bold');
+                    doc.setFontSize(12).setFont(undefined, 'normal');
                     doc.text(`${dd_}/${mm_}/${yy_}`, cx + cw / 2, midY - 1.5, { align: 'center' });
                     doc.text(day_,                   cx + cw / 2, midY + 2.5, { align: 'center' });
+                });
+
+                // ── Post-process: merge Staff Sign (col 5) per date group ──
+                rows.forEach((r, idx) => {
+                    const info = dateGroupInfo[idx];
+                    if (info.isContinuation || info.isLeaveRow) return;
+                    const leaderCell5 = col5CellInfo[idx];
+                    if (!leaderCell5) return;
+
+                    let totalH5 = leaderCell5.height;
+                    let hasActiveMerge5 = false;
+                    for (let j = idx + 1; j < rows.length; j++) {
+                        if (dateGroupInfo[j].groupLeader !== idx) break;
+                        if (!col5MergeActive[j]) break;
+                        const ci5 = col5CellInfo[j];
+                        if (!ci5 || ci5.page !== leaderCell5.page) break;
+                        totalH5 += ci5.height;
+                        hasActiveMerge5 = true;
+                    }
+                    if (!hasActiveMerge5) return;
+
+                    doc.setPage(leaderCell5.page);
+                    const cx5 = leaderCell5.x;
+                    const cy5 = leaderCell5.y;
+                    const cw5 = leaderCell5.width;
+
+                    // White fill
+                    doc.setFillColor(255, 255, 255);
+                    doc.rect(cx5 + 0.2, cy5 + 0.2, cw5 - 0.4, totalH5 - 0.4, 'F');
+
+                    // Redraw left, right, top borders
+                    doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
+                    doc.line(cx5,       cy5, cx5,       cy5 + totalH5);
+                    doc.line(cx5 + cw5, cy5, cx5 + cw5, cy5 + totalH5);
+                    doc.line(cx5,       cy5, cx5 + cw5, cy5);
                 });
 
                 // Return to last page for save
@@ -17103,13 +17167,16 @@ ${laSection}
                 doc.setFontSize(14).setFont(undefined, 'bold');
                 doc.text('GOVT. POLYTECHNIC, DHARMAVARAM', pageW / 2, 14, { align: 'center' });
 
-                doc.setFontSize(12).setFont(undefined, 'bold');
-                doc.text('CONSOLIDATE SYLLABUS COVERED', pageW / 2, 22, { align: 'center' });
+                doc.setFontSize(13).setFont(undefined, 'bold');
+                doc.text('BRANCH :- COMPUTER ENGINEERING', pageW / 2, 20, { align: 'center' });
 
-                doc.setFontSize(9).setFont(undefined, 'normal');
-                doc.text(`Name of Staff: ${facultyName}`, margin, 30);
+                doc.setFontSize(12).setFont(undefined, 'bold');
+                doc.text('CONSOLIDATE SYLLABUS COVERED', pageW / 2, 26, { align: 'center' });
+
+                doc.setFontSize(12).setFont(undefined, 'bold');
+                doc.text(`Name of Staff: ${facultyName}`, margin, 34);
                 const toDateFmt = toDate.split('-').reverse().join('/');
-                doc.text(`Up to: ${toDateFmt}`, pageW - margin, 30, { align: 'right' });
+                doc.text(`Up to: ${toDateFmt}`, pageW - margin, 34, { align: 'right' });
 
                 // ── Build table rows with merge info ──
                 // Flat rows grouped by month; Month column uses rowspan
@@ -17144,7 +17211,7 @@ ${laSection}
                 const csMergeActive = {};
 
                 doc.autoTable({
-                    startY: 36,
+                    startY: 40,
                     head: [[
                         { content: 'Month',                          styles: { halign: 'center' } },
                         { content: 'Sub. Code\n(Total Periods)',     styles: { halign: 'center' } },
@@ -17185,7 +17252,7 @@ ${laSection}
                         6: { cellWidth: 47, halign: 'center' }
                     },
                     alternateRowStyles: { fillColor: [255, 255, 255] },
-                    margin: { top: 38, bottom: 25, left: margin, right: margin },
+                    margin: { top: 41, bottom: 25, left: margin, right: margin },
                     tableWidth: pageW - margin * 2,
 
                     willDrawCell: (cellData) => {
@@ -17229,8 +17296,15 @@ ${laSection}
 
                     didDrawPage: (pageData) => {
                         if (pageData.pageNumber > 1) {
+                            doc.setFontSize(14).setFont(undefined, 'bold');
+                            doc.text('GOVT. POLYTECHNIC, DHARMAVARAM', pageW / 2, 14, { align: 'center' });
+                            doc.setFontSize(13).setFont(undefined, 'bold');
+                            doc.text('BRANCH :- COMPUTER ENGINEERING', pageW / 2, 20, { align: 'center' });
                             doc.setFontSize(12).setFont(undefined, 'bold');
-                            doc.text('CONSOLIDATE SYLLABUS COVERED (Continued…)', pageW / 2, 14, { align: 'center' });
+                            doc.text('CONSOLIDATE SYLLABUS COVERED (Continued…)', pageW / 2, 26, { align: 'center' });
+                            doc.setFontSize(12).setFont(undefined, 'bold');
+                            doc.text(`Name of Staff: ${facultyName}`, margin, 34);
+                            doc.text(`Up to: ${toDateFmt}`, pageW - margin, 34, { align: 'right' });
                         }
                         // Footer
                         if (pageData.pageNumber === doc.internal.getNumberOfPages()) {
