@@ -16519,6 +16519,10 @@ ${laSection}
                         // Track page for col 0
                         if (colIdx === 0) {
                             rowPageMap[rowIdx] = curPage;
+                            // Suppress autoTable text for ALL date cells — we redraw in post-process
+                            if (info && !info.isContinuation && !info.isLeaveRow) {
+                                data.cell.text = [];
+                            }
                         }
 
                         // ── Leave/OD row: suppress text in cols 1,2,4 (they'll be merged with col 3) ──
@@ -16663,8 +16667,8 @@ ${laSection}
 
                 // ── Post-process: redraw group-leader date text vertically centred ──
                 // Now that all rows are drawn and their heights are recorded, we can
-                // re-draw the date text for group leaders so it sits in the middle of
-                // the combined merged area (leader row + active continuation rows).
+                // re-draw the date text for ALL group leaders so every date cell
+                // goes through the same rendering pipeline for visual consistency.
                 rows.forEach((r, idx) => {
                     const info = dateGroupInfo[idx];
                     if (info.isContinuation || info.isLeaveRow) return;  // skip non-leaders and leave rows
@@ -16682,26 +16686,26 @@ ${laSection}
                         totalH += ci.height;
                         hasActiveMerge = true;
                     }
-                    if (!hasActiveMerge) return;               // single-row group, nothing to do
 
-                    // Switch to the correct page, fill white over leader cell, redraw text
+                    // Switch to the correct page
                     doc.setPage(leaderCell.page);
 
                     const cx = leaderCell.x;
                     const cy = leaderCell.y;
                     const cw = leaderCell.width;
 
-                    // White fill (leave 0.3 px border gap)
-                    doc.setFillColor(255, 255, 255);
-                    doc.rect(cx + 0.2, cy + 0.2, cw - 0.4, totalH - 0.4, 'F');
+                    if (hasActiveMerge) {
+                        // Multi-row merged cell: white fill + redraw borders
+                        doc.setFillColor(255, 255, 255);
+                        doc.rect(cx + 0.2, cy + 0.2, cw - 0.4, totalH - 0.4, 'F');
 
-                    // Redraw left, right, top borders of merged area
-                    doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
-                    doc.line(cx,      cy, cx,      cy + totalH);   // left
-                    doc.line(cx + cw, cy, cx + cw, cy + totalH);   // right
-                    doc.line(cx,      cy, cx + cw, cy);            // top
+                        doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
+                        doc.line(cx,      cy, cx,      cy + totalH);   // left
+                        doc.line(cx + cw, cy, cx + cw, cy + totalH);   // right
+                        doc.line(cx,      cy, cx + cw, cy);            // top
+                    }
 
-                    // Vertically centred date text
+                    // Vertically centred date text (same for single and multi-row)
                     const d    = new Date(r.date + 'T00:00:00');
                     const dd_  = String(d.getDate()).padStart(2, '0');
                     const mm_  = String(d.getMonth() + 1).padStart(2, '0');
