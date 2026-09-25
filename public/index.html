@@ -16530,11 +16530,6 @@ ${laSection}
                         // Track page for col 0
                         if (colIdx === 0) {
                             rowPageMap[rowIdx] = curPage;
-                            // Suppress autoTable text only for multi-row date leaders
-                            // (post-process will redraw centred across merged rows)
-                            if (info && !info.isContinuation && !info.isLeaveRow && info.count > 1) {
-                                data.cell.text = [];
-                            }
                         }
 
                         // ── Leave/OD row: suppress text in cols 1,2,4 (they'll be merged with col 3) ──
@@ -16672,52 +16667,33 @@ ${laSection}
                     }
                 });
 
-                // ── Post-process: redraw group-leader date text vertically centred ──
-                // Only for multi-row merged dates. Single-row dates are drawn by
-                // autoTable naturally (same rendering as body text).
+                // ── Post-process: redraw borders for merged date cells ──
+                // autoTable draws ALL date text naturally (same rendering as body).
+                // We only need to fix the outer borders of merged areas here.
                 rows.forEach((r, idx) => {
                     const info = dateGroupInfo[idx];
-                    if (info.isContinuation || info.isLeaveRow) return;  // skip non-leaders and leave rows
+                    if (info.isContinuation || info.isLeaveRow) return;
                     const leaderCell = rowCellInfo[idx];
                     if (!leaderCell) return;
 
-                    // Sum heights of consecutive active continuation rows on the same page
                     let totalH = leaderCell.height;
                     let hasActiveMerge = false;
                     for (let j = idx + 1; j < rows.length; j++) {
                         if (dateGroupInfo[j].groupLeader !== idx) break;
-                        if (!mergeActive[j]) break;            // cross-page → stop
+                        if (!mergeActive[j]) break;
                         const ci = rowCellInfo[j];
                         if (!ci || ci.page !== leaderCell.page) break;
                         totalH += ci.height;
                         hasActiveMerge = true;
                     }
-                    if (!hasActiveMerge) return;               // single-row: autoTable already drew it
+                    if (!hasActiveMerge) return;
 
-                    // Switch to the correct page
                     doc.setPage(leaderCell.page);
-
-                    const cx = leaderCell.x;
-                    const cy = leaderCell.y;
-                    const cw = leaderCell.width;
-
-                    // Redraw outer borders (no white fill to keep same weight as body text)
+                    const cx = leaderCell.x, cy = leaderCell.y, cw = leaderCell.width;
                     doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
                     doc.line(cx,      cy, cx,      cy + totalH);   // left
                     doc.line(cx + cw, cy, cx + cw, cy + totalH);   // right
                     doc.line(cx,      cy, cx + cw, cy);            // top
-
-                    // Vertically centred date text
-                    const d    = new Date(r.date + 'T00:00:00');
-                    const dd_  = String(d.getDate()).padStart(2, '0');
-                    const mm_  = String(d.getMonth() + 1).padStart(2, '0');
-                    const yy_  = String(d.getFullYear()).slice(-2);
-                    const day_ = DAY3[d.getDay()];
-                    const midY = cy + totalH / 2;
-
-                    doc.setFontSize(12).setFont(undefined, 'bold');
-                    doc.text(`${dd_}/${mm_}/${yy_}`, cx + cw / 2, midY - 1.5, { align: 'center' });
-                    doc.text(day_,                   cx + cw / 2, midY + 2.5, { align: 'center' });
                 });
 
                 // ── Post-process: merge Staff Sign (col 5) per date group ──
