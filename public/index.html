@@ -16530,10 +16530,6 @@ ${laSection}
                         // Track page for col 0
                         if (colIdx === 0) {
                             rowPageMap[rowIdx] = curPage;
-                            // Suppress text for multi-row leaders — post-process centres it
-                            if (info && !info.isContinuation && !info.isLeaveRow && info.count > 1) {
-                                data.cell.text = [];
-                            }
                         }
 
                         // ── Leave/OD row: suppress text in cols 1,2,4 (they'll be merged with col 3) ──
@@ -16671,7 +16667,7 @@ ${laSection}
                     }
                 });
 
-                // ── Post-process: redraw borders + centred text for merged date cells ──
+                // ── Post-process: redraw borders for merged date cells ──
                 rows.forEach((r, idx) => {
                     const info = dateGroupInfo[idx];
                     if (info.isContinuation || info.isLeaveRow) return;
@@ -16692,24 +16688,10 @@ ${laSection}
 
                     doc.setPage(leaderCell.page);
                     const cx = leaderCell.x, cy = leaderCell.y, cw = leaderCell.width;
-
-                    // Redraw outer borders
                     doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
                     doc.line(cx,      cy, cx,      cy + totalH);   // left
                     doc.line(cx + cw, cy, cx + cw, cy + totalH);   // right
                     doc.line(cx,      cy, cx + cw, cy);            // top
-
-                    // Vertically centred date text (no white fill — same weight as body)
-                    const d    = new Date(r.date + 'T00:00:00');
-                    const dd_  = String(d.getDate()).padStart(2, '0');
-                    const mm_  = String(d.getMonth() + 1).padStart(2, '0');
-                    const yy_  = String(d.getFullYear()).slice(-2);
-                    const day_ = DAY3[d.getDay()];
-                    const midY = cy + totalH / 2;
-
-                    doc.setFontSize(12).setFont(undefined, 'bold');
-                    doc.text(`${dd_}/${mm_}/${yy_}`, cx + cw / 2, midY - 1.5, { align: 'center' });
-                    doc.text(day_,                   cx + cw / 2, midY + 2.5, { align: 'center' });
                 });
 
                 // ── Post-process: merge Staff Sign (col 5) per date group ──
