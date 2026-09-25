@@ -16519,8 +16519,9 @@ ${laSection}
                         // Track page for col 0
                         if (colIdx === 0) {
                             rowPageMap[rowIdx] = curPage;
-                            // Suppress autoTable text for ALL date cells — we redraw in post-process
-                            if (info && !info.isContinuation && !info.isLeaveRow) {
+                            // Suppress autoTable text only for multi-row date leaders
+                            // (post-process will redraw centred across merged rows)
+                            if (info && !info.isContinuation && !info.isLeaveRow && info.count > 1) {
                                 data.cell.text = [];
                             }
                         }
@@ -16551,14 +16552,9 @@ ${laSection}
                                 data.cell.text = [];
                             }
                         } else {
+                            // Cross-page: don't merge, don't restore date text
                             if (colIdx === 0) {
                                 mergeActive[rowIdx] = false;
-                                const r2  = rows[rowIdx];
-                                const d2  = new Date(r2.date + 'T00:00:00');
-                                const dd2 = String(d2.getDate()).padStart(2, '0');
-                                const mm2 = String(d2.getMonth() + 1).padStart(2, '0');
-                                const yy2 = String(d2.getFullYear()).slice(-2);
-                                data.cell.text = [`${dd2}/${mm2}/${yy2}`, DAY3[d2.getDay()]];
                             } else {
                                 col5MergeActive[rowIdx] = false;
                             }
@@ -16666,14 +16662,13 @@ ${laSection}
                 });
 
                 // ── Post-process: redraw group-leader date text vertically centred ──
-                // Now that all rows are drawn and their heights are recorded, we can
-                // re-draw the date text for ALL group leaders so every date cell
-                // goes through the same rendering pipeline for visual consistency.
+                // Only for multi-row merged dates. Single-row dates are drawn by
+                // autoTable naturally (same rendering as body text).
                 rows.forEach((r, idx) => {
                     const info = dateGroupInfo[idx];
                     if (info.isContinuation || info.isLeaveRow) return;  // skip non-leaders and leave rows
                     const leaderCell = rowCellInfo[idx];
-                    if (!leaderCell) return;                   // not drawn yet (shouldn't happen)
+                    if (!leaderCell) return;
 
                     // Sum heights of consecutive active continuation rows on the same page
                     let totalH = leaderCell.height;
@@ -16686,6 +16681,7 @@ ${laSection}
                         totalH += ci.height;
                         hasActiveMerge = true;
                     }
+                    if (!hasActiveMerge) return;               // single-row: autoTable already drew it
 
                     // Switch to the correct page
                     doc.setPage(leaderCell.page);
@@ -16694,18 +16690,13 @@ ${laSection}
                     const cy = leaderCell.y;
                     const cw = leaderCell.width;
 
-                    if (hasActiveMerge) {
-                        // Multi-row merged cell: white fill + redraw borders
-                        doc.setFillColor(255, 255, 255);
-                        doc.rect(cx + 0.2, cy + 0.2, cw - 0.4, totalH - 0.4, 'F');
+                    // Redraw outer borders (no white fill to keep same weight as body text)
+                    doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
+                    doc.line(cx,      cy, cx,      cy + totalH);   // left
+                    doc.line(cx + cw, cy, cx + cw, cy + totalH);   // right
+                    doc.line(cx,      cy, cx + cw, cy);            // top
 
-                        doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
-                        doc.line(cx,      cy, cx,      cy + totalH);   // left
-                        doc.line(cx + cw, cy, cx + cw, cy + totalH);   // right
-                        doc.line(cx,      cy, cx + cw, cy);            // top
-                    }
-
-                    // Vertically centred date text (same for single and multi-row)
+                    // Vertically centred date text
                     const d    = new Date(r.date + 'T00:00:00');
                     const dd_  = String(d.getDate()).padStart(2, '0');
                     const mm_  = String(d.getMonth() + 1).padStart(2, '0');
