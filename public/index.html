@@ -16404,12 +16404,23 @@ ${laSection}
                 // isContinuation = true for rows[i] when rows[i].date === rows[i-1].date
                 // Leave/OD rows are standalone — they are NOT continuations of date groups
                 const dateGroupInfo = rows.map((r, idx) => {
-                    if (r.isLeaveOD) return { isContinuation: false, groupLeader: idx, isLeaveRow: true };
+                    if (r.isLeaveOD) return { isContinuation: false, groupLeader: idx, isLeaveRow: true, count: 1 };
                     const prevNonLeave = idx > 0 && !rows[idx - 1].isLeaveOD && rows[idx - 1].date === r.date;
                     const isContinuation = prevNonLeave;
                     let leader = idx;
                     while (leader > 0 && !rows[leader - 1].isLeaveOD && rows[leader - 1].date === r.date) leader--;
-                    return { isContinuation, groupLeader: leader, isLeaveRow: false };
+                    return { isContinuation, groupLeader: leader, isLeaveRow: false, count: 0 };
+                });
+                // Compute count for each group leader
+                dateGroupInfo.forEach((info, idx) => {
+                    if (!info.isContinuation && !info.isLeaveRow) {
+                        let cnt = 1;
+                        for (let j = idx + 1; j < rows.length; j++) {
+                            if (dateGroupInfo[j].groupLeader !== idx) break;
+                            cnt++;
+                        }
+                        info.count = cnt;
+                    }
                 });
 
                 // Tracking maps filled during drawing hooks
