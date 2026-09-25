@@ -16518,6 +16518,7 @@ ${laSection}
                     alternateRowStyles: { fillColor: [255, 255, 255] },
                     margin: { top: 41, bottom: 28, left: margin, right: margin },
                     tableWidth: pageW - margin * 2,
+                    rowPageBreak: 'avoid',
 
                     // ── Decide per cell: merge or restore date text ────────
                     willDrawCell: (data) => {
@@ -16527,19 +16528,9 @@ ${laSection}
                         const curPage = data.doc.internal.getCurrentPageInfo().pageNumber;
                         const info    = dateGroupInfo[rowIdx];
 
-                        // Track page for col 0 + vertically centre merged dates
+                        // Track page for col 0
                         if (colIdx === 0) {
                             rowPageMap[rowIdx] = curPage;
-                            // Shift text down to centre in merged area (autoTable still draws it)
-                            if (info && !info.isContinuation && !info.isLeaveRow && info.count > 1 && data.cell.textPos) {
-                                let totalH = data.cell.height;
-                                for (let j = rowIdx + 1; j < rows.length; j++) {
-                                    if (dateGroupInfo[j].groupLeader !== rowIdx) break;
-                                    const bodyRow = data.table.body[j];
-                                    if (bodyRow) totalH += bodyRow.height;
-                                }
-                                data.cell.textPos.y += (totalH - data.cell.height) / 2;
-                            }
                         }
 
                         // ── Leave/OD row: suppress text in cols 1,2,4 (they'll be merged with col 3) ──
