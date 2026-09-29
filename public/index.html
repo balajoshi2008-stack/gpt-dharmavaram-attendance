@@ -3018,7 +3018,7 @@
                                     <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Marks (0-40)
                                     </th>
                                     <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Assign/Activity<br><small style="font-weight:400;opacity:0.85;">(Max 10)</small></th>
-                                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Final Marks<br><small style="font-weight:400;opacity:0.85;">(20M)</small></th>
+                                    <th id="unitFinalHeader" style="padding: 12px; text-align: center; border: 1px solid #ddd;">Final Marks<br><small style="font-weight:400;opacity:0.85;">(20M)</small></th>
                                 </tr>
                             </thead>
                             <tbody id="unitMarkTableBody"></tbody>
@@ -10060,6 +10060,17 @@
             const markKey = `${y}-${s}_${subCode}_UNIT-${unit}`;
             const existingMarks = UNIT_MARKS[markKey] || {};
 
+            // Detect C26 scheme: subject codes starting with "26" (e.g., 26CS105T)
+            const isC26 = /^26/.test(subCode);
+
+            // Update Final Marks header based on scheme
+            const finalHeader = document.getElementById('unitFinalHeader');
+            if (finalHeader) {
+                finalHeader.innerHTML = isC26
+                    ? 'Final Marks<br><small style="font-weight:400;opacity:0.85;">(30M)</small>'
+                    : 'Final Marks<br><small style="font-weight:400;opacity:0.85;">(20M)</small>';
+            }
+
             // Build table
             const tbody = document.getElementById('unitMarkTableBody');
             tbody.innerHTML = '';
@@ -10072,10 +10083,19 @@
                 const assignVal = existingMarks[st.pin + '_assign'] !== undefined && existingMarks[st.pin + '_assign'] !== null
                     ? existingMarks[st.pin + '_assign'] : 10; // default 10
 
-                // Calculate final marks: ceil((marks + assign) / 2.5), max 20
+                // Calculate final marks based on scheme
                 const markNum = mark !== '' ? parseInt(mark) : 0;
                 const assignNum = parseInt(assignVal) || 0;
-                const finalMarks = (mark !== '') ? Math.min(Math.ceil((markNum + assignNum) / 2.5), 20) : '';
+                let finalMarks = '';
+                if (mark !== '') {
+                    if (isC26) {
+                        // C26: ceil(marks/2) + assign, max 30
+                        finalMarks = Math.min(Math.ceil(markNum / 2) + assignNum, 30);
+                    } else {
+                        // C23: ceil((marks + assign) / 2.5), max 20
+                        finalMarks = Math.min(Math.ceil((markNum + assignNum) / 2.5), 20);
+                    }
+                }
 
                 tr.innerHTML = `
                     <td style="padding: 10px; border: 1px solid #ddd;">${idx + 1}</td>
@@ -10163,7 +10183,13 @@
                 if (mv === '') { finalSpan.textContent = ''; return; }
                 const m = parseInt(mv) || 0;
                 const a = av !== '' ? (parseInt(av) || 0) : 10;
-                finalSpan.textContent = Math.min(Math.ceil((m + a) / 2.5), 20);
+                if (isC26) {
+                    // C26: ceil(marks/2) + assign, max 30
+                    finalSpan.textContent = Math.min(Math.ceil(m / 2) + a, 30);
+                } else {
+                    // C23: ceil((marks + assign) / 2.5), max 20
+                    finalSpan.textContent = Math.min(Math.ceil((m + a) / 2.5), 20);
+                }
             };
 
             // Attach listeners
@@ -10355,7 +10381,9 @@
 
             theorySubjects.forEach(code => {
                 const subName = getSubjectName(code);
-                html += `<th style="padding: 12px; text-align: center; border: 1px solid #ddd; min-width: 180px;">${code}<br><small style="font-size: 11px;">${subName}</small><br><small style="font-size:10px;opacity:0.8;">Marks | Assign | Final(20)</small></th>`;
+                const isC26Sub = /^26/.test(code);
+                const finalLabel = isC26Sub ? 'Final(30)' : 'Final(20)';
+                html += `<th style="padding: 12px; text-align: center; border: 1px solid #ddd; min-width: 180px;">${code}<br><small style="font-size: 11px;">${subName}</small><br><small style="font-size:10px;opacity:0.8;">Marks | Assign | ${finalLabel}</small></th>`;
             });
 
             html += '</tr></thead><tbody>';
@@ -10377,9 +10405,14 @@
                     let bgColor = '#fff8e1';
 
                     if (mark !== undefined && mark !== null) {
-                        const finalM = Math.min(Math.ceil((mark + assign) / 2.5), 20);
+                        const isC26Sub = /^26/.test(code);
+                        const finalM = isC26Sub
+                            ? Math.min(Math.ceil(mark / 2) + assign, 30)
+                            : Math.min(Math.ceil((mark + assign) / 2.5), 20);
+                        const passThreshold = isC26Sub ? 18 : 12;
+                        const midThreshold = isC26Sub ? 12 : 8;
                         displayMark = `${mark} | ${assign} | <strong>${finalM}</strong>`;
-                        bgColor = finalM >= 12 ? '#e8f5e9' : finalM >= 8 ? '#fff3e0' : '#ffebee';
+                        bgColor = finalM >= passThreshold ? '#e8f5e9' : finalM >= midThreshold ? '#fff3e0' : '#ffebee';
                     }
 
                     html += `<td style="padding: 10px; border: 1px solid #ddd; text-align: center; background: ${bgColor}; font-size:13px;">${displayMark}</td>`;
@@ -10459,8 +10492,9 @@
 
             // Header row 3: Sub-headers for each subject
             const header3 = ['', '', ''];
-            theorySubjects.forEach(() => {
-                header3.push('Marks(40)', 'Assign(10)', 'Final(20)');
+            theorySubjects.forEach(code => {
+                const isC26Sub = /^26/.test(code);
+                header3.push('Marks(40)', 'Assign(10)', isC26Sub ? 'Final(30)' : 'Final(20)');
             });
             data.push(header3);
 
@@ -10475,7 +10509,10 @@
                     const assign = marks[st.pin + '_assign'] !== undefined && marks[st.pin + '_assign'] !== null ? marks[st.pin + '_assign'] : 10;
 
                     if (mark !== undefined && mark !== null) {
-                        const finalM = Math.min(Math.ceil((mark + assign) / 2.5), 20);
+                        const isC26Sub = /^26/.test(code);
+                        const finalM = isC26Sub
+                            ? Math.min(Math.ceil(mark / 2) + assign, 30)
+                            : Math.min(Math.ceil((mark + assign) / 2.5), 20);
                         row.push(mark, assign, finalM);
                     } else {
                         row.push('NA', '', '');
