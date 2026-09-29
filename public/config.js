@@ -4,7 +4,7 @@
 //
 //  SCHEME HISTORY:
 //  C23 (≤ 2025): PIN = 25170-CM-001   Subject = CM-101   Branch = Computer Engineering
-//  C26 (≥ 2026): PIN = 26170CM001     Subject = 26CM101T Branch = Computer Science & Engineering
+//  C26 (≥ 2026): PIN = 26170CS001     Subject = 26CS101T Branch = Computer Science & Engineering
 //
 //  SUBJECT TYPE SUFFIXES (C26 only):
 //  T = Theory    → Unit Marks tab ✅   Lab Assessment ❌
@@ -30,7 +30,7 @@ const APP_CONFIG = {
     branch: {
         name:      "Computer Science & Engineering",  // C26 name
         shortName: "CSE",
-        code:      "CM"   // same in both C23 and C26
+        code:      "CS"   // C26 scheme branch code (C23 uses "CM" via scheme-aware logic)
     },
 
     schemeChangeYear: 2026,   // admission year 2026 = C26 scheme
@@ -51,8 +51,8 @@ const APP_CONFIG = {
             rollDigits:       3,
             branchName:       "Computer Science & Engineering",
             branchShortName:  "CSE",
-            pinExample:       "26170CM001",
-            subjectExample:   "26CM101T"
+            pinExample:       "26170CS001",
+            subjectExample:   "26CS101T"
         }
     },
 
@@ -129,7 +129,7 @@ APP_CONFIG.detectSchemeFromPIN = function(pin) {
     return String(pin || '').includes('-') ? 'C23' : 'C26';
 };
 
-// Subject code starting with 2 digits then letters = C26 ("26CM101T"); else C23 ("CM-101")
+// Subject code starting with 2 digits then letters = C26 ("26CS101T"); else C23 ("CM-101")
 APP_CONFIG.detectSchemeFromSubject = function(code) {
     return /^\d{2}[A-Z]/.test(String(code || '')) ? 'C26' : 'C23';
 };
@@ -144,19 +144,19 @@ APP_CONFIG.getBranchName = function(admissionYear) {
 
 /**
  * Generate PIN — correct scheme chosen automatically from admissionYear.
- *   generatePIN(2025, 1)   → "25170-CM-001"   (C23 — with dashes, unchanged)
- *   generatePIN(2024, 5)   → "24170-CM-005"   (C23 — with dashes, unchanged)
- *   generatePIN(2026, 1)   → "26170CM001"     (C26 — no dashes)
- *   generatePIN(2027, 15)  → "27170CM015"     (C26 — no dashes)
+ *   generatePIN(2025, 1)   → "25170-CM-001"   (C23 — with dashes, branch CM)
+ *   generatePIN(2024, 5)   → "24170-CM-005"   (C23 — with dashes, branch CM)
+ *   generatePIN(2026, 1)   → "26170CS001"     (C26 — no dashes, branch CS)
+ *   generatePIN(2027, 15)  → "27170CS015"     (C26 — no dashes, branch CS)
  */
 APP_CONFIG.generatePIN = function(admissionYear, rollNo) {
     const yr     = String(admissionYear).slice(-2);
     const cc     = this.college.code;
-    const bc     = this.branch.code;
     const scheme = this.getScheme(admissionYear);
+    const bc     = scheme === 'C26' ? this.branch.code : 'CM';  // C23 always "CM"
     const roll   = String(rollNo).padStart(this.schemes[scheme].rollDigits, '0');
     return scheme === 'C26'
-        ? `${yr}${cc}${bc}${roll}`       // "26170CM001"
+        ? `${yr}${cc}${bc}${roll}`       // "26170CS001"
         : `${yr}${cc}-${bc}-${roll}`;    // "25170-CM-001"
 };
 
@@ -178,9 +178,9 @@ APP_CONFIG.extractRollFromPIN = function(pin) {
 
 /**
  * Generate C26 subject code from year + number + type.
- *   generateSubjectCode(2026, 101, 'T') → "26CM101T"
- *   generateSubjectCode(2026, 107, 'L') → "26CM107L"
- *   generateSubjectCode(2026, 106, 'A') → "26CM106A"
+ *   generateSubjectCode(2026, 101, 'T') → "26CS101T"
+ *   generateSubjectCode(2026, 107, 'L') → "26CS107L"
+ *   generateSubjectCode(2026, 106, 'A') → "26CS106A"
  * C23 subjects keep their existing CM-xxx codes — no generation needed.
  */
 APP_CONFIG.generateSubjectCode = function(admissionYear, number, type) {
@@ -213,8 +213,8 @@ APP_CONFIG.c26NumberToYearSemLabel = function(num) {
 /**
  * Parse a subject code — returns unified info for C23 and C26.
  *
- * parseSubjectCode("26CM101T") → { scheme:'C26', type:'T', showInUnitMarks:true, ... }
- * parseSubjectCode("26CM107L") → { scheme:'C26', type:'L', showInLabAssess:true, ... }
+ * parseSubjectCode("26CS101T") → { scheme:'C26', type:'T', showInUnitMarks:true, ... }
+ * parseSubjectCode("26CS107L") → { scheme:'C26', type:'L', showInLabAssess:true, ... }
  * parseSubjectCode("CM-101")   → { scheme:'C23', type:null, showInUnitMarks:true, ... }
  */
 APP_CONFIG.parseSubjectCode = function(code) {

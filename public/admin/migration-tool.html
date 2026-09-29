@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,
+        initial-scale=1.0, viewport-fit=cover">
+  <title>Branch Code Migration — GPT Dharmavaram</title>
+  <link rel="stylesheet" href="../css/landscape.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;
+         background:#f0f2f8;color:#2d2d2d;padding:1rem;
+         padding-bottom:env(safe-area-inset-bottom,0)}
+    .card{background:white;border-radius:12px;padding:1.5rem;
+          margin-bottom:1rem;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+    h1{color:#1F3864;font-size:1.15rem;margin-bottom:.4rem}
+    h2{color:#1F3864;font-size:.98rem;margin-bottom:.9rem}
+    .box{border-left:4px solid;border-radius:0 8px 8px 0;
+         padding:.85rem 1rem;font-size:.84rem;
+         line-height:1.6;margin-bottom:.9rem}
+    .warn   {background:#FFF3E0;border-color:#FF9800;color:#E65100}
+    .danger {background:#FFEBEE;border-color:#F44336;color:#C62828}
+    .info   {background:#EFF6FF;border-color:#2E75B6;color:#1E40AF}
+    .success{background:#E8F5E9;border-color:#4CAF50;color:#2E7D32}
+    .btn{width:100%;padding:.78rem;border:none;border-radius:8px;
+         font-size:.92rem;font-weight:700;cursor:pointer;
+         margin-bottom:.6rem;transition:all .2s}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-blue {background:#2E75B6;color:white}
+    .btn-red  {background:#C62828;color:white}
+    .btn-gray {background:#757575;color:white}
+    .prog-bg  {background:#dde1f0;border-radius:8px;height:10px}
+    .prog-fill{background:linear-gradient(90deg,#1F3864,#2E75B6);
+               height:10px;border-radius:8px;transition:width .4s}
+    .log{background:#0d1117;color:#58a6ff;font-family:monospace;
+         font-size:.75rem;padding:1rem;border-radius:8px;
+         max-height:350px;overflow-y:auto;white-space:pre-wrap;
+         display:none;margin-top:.8rem}
+    .ok  {color:#3fb950} .err{color:#f85149}
+    .skip{color:#8b949e} .hd {color:#e3b341;font-weight:bold}
+    table{border-collapse:collapse;width:100%;font-size:.82rem;margin:.6rem 0}
+    th{background:#1F3864;color:white;padding:.5rem .7rem;text-align:left}
+    td{padding:.5rem .7rem;border:1px solid #ddd}
+    tr:nth-child(even) td{background:#f5f7ff}
+    .old{background:#FFEBEE;color:#C62828;border-radius:4px;
+         padding:.1rem .4rem;font-size:.75rem;font-weight:700}
+    .new{background:#E8F5E9;color:#2E7D32;border-radius:4px;
+         padding:.1rem .4rem;font-size:.75rem;font-weight:700}
+    .sn{background:#1F3864;color:white;border-radius:50%;
+        width:24px;height:24px;display:inline-flex;
+        align-items:center;justify-content:center;
+        font-size:.75rem;font-weight:700;margin-right:.5rem}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="card" id="loginCard">
+  <h1>🔐 Admin Login</h1>
+  <p style="color:#666;font-size:.84rem;margin-bottom:1rem;">
+    Branch Code Migration Tool — Admin access required
+  </p>
+  <div style="margin-bottom:.8rem;">
+    <label style="font-size:.84rem;font-weight:600;">Admin Username</label>
+    <input type="text" id="mgAdminUser" placeholder="e.g. admin"
+           style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-top:4px;font-size:.9rem;">
+  </div>
+  <div style="margin-bottom:1rem;">
+    <label style="font-size:.84rem;font-weight:600;">Password</label>
+    <input type="password" id="mgAdminPass" placeholder="Password"
+           style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-top:4px;font-size:.9rem;"
+           onkeydown="if(event.key==='Enter')mgLogin()">
+  </div>
+  <button class="btn btn-blue" onclick="mgLogin()" id="loginBtn">🔑 Login</button>
+  <div id="loginError" style="display:none;color:#C62828;font-size:.84rem;margin-top:.6rem;font-weight:600;"></div>
+</div>
+
+<!-- TOOL -->
+<div id="toolContent" style="display:none;">
+<div class="card">
+  <h1>🔄 Branch Code Migration Tool</h1>
+  <p style="color:#666;font-size:.84rem;margin-bottom:.8rem;">
+    C26 scheme: <strong>CM → CS</strong> in PINs and subject codes
+  </p>
+  <div class="box info">
+    ℹ️ <strong>PIN:</strong>
+    <span class="old">26170CM001</span> → <span class="new">26170CS001</span><br>
+    <strong>Subject:</strong>
+    <span class="old">26CM101T</span> → <span class="new">26CS101T</span>
+  </div>
+  <div class="box danger">
+    ⛔ C23 data (24170-CM-001 / CM-101) <strong>NEVER</strong> touched<br>
+    • Run SCAN first — no changes during scan
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="sn">1</span>Scan — Preview Changes</h2>
+  <button class="btn btn-blue" onclick="mg_scan()" id="scanBtn">
+    🔍 Scan Firestore (Safe — No Changes)
+  </button>
+  <div id="scanArea"></div>
+</div>
+
+<div class="card" id="migrateCard" style="display:none;">
+  <h2><span class="sn">2</span>Run Migration</h2>
+  <div class="box warn">
+    ⚠️ No faculty should be using the system right now.
+    Do NOT close this page while migration runs.
+  </div>
+  <label style="display:flex;align-items:flex-start;gap:.7rem;
+                font-size:.88rem;cursor:pointer;margin-bottom:1rem;
+                background:#f7f8ff;padding:.85rem;border-radius:8px;
+                border:1.5px solid #dde1f0;">
+    <input type="checkbox" id="confirmBox"
+           style="margin-top:2px;width:18px;height:18px;"
+           onchange="document.getElementById('migrateBtn').disabled=!this.checked"/>
+    <span>I understand this modifies Firestore data. Already-migrated
+    data will be skipped safely.</span>
+  </label>
+  <button class="btn btn-red" id="migrateBtn" onclick="mg_migrate()" disabled>
+    🔄 Start Migration (CM → CS)
+  </button>
+  <div id="progressArea" style="display:none;margin-top:.8rem;">
+    <div id="progressLabel" style="font-size:.83rem;color:#666;margin-bottom:.4rem;font-weight:600;"></div>
+    <div class="prog-bg"><div class="prog-fill" id="progressFill" style="width:0%"></div></div>
+    <div id="progressDetail" style="font-size:.76rem;color:#888;margin-top:.3rem;"></div>
+  </div>
+  <div class="log" id="migrateLog"></div>
+</div>
+
+<div class="card" id="doneCard" style="display:none;">
+  <h2><span class="sn">3</span>Migration Complete</h2>
+  <div class="box success" id="doneMsg"></div>
+</div>
+</div> <!-- /toolContent -->
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyC9nMFnZGdnOm5zXgpSMKiTFpzEBTuPfRM",
+    authDomain: "gpt-dharmavaram-attendance.firebaseapp.com",
+    projectId: "gpt-dharmavaram-attendance",
+    storageBucket: "gpt-dharmavaram-attendance.firebasestorage.app",
+    messagingSenderId: "471911252737",
+    appId: "1:471911252737:web:a88dcdfafbe0307e7a1100"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+async function mgLogin() {
+  const user = document.getElementById('mgAdminUser').value.trim().toLowerCase();
+  const pass = document.getElementById('mgAdminPass').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  if (!user||!pass){errEl.textContent='⚠️ Enter username and password.';errEl.style.display='block';return;}
+  btn.disabled=true; btn.textContent='⏳ Logging in...'; errEl.style.display='none';
+  try {
+    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    await auth.signInWithEmailAndPassword(user+'@dharmavaram.com', pass);
+    const ud = await db.collection('users').doc(user).get();
+    if (!ud.exists){await auth.signOut();errEl.textContent='⛔ User not found.';errEl.style.display='block';btn.disabled=false;btn.textContent='🔑 Login';return;}
+    const t=ud.data().type||'';
+    if (!['admin','powerUser'].includes(t)){await auth.signOut();errEl.textContent='⛔ Admin required. Role: '+t;errEl.style.display='block';btn.disabled=false;btn.textContent='🔑 Login';return;}
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('toolContent').style.display='block';
+  } catch(e){errEl.textContent='❌ '+e.message;errEl.style.display='block';btn.disabled=false;btn.textContent='🔑 Login';}
+}
+
+// ════════════════════════════════════════════════════════════════
+// HELPERS — C23 is NEVER touched
+// ════════════════════════════════════════════════════════════════
+function needsPIN(pin) {
+  if (!pin) return false;
+  const p = String(pin).trim();
+  if (p.includes('-')) return false;
+  if (parseInt(p.slice(0,2)) < 26) return false;
+  return p.includes('170CM');
+}
+function needsSubj(code) {
+  if (!code) return false;
+  const c = String(code).trim();
+  if (c.startsWith('CM-')) return false;
+  if (!/^\d{2}CM/.test(c)) return false;
+  return parseInt(c.slice(0,2)) >= 26;
+}
+function fixPIN(pin) {
+  const p = String(pin).trim();
+  if (p.includes('-')||parseInt(p.slice(0,2))<26||!p.includes('170CM')) return p;
+  return p.replace('170CM','170CS');
+}
+function fixSubj(code) {
+  const c = String(code).trim();
+  if (c.startsWith('CM-')||!/^\d{2}CM/.test(c)||parseInt(c.slice(0,2))<26) return c;
+  return c.replace(/^(\d{2})CM/,'$1CS');
+}
+
+const logEl = document.getElementById('migrateLog');
+function mlog(msg,cls=''){logEl.style.display='block';const s=document.createElement('span');s.className=cls;s.textContent=new Date().toLocaleTimeString()+' '+msg+'\n';logEl.appendChild(s);logEl.scrollTop=logEl.scrollHeight;}
+function setProg(pct,label,detail=''){document.getElementById('progressArea').style.display='block';document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressLabel').textContent=label;document.getElementById('progressDetail').textContent=detail;}
+
+// ════════════════════════════════════════════════════════════════
+// ACTUAL DATA STRUCTURE:
+//
+// settings/subjects       → { "26CM101T": {name,...}, "CM-101": {name,...} }
+// settings/timetable      → { "1_Monday": [{code,faculty,...}], ... }
+// settings/facultyMap     → { "26CM101T": "FacultyName", ... }
+// settings/periodFaculty  → { "dayKey": { "period": {subject,...} } }
+//
+// students/1              → { "1": [{pin:"26170CM001",name:"...",joinDate:...}, ...] }
+// students/2              → { "3": [...], "4": [...] }
+// students/3              → { "5": [...] }
+//   PIN is a FIELD inside array objects, NOT the document ID!
+//
+// attendance/{date}       → { "26170CM001": { "1": {status,faculty,subject} } }
+//   PIN is a KEY (field name) inside the date document
+//
+// unitMarks/{id}          → { pin, subject, ... }
+// ════════════════════════════════════════════════════════════════
+
+async function mg_scan() {
+  const btn = document.getElementById('scanBtn');
+  btn.disabled=true; btn.textContent='⏳ Scanning...';
+  const area = document.getElementById('scanArea');
+  area.innerHTML='<div class="box info" style="margin-top:.8rem;">Scanning...</div>';
+
+  try {
+    // ── settings/subjects ──
+    const subjDoc = await db.collection('settings').doc('subjects').get();
+    const subjData = subjDoc.exists ? subjDoc.data() : {};
+    const subjOld = Object.keys(subjData).filter(k => needsSubj(k));
+
+    // ── students/{year} — arrays with pin field ──
+    const stuSnap = await db.collection('students').get();
+    let stuPins = [];
+    stuSnap.forEach(doc => {
+      const data = doc.data();
+      Object.keys(data).forEach(sem => {
+        if (Array.isArray(data[sem])) {
+          data[sem].forEach(s => {
+            if (s.pin && needsPIN(s.pin)) {
+              stuPins.push({yearDoc:doc.id, sem, oldPin:s.pin, newPin:fixPIN(s.pin), name:s.name||''});
+            }
+          });
+        }
+      });
+    });
+
+    // ── attendance/{date} — pin keys + subject fields ──
+    const attSnap = await db.collection('attendance').get();
+    let attPins=0, attSubjs=0;
+    attSnap.forEach(doc => {
+      const data = doc.data();
+      Object.keys(data).forEach(pin => {
+        if (needsPIN(pin)) attPins++;
+        if (typeof data[pin]==='object' && data[pin]) {
+          Object.values(data[pin]).forEach(rec => {
+            if (rec && needsSubj(rec.subject)) attSubjs++;
+          });
+        }
+      });
+    });
+
+    // ── settings/timetable ──
+    const ttDoc = await db.collection('settings').doc('timetable').get();
+    const ttData = ttDoc.exists ? ttDoc.data() : {};
+    let ttSubjs = 0;
+    Object.values(ttData).forEach(v => {
+      if (Array.isArray(v)) v.forEach(p => { if (p && needsSubj(p.code)) ttSubjs++; });
+    });
+
+    // ── settings/facultyMap ──
+    const fmDoc = await db.collection('settings').doc('facultyMap').get();
+    const fmData = fmDoc.exists ? fmDoc.data() : {};
+    const fmOld = Object.keys(fmData).filter(k => needsSubj(k));
+
+    // ── settings/periodFaculty ──
+    const pfDoc = await db.collection('settings').doc('periodFaculty').get();
+    const pfData = pfDoc.exists ? pfDoc.data() : {};
+    let pfSubjs = 0;
+    Object.values(pfData).forEach(d => {
+      if (typeof d==='object'&&d) Object.values(d).forEach(r => { if (r&&needsSubj(r.subject)) pfSubjs++; });
+    });
+
+    // ── unitMarks/ ──
+    let umPins=0, umSubjs=0;
+    try { const us=await db.collection('unitMarks').get(); us.forEach(d=>{const x=d.data();if(needsPIN(x.pin))umPins++;if(needsSubj(x.subject))umSubjs++;}); } catch(e){}
+
+    const total = subjOld.length + stuPins.length + attPins + attSubjs +
+                  ttSubjs + fmOld.length + pfSubjs + umPins + umSubjs;
+
+    if (total===0) {
+      area.innerHTML='<div class="box success" style="margin-top:.8rem;">✅ Nothing to migrate. All C26 codes already use CS.</div>';
+      btn.disabled=false; btn.textContent='🔍 Scan Again'; return;
+    }
+
+    const stuRows = stuPins.map(s =>
+      `<tr><td>students/${s.yearDoc} [sem ${s.sem}]</td><td><span class="old">${s.oldPin}</span></td><td><span class="new">${s.newPin}</span></td><td>${s.name}</td></tr>`
+    ).join('');
+    const subjRows = subjOld.map(c =>
+      `<tr><td><span class="old">${c}</span></td><td><span class="new">${fixSubj(c)}</span></td><td>${subjData[c]?.name||''}</td></tr>`
+    ).join('');
+
+    area.innerHTML = `
+      <div class="box info" style="margin-top:.8rem;">
+        <strong>📊 ${total} changes needed</strong> — C23 data skipped ✅
+      </div>
+      <table>
+        <tr><th>Data</th><th>Needs Change</th></tr>
+        <tr><td>settings/subjects (key rename)</td><td style="color:#C62828;font-weight:700;">${subjOld.length} codes</td></tr>
+        <tr><td>students/ (pin field inside arrays)</td><td style="color:#C62828;font-weight:700;">${stuPins.length} PINs</td></tr>
+        <tr><td>attendance/ (pin keys + subject fields)</td><td>${attPins} pins + ${attSubjs} subjects</td></tr>
+        <tr><td>settings/timetable</td><td>${ttSubjs} entries</td></tr>
+        <tr><td>settings/facultyMap (key rename)</td><td>${fmOld.length} keys</td></tr>
+        <tr><td>settings/periodFaculty</td><td>${pfSubjs} entries</td></tr>
+        <tr><td>unitMarks/</td><td>${umPins} pins + ${umSubjs} subjects</td></tr>
+      </table>
+      ${stuPins.length>0?`<strong style="display:block;margin:.8rem 0 .4rem;">Student PINs (field update inside year docs):</strong>
+      <table><tr><th>Location</th><th>Old PIN</th><th>New PIN</th><th>Name</th></tr>${stuRows}</table>`:''}
+      ${subjOld.length>0?`<strong style="display:block;margin:.8rem 0 .4rem;">Subject codes:</strong>
+      <table><tr><th>Old</th><th>New</th><th>Name</th></tr>${subjRows}</table>`:''}`;
+
+    document.getElementById('migrateCard').style.display='block';
+    document.getElementById('migrateCard').scrollIntoView({behavior:'smooth'});
+  } catch(e) {
+    area.innerHTML=`<div class="box danger" style="margin-top:.8rem;">❌ ${e.message}</div>`;
+    console.error(e);
+  } finally { btn.disabled=false; btn.textContent='🔍 Scan Again'; }
+}
+
+// ════════════════════════════════════════════════════════════════
+// MIGRATION
+// ════════════════════════════════════════════════════════════════
+async function mg_migrate() {
+  const btn=document.getElementById('migrateBtn');
+  btn.disabled=true; btn.textContent='⏳ Migrating...';
+  let done=0;
+  mlog('=== MIGRATION STARTED ===','hd');
+  mlog('C23 (dashes / CM-xxx): NEVER touched','skip');
+
+  try {
+    // ── STEP 1: settings/subjects ─────────────────────────
+    setProg(5,'Step 1/7: settings/subjects...','');
+    mlog('\n--- STEP 1: settings/subjects ---','hd');
+    const subjDoc = await db.collection('settings').doc('subjects').get();
+    const subjData = subjDoc.exists ? subjDoc.data() : {};
+    const newSubj = {};
+    let s1=0;
+    Object.keys(subjData).forEach(code => {
+      if (needsSubj(code)) {
+        const nc = fixSubj(code);
+        newSubj[nc] = {...subjData[code]};
+        if (newSubj[nc].code) newSubj[nc].code = nc;
+        mlog('  '+code+' → '+nc,'ok'); s1++; done++;
+      } else {
+        newSubj[code] = subjData[code];
+      }
+    });
+    if (s1>0) await db.collection('settings').doc('subjects').set(newSubj);
+    mlog('Step 1 done: '+s1+' codes','ok');
+
+    // ── STEP 2: students/{year} — update pin field in arrays ─
+    setProg(15,'Step 2/7: students/ (pin fields)...','');
+    mlog('\n--- STEP 2: students/{year} (pin field in arrays) ---','hd');
+    mlog('  Structure: students/1 → { "1": [{pin,name,...},...] }','skip');
+    const stuSnap = await db.collection('students').get();
+    let s2=0;
+    for (const doc of stuSnap.docs) {
+      const data = doc.data();
+      let changed = false;
+      Object.keys(data).forEach(sem => {
+        if (Array.isArray(data[sem])) {
+          data[sem] = data[sem].map(student => {
+            if (student.pin && needsPIN(student.pin)) {
+              const newPin = fixPIN(student.pin);
+              mlog('  [students/'+doc.id+' sem '+sem+'] '+student.pin+' → '+newPin+' ('+student.name+')','ok');
+              changed = true; s2++; done++;
+              return {...student, pin: newPin};
+            }
+            return student;
+          });
+        }
+      });
+      if (changed) {
+        await db.collection('students').doc(doc.id).set(data);
+        mlog('  ✓ students/'+doc.id+' saved','ok');
+      }
+    }
+    mlog('Step 2 done: '+s2+' student PINs updated','ok');
+
+    // ── STEP 3: attendance/{date} — pin keys + subject fields ─
+    setProg(28,'Step 3/7: attendance/ (ALL dates)...','');
+    mlog('\n--- STEP 3: attendance/ ---','hd');
+    const attSnap = await db.collection('attendance').get();
+    mlog('  Total date docs: '+attSnap.size);
+    let s3=0;
+    for (const doc of attSnap.docs) {
+      const data = doc.data();
+      const newData = {};
+      let changed = false;
+      Object.keys(data).forEach(pin => {
+        const newPin = needsPIN(pin) ? fixPIN(pin) : pin;
+        if (newPin !== pin) changed = true;
+        if (typeof data[pin]==='object' && data[pin]!==null) {
+          const periods = {};
+          Object.keys(data[pin]).forEach(period => {
+            const rec = data[pin][period];
+            if (rec && typeof rec==='object' && needsSubj(rec.subject)) {
+              periods[period] = {...rec, subject: fixSubj(rec.subject)};
+              changed = true;
+            } else {
+              periods[period] = rec;
+            }
+          });
+          newData[newPin] = periods;
+        } else {
+          newData[newPin] = data[pin];
+        }
+      });
+      if (changed) {
+        await db.collection('attendance').doc(doc.id).set(newData);
+        s3++; done++;
+        if (s3%10===0) {
+          mlog('  '+s3+' date docs updated...','ok');
+          setProg(28+Math.min(25,s3/attSnap.size*25),'Step 3/7: attendance...',s3+'/'+attSnap.size);
+        }
+      }
+    }
+    mlog('Step 3 done: '+s3+' date docs','ok');
+
+    // ── STEP 4: settings/timetable ────────────────────────
+    setProg(56,'Step 4/7: settings/timetable...','');
+    mlog('\n--- STEP 4: settings/timetable ---','hd');
+    const ttDoc = await db.collection('settings').doc('timetable').get();
+    let s4=0;
+    if (ttDoc.exists) {
+      const ttData = ttDoc.data();
+      let ch=false;
+      Object.keys(ttData).forEach(key => {
+        if (Array.isArray(ttData[key])) {
+          ttData[key] = ttData[key].map(p => {
+            if (p && needsSubj(p.code)) { ch=true; s4++; done++; return {...p, code:fixSubj(p.code)}; }
+            return p;
+          });
+        }
+      });
+      if (ch) await db.collection('settings').doc('timetable').set(ttData);
+    }
+    mlog('Step 4 done: '+s4,'ok');
+
+    // ── STEP 5: settings/facultyMap ───────────────────────
+    setProg(65,'Step 5/7: settings/facultyMap...','');
+    mlog('\n--- STEP 5: settings/facultyMap ---','hd');
+    const fmDoc = await db.collection('settings').doc('facultyMap').get();
+    let s5=0;
+    if (fmDoc.exists) {
+      const fmData = fmDoc.data();
+      const newFM = {};
+      let ch=false;
+      Object.keys(fmData).forEach(code => {
+        if (needsSubj(code)) { newFM[fixSubj(code)]=fmData[code]; ch=true; s5++; done++; }
+        else { newFM[code]=fmData[code]; }
+      });
+      if (ch) await db.collection('settings').doc('facultyMap').set(newFM);
+    }
+    mlog('Step 5 done: '+s5,'ok');
+
+    // ── STEP 6: settings/periodFaculty ────────────────────
+    setProg(74,'Step 6/7: settings/periodFaculty...','');
+    mlog('\n--- STEP 6: settings/periodFaculty ---','hd');
+    const pfDoc = await db.collection('settings').doc('periodFaculty').get();
+    let s6=0;
+    if (pfDoc.exists) {
+      const pfData = pfDoc.data();
+      let ch=false;
+      Object.keys(pfData).forEach(dk => {
+        if (typeof pfData[dk]==='object'&&pfData[dk]) {
+          Object.keys(pfData[dk]).forEach(pk => {
+            const r = pfData[dk][pk];
+            if (r&&needsSubj(r.subject)) { pfData[dk][pk]={...r,subject:fixSubj(r.subject)}; ch=true; s6++; done++; }
+          });
+        }
+      });
+      if (ch) await db.collection('settings').doc('periodFaculty').set(pfData);
+    }
+    mlog('Step 6 done: '+s6,'ok');
+
+    // ── STEP 7: unitMarks/ ────────────────────────────────
+    setProg(85,'Step 7/7: unitMarks/...','');
+    mlog('\n--- STEP 7: unitMarks/ ---','hd');
+    let s7=0;
+    try {
+      const umSnap = await db.collection('unitMarks').get();
+      let batch=db.batch(), bc=0;
+      for (const doc of umSnap.docs) {
+        const d=doc.data();
+        const np=needsPIN(d.pin)?fixPIN(d.pin):d.pin;
+        const ns=needsSubj(d.subject)?fixSubj(d.subject):d.subject;
+        if (np===d.pin&&ns===d.subject) continue;
+        batch.update(doc.ref,{pin:np,subject:ns}); bc++; s7++; done++;
+        if (bc>=400){await batch.commit();batch=db.batch();bc=0;}
+      }
+      if (bc>0) await batch.commit();
+    } catch(e){mlog('  unitMarks skipped: '+e.message,'skip');}
+    mlog('Step 7 done: '+s7,'ok');
+
+    // ── DONE ──────────────────────────────────────────────
+    setProg(100,'✅ Complete!','');
+    mlog('\n=== ALL DONE: '+done+' operations ===','hd');
+    mlog('C23 data: UNTOUCHED ✅','skip');
+
+    try { await db.collection('adminLogs').add({
+      action:'C26_CM_TO_CS_MIGRATION', totalOps:done,
+      performedBy:auth.currentUser?.email||'admin',
+      completedAt:firebase.firestore.FieldValue.serverTimestamp()
+    }); } catch(e){}
+
+    document.getElementById('doneCard').style.display='block';
+    document.getElementById('doneMsg').innerHTML=
+      '✅ <strong>Done!</strong> '+done+' operations.<br>'+
+      'PINs: CM→CS ✓ | Subjects: CM→CS ✓ | Attendance: all dates ✓ | C23: untouched ✓';
+    document.getElementById('doneCard').scrollIntoView({behavior:'smooth'});
+  } catch(e) {
+    setProg(0,'❌ Error',e.message);
+    mlog('\n❌ '+e.message,'err');
+    mlog('Safe to re-run.','err');
+    alert('Error: '+e.message);
+    btn.disabled=false; btn.textContent='🔄 Retry';
+  }
+}
+</script>
+</body>
+</html>

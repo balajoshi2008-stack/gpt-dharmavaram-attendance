@@ -2233,7 +2233,7 @@
                         <label>Scheme / Admission Year</label>
                         <select id="sub_year" onchange="sub_onYearChange()">
                             <option value="2025">2025 (C23 — old format: CM-101)</option>
-                            <option value="2026" selected>2026 (C26 — new format: 26CM101T)</option>
+                            <option value="2026" selected>2026 (C26 — new format: 26CS101T)</option>
                             <option value="2027">2027 (C26)</option>
                             <option value="2028">2028 (C26)</option>
                         </select>
@@ -16531,10 +16531,6 @@ ${laSection}
                         // Track page for col 0
                         if (colIdx === 0) {
                             rowPageMap[rowIdx] = curPage;
-                            // Suppress text for multi-row leaders — post-process centres it
-                            if (info && !info.isContinuation && !info.isLeaveRow && info.count > 1) {
-                                data.cell.text = [];
-                            }
                         }
 
                         // ── Leave/OD row: suppress text in cols 1,2,4 (they'll be merged with col 3) ──
@@ -16672,11 +16668,11 @@ ${laSection}
                     }
                 });
 
-                // ── Post-process: redraw borders + centred text for merged date cells ──
+                // ── Post-process: redraw borders for merged date cells ──
                 rows.forEach((r, idx) => {
                     const info = dateGroupInfo[idx];
                     if (info.isContinuation || info.isLeaveRow) return;
-                    if (info.count <= 1) return;   // single-row dates handled by autoTable
+                    if (info.count <= 1) return;
                     const leaderCell = rowCellInfo[idx];
                     if (!leaderCell) return;
 
@@ -16694,24 +16690,10 @@ ${laSection}
 
                     doc.setPage(leaderCell.page);
                     const cx = leaderCell.x, cy = leaderCell.y, cw = leaderCell.width;
-
-                    // Borders
                     doc.setDrawColor(0, 0, 0).setLineWidth(0.3);
                     doc.line(cx,      cy, cx,      cy + totalH);
                     doc.line(cx + cw, cy, cx + cw, cy + totalH);
                     doc.line(cx,      cy, cx + cw, cy);
-
-                    // Vertically centred date text (same font as body)
-                    const d    = new Date(r.date + 'T00:00:00');
-                    const dd_  = String(d.getDate()).padStart(2, '0');
-                    const mm_  = String(d.getMonth() + 1).padStart(2, '0');
-                    const yy_  = String(d.getFullYear()).slice(-2);
-                    const day_ = DAY3[d.getDay()];
-                    const midY = cy + totalH / 2;
-
-                    doc.setFontSize(12).setFont(undefined, 'bold').setTextColor(0, 0, 0);
-                    doc.text(`${dd_}/${mm_}/${yy_}`, cx + cw / 2, midY - 2, { align: 'center' });
-                    doc.text(day_,                   cx + cw / 2, midY + 3, { align: 'center' });
                 });
 
                 // ── Post-process: merge Staff Sign (col 5) per date group ──

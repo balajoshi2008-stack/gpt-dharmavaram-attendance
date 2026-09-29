@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Subject Code Remap - GPT Dharmavaram</title>
+  <link rel="stylesheet" href="../css/landscape.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f8;color:#2d2d2d;padding:1rem}
+    .card{background:white;border-radius:12px;padding:1.5rem;margin-bottom:1rem;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+    h1{color:#1F3864;font-size:1.15rem;margin-bottom:.4rem}
+    h2{color:#1F3864;font-size:.98rem;margin-bottom:.9rem}
+    .box{border-left:4px solid;border-radius:0 8px 8px 0;padding:.85rem 1rem;font-size:.84rem;line-height:1.6;margin-bottom:.9rem}
+    .warn{background:#FFF3E0;border-color:#FF9800;color:#E65100}
+    .danger{background:#FFEBEE;border-color:#F44336;color:#C62828}
+    .info{background:#EFF6FF;border-color:#2E75B6;color:#1E40AF}
+    .success{background:#E8F5E9;border-color:#4CAF50;color:#2E7D32}
+    .btn{width:100%;padding:.78rem;border:none;border-radius:8px;font-size:.92rem;font-weight:700;cursor:pointer;margin-bottom:.6rem;transition:all .2s}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-blue{background:#2E75B6;color:white}
+    .btn-red{background:#C62828;color:white}
+    .prog-bg{background:#dde1f0;border-radius:8px;height:10px}
+    .prog-fill{background:linear-gradient(90deg,#1F3864,#2E75B6);height:10px;border-radius:8px;transition:width .4s}
+    .log{background:#0d1117;color:#58a6ff;font-family:monospace;font-size:.75rem;padding:1rem;border-radius:8px;max-height:350px;overflow-y:auto;white-space:pre-wrap;display:none;margin-top:.8rem}
+    .ok{color:#3fb950}.err{color:#f85149}.skip{color:#8b949e}.hd{color:#e3b341;font-weight:bold}
+    table{border-collapse:collapse;width:100%;font-size:.82rem;margin:.6rem 0}
+    th{background:#1F3864;color:white;padding:.5rem .7rem;text-align:left}
+    td{padding:.5rem .7rem;border:1px solid #ddd}
+    tr:nth-child(even) td{background:#f5f7ff}
+    .old{background:#FFEBEE;color:#C62828;border-radius:4px;padding:.1rem .4rem;font-size:.75rem;font-weight:700}
+    .new{background:#E8F5E9;color:#2E7D32;border-radius:4px;padding:.1rem .4rem;font-size:.75rem;font-weight:700}
+    .sn{background:#1F3864;color:white;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;margin-right:.5rem}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="card" id="loginCard">
+  <h1>Admin Login</h1>
+  <p style="color:#666;font-size:.84rem;margin-bottom:1rem;">Subject Code Remap Tool - Admin access required</p>
+  <div style="margin-bottom:.8rem;">
+    <label style="font-size:.84rem;font-weight:600;">Admin Username</label>
+    <input type="text" id="mgAdminUser" placeholder="e.g. admin" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-top:4px;font-size:.9rem;">
+  </div>
+  <div style="margin-bottom:1rem;">
+    <label style="font-size:.84rem;font-weight:600;">Password</label>
+    <input type="password" id="mgAdminPass" placeholder="Password" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-top:4px;font-size:.9rem;" onkeydown="if(event.key==='Enter')mgLogin()">
+  </div>
+  <button class="btn btn-blue" onclick="mgLogin()" id="loginBtn">Login</button>
+  <div id="loginError" style="display:none;color:#C62828;font-size:.84rem;margin-top:.6rem;font-weight:600;"></div>
+</div>
+
+<!-- TOOL -->
+<div id="toolContent" style="display:none;">
+<div class="card">
+  <h1>Subject Code Remap Tool</h1>
+  <p style="color:#666;font-size:.84rem;margin-bottom:.8rem;">C26 subject code changes - Department revision</p>
+  <div class="box info">
+    <strong>Mappings:</strong><br>
+    <span class="old">26CS109L</span> --&gt; <span class="new">26CS109L_26CS110L</span> Physics &amp; Chemistry Lab<br>
+    <span class="old">26CS110L</span> --&gt; <span class="new">26CS111L</span> Computer &amp; Digital Skills Lab<br>
+    <span class="old">26CS100L</span> --&gt; <span class="new">26CS112C</span> Activity<br>
+    <span class="old">CM-100</span> --&gt; <span class="new">26CS112C</span> Activity (old oversight records)
+  </div>
+  <div class="box danger">
+    Only the 4 codes above are changed. Everything else is untouched.<br>
+    Student PINs are NOT touched.
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="sn">1</span>Scan - Preview Changes</h2>
+  <button class="btn btn-blue" onclick="doScan()" id="scanBtn">Scan (Safe - No Changes)</button>
+  <div id="scanArea"></div>
+</div>
+
+<div class="card" id="migrateCard" style="display:none;">
+  <h2><span class="sn">2</span>Run Remap</h2>
+  <label style="display:flex;align-items:flex-start;gap:.7rem;font-size:.88rem;cursor:pointer;margin-bottom:1rem;background:#f7f8ff;padding:.85rem;border-radius:8px;border:1.5px solid #dde1f0;">
+    <input type="checkbox" id="confirmBox" style="margin-top:2px;width:18px;height:18px;" onchange="document.getElementById('migrateBtn').disabled=!this.checked"/>
+    <span>I understand this updates subject codes in all attendance records and settings. Already-changed records will be skipped.</span>
+  </label>
+  <button class="btn btn-red" id="migrateBtn" onclick="doMigrate()" disabled>Start Remap</button>
+  <div id="progressArea" style="display:none;margin-top:.8rem;">
+    <div id="progressLabel" style="font-size:.83rem;color:#666;margin-bottom:.4rem;font-weight:600;"></div>
+    <div class="prog-bg"><div class="prog-fill" id="progressFill" style="width:0%"></div></div>
+    <div id="progressDetail" style="font-size:.76rem;color:#888;margin-top:.3rem;"></div>
+  </div>
+  <div class="log" id="migrateLog"></div>
+</div>
+
+<div class="card" id="doneCard" style="display:none;">
+  <h2><span class="sn">3</span>Remap Complete</h2>
+  <div class="box success" id="doneMsg"></div>
+</div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyC9nMFnZGdnOm5zXgpSMKiTFpzEBTuPfRM",
+    authDomain: "gpt-dharmavaram-attendance.firebaseapp.com",
+    projectId: "gpt-dharmavaram-attendance",
+    storageBucket: "gpt-dharmavaram-attendance.firebasestorage.app",
+    messagingSenderId: "471911252737",
+    appId: "1:471911252737:web:a88dcdfafbe0307e7a1100"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+async function mgLogin() {
+  var user = document.getElementById('mgAdminUser').value.trim().toLowerCase();
+  var pass = document.getElementById('mgAdminPass').value;
+  var errEl = document.getElementById('loginError');
+  var btn = document.getElementById('loginBtn');
+  if (!user||!pass){errEl.textContent='Enter credentials.';errEl.style.display='block';return;}
+  btn.disabled=true; btn.textContent='Logging in...'; errEl.style.display='none';
+  try {
+    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    await auth.signInWithEmailAndPassword(user+'@dharmavaram.com', pass);
+    var ud = await db.collection('users').doc(user).get();
+    if (!ud.exists||!['admin','powerUser'].includes(ud.data().type||'')){await auth.signOut();errEl.textContent='Admin required.';errEl.style.display='block';btn.disabled=false;btn.textContent='Login';return;}
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('toolContent').style.display='block';
+  } catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';btn.disabled=false;btn.textContent='Login';}
+}
+
+// REMAP TABLE
+var REMAP = {
+  '26CS109L': '26CS109L_26CS110L',
+  '26CS110L': '26CS111L',
+  '26CS100L': '26CS112C',
+  'CM-100':   '26CS112C'
+};
+
+function remap(code) {
+  if (!code) return code;
+  var c = String(code).trim();
+  return REMAP[c] || c;
+}
+function needsRemap(code) {
+  if (!code) return false;
+  return REMAP.hasOwnProperty(String(code).trim());
+}
+
+var logEl = document.getElementById('migrateLog');
+function mlog(msg,cls){logEl.style.display='block';var s=document.createElement('span');s.className=cls||'';s.textContent=new Date().toLocaleTimeString()+' '+msg+'\n';logEl.appendChild(s);logEl.scrollTop=logEl.scrollHeight;}
+function setProg(pct,label,detail){document.getElementById('progressArea').style.display='block';document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressLabel').textContent=label;document.getElementById('progressDetail').textContent=detail||'';}
+
+// SCAN
+async function doScan() {
+  var btn = document.getElementById('scanBtn');
+  btn.disabled=true; btn.textContent='Scanning...';
+  var area = document.getElementById('scanArea');
+  area.innerHTML='<div class="box info" style="margin-top:.8rem;">Scanning Firestore...</div>';
+
+  try {
+    var counts = {'26CS109L':0, '26CS110L':0, '26CS100L':0, 'CM-100':0};
+
+    // settings/subjects
+    var subjDoc = await db.collection('settings').doc('subjects').get();
+    var subjData = subjDoc.exists ? subjDoc.data() : {};
+    Object.keys(subjData).forEach(function(k) { if (counts[k]!==undefined) counts[k]++; });
+
+    // attendance/{date}
+    var attSnap = await db.collection('attendance').get();
+    var attTotal = 0;
+    attSnap.forEach(function(doc) {
+      var data = doc.data();
+      Object.values(data).forEach(function(pinData) {
+        if (typeof pinData==='object' && pinData) {
+          Object.values(pinData).forEach(function(rec) {
+            if (rec && needsRemap(rec.subject)) { counts[rec.subject]=(counts[rec.subject]||0)+1; attTotal++; }
+          });
+        }
+      });
+    });
+
+    // settings/timetable
+    var ttDoc = await db.collection('settings').doc('timetable').get();
+    var ttData = ttDoc.exists ? ttDoc.data() : {};
+    var ttCount = 0;
+    Object.values(ttData).forEach(function(v) {
+      if (Array.isArray(v)) v.forEach(function(p) { if (p && needsRemap(p.code)) { ttCount++; counts[p.code]=(counts[p.code]||0)+1; } });
+    });
+
+    // settings/facultyMap
+    var fmDoc = await db.collection('settings').doc('facultyMap').get();
+    var fmData = fmDoc.exists ? fmDoc.data() : {};
+    var fmCount = 0;
+    Object.keys(fmData).forEach(function(k) { if (needsRemap(k)) { fmCount++; counts[k]=(counts[k]||0)+1; } });
+
+    // settings/periodFaculty
+    var pfDoc = await db.collection('settings').doc('periodFaculty').get();
+    var pfData = pfDoc.exists ? pfDoc.data() : {};
+    var pfCount = 0;
+    Object.values(pfData).forEach(function(d) {
+      if (typeof d==='object'&&d) Object.values(d).forEach(function(r) { if (r&&needsRemap(r.subject)) { pfCount++; counts[r.subject]=(counts[r.subject]||0)+1; } });
+    });
+
+    // unitMarks/
+    var umCount = 0;
+    try { var us=await db.collection('unitMarks').get(); us.forEach(function(d){if(needsRemap(d.data().subject)){umCount++;counts[d.data().subject]=(counts[d.data().subject]||0)+1;}}); } catch(e){}
+
+    var total = 0;
+    Object.keys(counts).forEach(function(k){total+=counts[k];});
+    if (total===0) {
+      area.innerHTML='<div class="box success" style="margin-top:.8rem;">Nothing to remap. All codes already updated.</div>';
+      btn.disabled=false; btn.textContent='Scan Again'; return;
+    }
+
+    area.innerHTML =
+      '<div class="box info" style="margin-top:.8rem;"><strong>' + total + ' changes needed</strong></div>' +
+      '<table>' +
+        '<tr><th>Old Code</th><th>New Code</th><th>Occurrences</th></tr>' +
+        '<tr><td><span class="old">26CS109L</span></td><td><span class="new">26CS109L_26CS110L</span></td><td style="font-weight:700;">' + (counts['26CS109L']||0) + '</td></tr>' +
+        '<tr><td><span class="old">26CS110L</span></td><td><span class="new">26CS111L</span></td><td style="font-weight:700;">' + (counts['26CS110L']||0) + '</td></tr>' +
+        '<tr><td><span class="old">26CS100L</span></td><td><span class="new">26CS112C</span></td><td style="font-weight:700;">' + (counts['26CS100L']||0) + '</td></tr>' +
+        '<tr><td><span class="old">CM-100</span></td><td><span class="new">26CS112C</span></td><td style="font-weight:700;">' + (counts['CM-100']||0) + '</td></tr>' +
+      '</table>' +
+      '<table>' +
+        '<tr><th>Data Location</th><th>Records</th></tr>' +
+        '<tr><td>settings/subjects (key rename)</td><td>' + Object.keys(subjData).filter(function(k){return needsRemap(k);}).length + '</td></tr>' +
+        '<tr><td>attendance/ (subject field in ' + attSnap.size + ' date docs)</td><td>' + attTotal + '</td></tr>' +
+        '<tr><td>settings/timetable</td><td>' + ttCount + '</td></tr>' +
+        '<tr><td>settings/facultyMap</td><td>' + fmCount + '</td></tr>' +
+        '<tr><td>settings/periodFaculty</td><td>' + pfCount + '</td></tr>' +
+        '<tr><td>unitMarks/</td><td>' + umCount + '</td></tr>' +
+      '</table>';
+
+    document.getElementById('migrateCard').style.display='block';
+    document.getElementById('migrateCard').scrollIntoView({behavior:'smooth'});
+  } catch(e) {
+    area.innerHTML='<div class="box danger" style="margin-top:.8rem;">Error: ' + e.message + '</div>';
+    console.error(e);
+  } finally { btn.disabled=false; btn.textContent='Scan Again'; }
+}
+
+// MIGRATE
+async function doMigrate() {
+  var btn=document.getElementById('migrateBtn');
+  btn.disabled=true; btn.textContent='Remapping...';
+  var done=0;
+  mlog('=== SUBJECT CODE REMAP STARTED ===','hd');
+  mlog('26CS109L > 26CS109L_26CS110L | 26CS110L > 26CS111L | 26CS100L > 26CS112C | CM-100 > 26CS112C','hd');
+
+  try {
+    // STEP 1: settings/subjects (add new > verify > delete old)
+    setProg(5,'Step 1/6: settings/subjects...','');
+    mlog('--- STEP 1: settings/subjects (add new > verify > delete old) ---','hd');
+    var subjDoc = await db.collection('settings').doc('subjects').get();
+    var subjData = subjDoc.exists ? subjDoc.data() : {};
+    var oldKeys = [];
+    var addUpdates = {};
+    var s1=0;
+    Object.keys(subjData).forEach(function(code) {
+      if (needsRemap(code)) {
+        var nc = remap(code);
+        if (!addUpdates[nc]) {
+          addUpdates[nc] = Object.assign({}, subjData[code]);
+          if (addUpdates[nc].code) addUpdates[nc].code = nc;
+          oldKeys.push(code);
+          mlog('  COPY: '+code+' > '+nc,'ok');
+        } else {
+          mlog('  '+code+' > '+nc+' (target already added, skip dup)','skip');
+          oldKeys.push(code);
+        }
+        s1++; done++;
+      }
+    });
+    if (s1>0) {
+      // Phase 1: ADD new keys (old keys still exist)
+      await db.collection('settings').doc('subjects').update(addUpdates);
+      mlog('  New keys added','ok');
+      // Phase 2: VERIFY
+      var verifyDoc = await db.collection('settings').doc('subjects').get();
+      var vData = verifyDoc.data();
+      Object.keys(addUpdates).forEach(function(nc) {
+        if (!vData[nc]) throw new Error('Verify FAILED for: '+nc);
+      });
+      mlog('  Verified - all new keys exist','ok');
+      // Phase 3: DELETE old keys
+      var delUpdates = {};
+      oldKeys.forEach(function(k) { delUpdates[k] = firebase.firestore.FieldValue.delete(); });
+      await db.collection('settings').doc('subjects').update(delUpdates);
+      mlog('  Old keys deleted','ok');
+    }
+    mlog('Step 1 done: '+s1+' codes (safe copy-first)','ok');
+
+    // STEP 2: attendance/{date}
+    setProg(15,'Step 2/6: attendance/ (ALL dates)...','');
+    mlog('--- STEP 2: attendance/ ---','hd');
+    var attSnap = await db.collection('attendance').get();
+    mlog('  Total date docs: '+attSnap.size);
+    var s2=0;
+    for (var i=0; i<attSnap.docs.length; i++) {
+      var doc = attSnap.docs[i];
+      var data = doc.data();
+      var changed = false;
+      Object.keys(data).forEach(function(pin) {
+        if (typeof data[pin]==='object' && data[pin]!==null) {
+          Object.keys(data[pin]).forEach(function(period) {
+            var rec = data[pin][period];
+            if (rec && typeof rec==='object' && needsRemap(rec.subject)) {
+              data[pin][period] = Object.assign({}, rec, {subject: remap(rec.subject)});
+              changed = true;
+            }
+          });
+        }
+      });
+      if (changed) {
+        await db.collection('attendance').doc(doc.id).set(data);
+        s2++; done++;
+        if (s2%10===0) {
+          mlog('  '+s2+' date docs updated...','ok');
+          setProg(15+Math.min(40,s2/attSnap.size*40),'Step 2/6: attendance...',s2+'/'+attSnap.size);
+        }
+      }
+    }
+    mlog('Step 2 done: '+s2+' date docs updated','ok');
+
+    // STEP 3: settings/timetable
+    setProg(58,'Step 3/6: settings/timetable...','');
+    mlog('--- STEP 3: settings/timetable ---','hd');
+    var ttDoc = await db.collection('settings').doc('timetable').get();
+    var s3=0;
+    if (ttDoc.exists) {
+      var ttData = ttDoc.data();
+      var ch=false;
+      Object.keys(ttData).forEach(function(key) {
+        if (Array.isArray(ttData[key])) {
+          ttData[key] = ttData[key].map(function(p) {
+            if (p && needsRemap(p.code)) { ch=true; s3++; done++; return Object.assign({}, p, {code:remap(p.code)}); }
+            return p;
+          });
+        }
+      });
+      if (ch) await db.collection('settings').doc('timetable').set(ttData);
+    }
+    mlog('Step 3 done: '+s3,'ok');
+
+    // STEP 4: settings/facultyMap (add new > verify > delete old)
+    setProg(70,'Step 4/6: settings/facultyMap...','');
+    mlog('--- STEP 4: settings/facultyMap (add new > verify > delete old) ---','hd');
+    var fmDoc = await db.collection('settings').doc('facultyMap').get();
+    var s4=0;
+    if (fmDoc.exists) {
+      var fmData = fmDoc.data();
+      var fmAdd = {};
+      var fmOldKeys = [];
+      Object.keys(fmData).forEach(function(code) {
+        if (needsRemap(code)) {
+          var nc = remap(code);
+          if (!fmAdd[nc]) { fmAdd[nc]=fmData[code]; mlog('  COPY: '+code+' > '+nc,'ok'); }
+          fmOldKeys.push(code);
+          s4++; done++;
+        }
+      });
+      if (s4>0) {
+        await db.collection('settings').doc('facultyMap').update(fmAdd);
+        mlog('  New keys added','ok');
+        var fmV = await db.collection('settings').doc('facultyMap').get();
+        Object.keys(fmAdd).forEach(function(nc) {
+          if (!fmV.data()[nc]) throw new Error('Verify FAILED for facultyMap: '+nc);
+        });
+        mlog('  Verified','ok');
+        var fmDel = {};
+        fmOldKeys.forEach(function(k) { fmDel[k] = firebase.firestore.FieldValue.delete(); });
+        await db.collection('settings').doc('facultyMap').update(fmDel);
+        mlog('  Old keys deleted','ok');
+      }
+    }
+    mlog('Step 4 done: '+s4+' (safe copy-first)','ok');
+
+    // STEP 5: settings/periodFaculty
+    setProg(80,'Step 5/6: settings/periodFaculty...','');
+    mlog('--- STEP 5: settings/periodFaculty ---','hd');
+    var pfDoc = await db.collection('settings').doc('periodFaculty').get();
+    var s5=0;
+    if (pfDoc.exists) {
+      var pfData = pfDoc.data();
+      var pfCh=false;
+      Object.keys(pfData).forEach(function(dk) {
+        if (typeof pfData[dk]==='object'&&pfData[dk]) {
+          Object.keys(pfData[dk]).forEach(function(pk) {
+            var r = pfData[dk][pk];
+            if (r&&needsRemap(r.subject)) { pfData[dk][pk]=Object.assign({},r,{subject:remap(r.subject)}); pfCh=true; s5++; done++; }
+          });
+        }
+      });
+      if (pfCh) await db.collection('settings').doc('periodFaculty').set(pfData);
+    }
+    mlog('Step 5 done: '+s5,'ok');
+
+    // STEP 6: unitMarks/
+    setProg(90,'Step 6/6: unitMarks/...','');
+    mlog('--- STEP 6: unitMarks/ ---','hd');
+    var s6=0;
+    try {
+      var umSnap = await db.collection('unitMarks').get();
+      var batch=db.batch(), bc=0;
+      for (var j=0; j<umSnap.docs.length; j++) {
+        var udoc = umSnap.docs[j];
+        var ud=udoc.data();
+        if (needsRemap(ud.subject)) {
+          batch.update(udoc.ref,{subject:remap(ud.subject)}); bc++; s6++; done++;
+          if (bc>=400){await batch.commit();batch=db.batch();bc=0;}
+        }
+      }
+      if (bc>0) await batch.commit();
+    } catch(e){mlog('  unitMarks skipped: '+e.message,'skip');}
+    mlog('Step 6 done: '+s6,'ok');
+
+    // DONE
+    setProg(100,'Remap Complete!','');
+    mlog('=== ALL DONE: '+done+' operations ===','hd');
+
+    try { await db.collection('adminLogs').add({
+      action:'C26_SUBJECT_REMAP',
+      description:'26CS109L>26CS109L_26CS110L, 26CS110L>26CS111L, 26CS100L>26CS112C, CM-100>26CS112C',
+      totalOps:done,
+      performedBy:auth.currentUser?auth.currentUser.email:'admin',
+      completedAt:firebase.firestore.FieldValue.serverTimestamp()
+    }); } catch(e){}
+
+    document.getElementById('doneCard').style.display='block';
+    document.getElementById('doneMsg').innerHTML=
+      '<strong>Remap Complete!</strong> '+done+' operations.<br><br>'+
+      '26CS109L --> 26CS109L_26CS110L Done<br>'+
+      '26CS110L --> 26CS111L Done<br>'+
+      '26CS100L --> 26CS112C Done<br>'+
+      'CM-100 --> 26CS112C Done';
+    document.getElementById('doneCard').scrollIntoView({behavior:'smooth'});
+    btn.textContent='Done';
+  } catch(e) {
+    setProg(0,'Error',e.message);
+    mlog('ERROR: '+e.message,'err');
+    mlog('Safe to re-run.','err');
+    alert('Error: '+e.message);
+    btn.disabled=false; btn.textContent='Retry';
+  }
+}
+</script>
+</body>
+</html>
