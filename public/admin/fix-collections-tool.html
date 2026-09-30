@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Fix Missed Collections - GPT Dharmavaram</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f8;color:#2d2d2d;padding:1rem}
+    .card{background:white;border-radius:12px;padding:1.5rem;margin-bottom:1rem;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+    h1{color:#1F3864;font-size:1.15rem;margin-bottom:.4rem}
+    h2{color:#1F3864;font-size:.98rem;margin-bottom:.9rem}
+    .box{border-left:4px solid;border-radius:0 8px 8px 0;padding:.85rem 1rem;font-size:.84rem;line-height:1.6;margin-bottom:.9rem}
+    .warn{background:#FFF3E0;border-color:#FF9800;color:#E65100}
+    .danger{background:#FFEBEE;border-color:#F44336;color:#C62828}
+    .info{background:#EFF6FF;border-color:#2E75B6;color:#1E40AF}
+    .success{background:#E8F5E9;border-color:#4CAF50;color:#2E7D32}
+    .btn{width:100%;padding:.78rem;border:none;border-radius:8px;font-size:.92rem;font-weight:700;cursor:pointer;margin-bottom:.6rem;transition:all .2s}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-blue{background:#2E75B6;color:white}
+    .btn-red{background:#C62828;color:white}
+    .prog-bg{background:#dde1f0;border-radius:8px;height:10px}
+    .prog-fill{background:linear-gradient(90deg,#1F3864,#2E75B6);height:10px;border-radius:8px;transition:width .4s}
+    .log{background:#0d1117;color:#58a6ff;font-family:monospace;font-size:.75rem;padding:1rem;border-radius:8px;max-height:400px;overflow-y:auto;white-space:pre-wrap;display:none;margin-top:.8rem}
+    .ok{color:#3fb950}.err{color:#f85149}.skip{color:#8b949e}.hd{color:#e3b341;font-weight:bold}
+    table{border-collapse:collapse;width:100%;font-size:.82rem;margin:.6rem 0}
+    th{background:#1F3864;color:white;padding:.5rem .7rem;text-align:left}
+    td{padding:.5rem .7rem;border:1px solid #ddd}
+    tr:nth-child(even) td{background:#f5f7ff}
+    .sn{background:#1F3864;color:white;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;margin-right:.5rem}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="card" id="loginCard">
+  <h1>Admin Login</h1>
+  <p style="color:#666;font-size:.84rem;margin-bottom:1rem;">Fix Missed Collections - Subject codes in dailyTopics, extraClasses, assignments, notifications</p>
+  <div style="margin-bottom:.8rem;">
+    <label style="font-size:.84rem;font-weight:600;">Admin Username</label>
+    <input type="text" id="mgAdminUser" placeholder="e.g. admin" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-top:4px;font-size:.9rem;">
+  </div>
+  <div style="margin-bottom:1rem;">
+    <label style="font-size:.84rem;font-weight:600;">Password</label>
+    <input type="password" id="mgAdminPass" placeholder="Password" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-top:4px;font-size:.9rem;" onkeydown="if(event.key==='Enter')mgLogin()">
+  </div>
+  <button class="btn btn-blue" onclick="mgLogin()" id="loginBtn">Login</button>
+  <div id="loginError" style="display:none;color:#C62828;font-size:.84rem;margin-top:.6rem;font-weight:600;"></div>
+</div>
+
+<!-- TOOL -->
+<div id="toolContent" style="display:none;">
+<div class="card">
+  <h1>Fix Missed Collections</h1>
+  <p style="color:#666;font-size:.84rem;margin-bottom:.8rem;">These collections were missed during earlier migration</p>
+  <div class="box info">
+    <strong>Collections to fix:</strong><br>
+    1. dailyTopics - subject field in topic entries (fixes Logbook)<br>
+    2. extraClasses - subject field<br>
+    3. assignments - subjectCode field<br>
+    4. notifications - timetable[].subjectCode field<br>
+    <br>
+    <strong>Both migrations applied:</strong><br>
+    CM --&gt; CS (e.g. 26CM101T --&gt; 26CS101T)<br>
+    + Subject remap (26CS109L --&gt; 26CS109L_26CS110L, 26CS110L --&gt; 26CS111L, 26CS100L --&gt; 26CS112C, CM-100 --&gt; 26CS112C)
+  </div>
+  <div class="box danger">
+    C23 data (CM-101 etc.) is NEVER touched. Only C26 codes.
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="sn">1</span>Scan</h2>
+  <button class="btn btn-blue" onclick="doScan()" id="scanBtn">Scan (Safe - No Changes)</button>
+  <div id="scanArea"></div>
+</div>
+
+<div class="card" id="migrateCard" style="display:none;">
+  <h2><span class="sn">2</span>Fix Collections</h2>
+  <label style="display:flex;align-items:flex-start;gap:.7rem;font-size:.88rem;cursor:pointer;margin-bottom:1rem;background:#f7f8ff;padding:.85rem;border-radius:8px;border:1.5px solid #dde1f0;">
+    <input type="checkbox" id="confirmBox" style="margin-top:2px;width:18px;height:18px;" onchange="document.getElementById('migrateBtn').disabled=!this.checked"/>
+    <span>I understand this updates subject codes in the listed collections.</span>
+  </label>
+  <button class="btn btn-red" id="migrateBtn" onclick="doFix()" disabled>Start Fix</button>
+  <div id="progressArea" style="display:none;margin-top:.8rem;">
+    <div id="progressLabel" style="font-size:.83rem;color:#666;margin-bottom:.4rem;font-weight:600;"></div>
+    <div class="prog-bg"><div class="prog-fill" id="progressFill" style="width:0%"></div></div>
+    <div id="progressDetail" style="font-size:.76rem;color:#888;margin-top:.3rem;"></div>
+  </div>
+  <div class="log" id="migrateLog"></div>
+</div>
+
+<div class="card" id="doneCard" style="display:none;">
+  <h2><span class="sn">3</span>Fix Complete</h2>
+  <div class="box success" id="doneMsg"></div>
+</div>
+</div>
+
+<script>
+var firebaseConfig = {
+    apiKey: "AIzaSyC9nMFnZGdnOm5zXgpSMKiTFpzEBTuPfRM",
+    authDomain: "gpt-dharmavaram-attendance.firebaseapp.com",
+    projectId: "gpt-dharmavaram-attendance",
+    storageBucket: "gpt-dharmavaram-attendance.firebasestorage.app",
+    messagingSenderId: "471911252737",
+    appId: "1:471911252737:web:a88dcdfafbe0307e7a1100"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+var auth = firebase.auth();
+
+async function mgLogin() {
+  var user = document.getElementById('mgAdminUser').value.trim().toLowerCase();
+  var pass = document.getElementById('mgAdminPass').value;
+  var errEl = document.getElementById('loginError');
+  var btn = document.getElementById('loginBtn');
+  if (!user||!pass){errEl.textContent='Enter credentials.';errEl.style.display='block';return;}
+  btn.disabled=true; btn.textContent='Logging in...'; errEl.style.display='none';
+  try {
+    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    await auth.signInWithEmailAndPassword(user+'@dharmavaram.com', pass);
+    var ud = await db.collection('users').doc(user).get();
+    if (!ud.exists||!['admin','powerUser'].includes(ud.data().type||'')){await auth.signOut();errEl.textContent='Admin required.';errEl.style.display='block';btn.disabled=false;btn.textContent='Login';return;}
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('toolContent').style.display='block';
+  } catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';btn.disabled=false;btn.textContent='Login';}
+}
+
+// ================================================================
+// COMBINED TRANSFORM: applies CM-->CS first, then subject remap
+// C23 (dashes / CM-xxx) is NEVER touched
+// ================================================================
+function fixCode(code) {
+  if (!code) return code;
+  var c = String(code).trim();
+
+  // C23 protection: never touch codes with dashes (CM-101 etc.)
+  if (c.indexOf('-') !== -1 && !c.match(/^CM-100$/)) return c;
+  // Special case: CM-100 is the old Activity code that was used by oversight
+
+  // Step 1: CM --> CS for C26 codes (26CM... --> 26CS...)
+  if (/^\d{2}CM/.test(c) && parseInt(c.slice(0,2)) >= 26) {
+    c = c.replace(/^(\d{2})CM/, '$1CS');
+  }
+
+  // Step 2: Subject remap
+  var REMAP = {
+    '26CS109L': '26CS109L_26CS110L',
+    '26CS110L': '26CS111L',
+    '26CS100L': '26CS112C',
+    'CM-100':   '26CS112C'
+  };
+  if (REMAP[c]) c = REMAP[c];
+
+  return c;
+}
+
+function needsFix(code) {
+  if (!code) return false;
+  var c = String(code).trim();
+  return fixCode(c) !== c;
+}
+
+var logEl = document.getElementById('migrateLog');
+function mlog(msg,cls){logEl.style.display='block';var s=document.createElement('span');s.className=cls||'';s.textContent=new Date().toLocaleTimeString()+' '+msg+'\n';logEl.appendChild(s);logEl.scrollTop=logEl.scrollHeight;}
+function setProg(pct,label,detail){document.getElementById('progressArea').style.display='block';document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressLabel').textContent=label;document.getElementById('progressDetail').textContent=detail||'';}
+
+// ── SCAN ──────────────────────────────────────────────────────
+async function doScan() {
+  var btn = document.getElementById('scanBtn');
+  btn.disabled=true; btn.textContent='Scanning...';
+  var area = document.getElementById('scanArea');
+  area.innerHTML='<div class="box info" style="margin-top:.8rem;">Scanning...</div>';
+
+  try {
+    var results = {};
+
+    // 1. dailyTopics — subject field inside map entries
+    var dtCount = 0;
+    var dtSnap = await db.collection('dailyTopics').get();
+    dtSnap.forEach(function(doc) {
+      var data = doc.data();
+      Object.keys(data).forEach(function(key) {
+        var entry = data[key];
+        if (entry && entry.subject && needsFix(entry.subject)) dtCount++;
+      });
+    });
+    results['dailyTopics'] = {total: dtSnap.size, fixes: dtCount};
+
+    // 2. extraClasses — subject field
+    var ecCount = 0;
+    var ecSnap = await db.collection('extraClasses').get();
+    ecSnap.forEach(function(doc) {
+      var d = doc.data();
+      if (needsFix(d.subject)) ecCount++;
+    });
+    results['extraClasses'] = {total: ecSnap.size, fixes: ecCount};
+
+    // 3. assignments — subjectCode field
+    var asCount = 0;
+    var asSnap = await db.collection('assignments').get();
+    asSnap.forEach(function(doc) {
+      var d = doc.data();
+      if (needsFix(d.subjectCode)) asCount++;
+    });
+    results['assignments'] = {total: asSnap.size, fixes: asCount};
+
+    // 4. notifications — timetable[].subjectCode
+    var ntCount = 0;
+    var ntSnap = await db.collection('notifications').get();
+    ntSnap.forEach(function(doc) {
+      var d = doc.data();
+      if (d.timetable && Array.isArray(d.timetable)) {
+        d.timetable.forEach(function(t) {
+          if (needsFix(t.subjectCode)) ntCount++;
+        });
+      }
+    });
+    results['notifications'] = {total: ntSnap.size, fixes: ntCount};
+
+    var totalFixes = dtCount + ecCount + asCount + ntCount;
+
+    if (totalFixes === 0) {
+      area.innerHTML='<div class="box success" style="margin-top:.8rem;">Nothing to fix. All subject codes already updated.</div>';
+      btn.disabled=false; btn.textContent='Scan Again'; return;
+    }
+
+    area.innerHTML =
+      '<div class="box info" style="margin-top:.8rem;"><strong>' + totalFixes + ' fixes needed</strong></div>' +
+      '<table>' +
+        '<tr><th>Collection</th><th>Total Docs</th><th>Need Fix</th></tr>' +
+        '<tr><td>dailyTopics (Logbook topics)</td><td>' + results.dailyTopics.total + '</td><td style="font-weight:700;color:#C62828;">' + results.dailyTopics.fixes + '</td></tr>' +
+        '<tr><td>extraClasses</td><td>' + results.extraClasses.total + '</td><td style="font-weight:700;color:#C62828;">' + results.extraClasses.fixes + '</td></tr>' +
+        '<tr><td>assignments</td><td>' + results.assignments.total + '</td><td style="font-weight:700;color:#C62828;">' + results.assignments.fixes + '</td></tr>' +
+        '<tr><td>notifications</td><td>' + results.notifications.total + '</td><td style="font-weight:700;color:#C62828;">' + results.notifications.fixes + '</td></tr>' +
+      '</table>';
+
+    document.getElementById('migrateCard').style.display='block';
+    document.getElementById('migrateCard').scrollIntoView({behavior:'smooth'});
+  } catch(e) {
+    area.innerHTML='<div class="box danger" style="margin-top:.8rem;">Error: ' + e.message + '</div>';
+    console.error(e);
+  } finally { btn.disabled=false; btn.textContent='Scan Again'; }
+}
+
+// ── FIX ───────────────────────────────────────────────────────
+async function doFix() {
+  var btn=document.getElementById('migrateBtn');
+  btn.disabled=true; btn.textContent='Fixing...';
+  var done=0;
+  mlog('=== FIX MISSED COLLECTIONS STARTED ===','hd');
+
+  try {
+    // STEP 1: dailyTopics
+    setProg(5,'Step 1/4: dailyTopics...','');
+    mlog('--- STEP 1: dailyTopics (subject field in entries) ---','hd');
+    var dtSnap = await db.collection('dailyTopics').get();
+    mlog('  Total date docs: ' + dtSnap.size);
+    var s1 = 0;
+    for (var i=0; i<dtSnap.docs.length; i++) {
+      var doc = dtSnap.docs[i];
+      var data = doc.data();
+      var changed = false;
+      Object.keys(data).forEach(function(key) {
+        var entry = data[key];
+        if (entry && entry.subject && needsFix(entry.subject)) {
+          var newCode = fixCode(entry.subject);
+          data[key] = Object.assign({}, entry, {subject: newCode});
+          changed = true;
+          s1++;
+        }
+      });
+      if (changed) {
+        await db.collection('dailyTopics').doc(doc.id).set(data);
+        done++;
+        if (done%10===0) {
+          mlog('  ' + done + ' docs updated...','ok');
+          setProg(5+Math.min(40,i/dtSnap.size*40),'Step 1/4: dailyTopics...',done+' docs');
+        }
+      }
+    }
+    mlog('Step 1 done: ' + s1 + ' topic entries fixed','ok');
+
+    // STEP 2: extraClasses
+    setProg(50,'Step 2/4: extraClasses...','');
+    mlog('--- STEP 2: extraClasses ---','hd');
+    var ecSnap = await db.collection('extraClasses').get();
+    var s2 = 0;
+    var batch = db.batch(), bc = 0;
+    for (var j=0; j<ecSnap.docs.length; j++) {
+      var edoc = ecSnap.docs[j];
+      var ed = edoc.data();
+      if (needsFix(ed.subject)) {
+        batch.update(edoc.ref, {subject: fixCode(ed.subject)});
+        bc++; s2++; done++;
+        if (bc>=400){await batch.commit();batch=db.batch();bc=0;}
+      }
+    }
+    if (bc>0) await batch.commit();
+    mlog('Step 2 done: ' + s2 + ' extra classes fixed','ok');
+
+    // STEP 3: assignments
+    setProg(70,'Step 3/4: assignments...','');
+    mlog('--- STEP 3: assignments ---','hd');
+    var asSnap = await db.collection('assignments').get();
+    var s3 = 0;
+    batch = db.batch(); bc = 0;
+    for (var k=0; k<asSnap.docs.length; k++) {
+      var adoc = asSnap.docs[k];
+      var ad = adoc.data();
+      if (needsFix(ad.subjectCode)) {
+        batch.update(adoc.ref, {subjectCode: fixCode(ad.subjectCode)});
+        bc++; s3++; done++;
+        if (bc>=400){await batch.commit();batch=db.batch();bc=0;}
+      }
+    }
+    if (bc>0) await batch.commit();
+    mlog('Step 3 done: ' + s3 + ' assignments fixed','ok');
+
+    // STEP 4: notifications
+    setProg(85,'Step 4/4: notifications...','');
+    mlog('--- STEP 4: notifications ---','hd');
+    var ntSnap = await db.collection('notifications').get();
+    var s4 = 0;
+    batch = db.batch(); bc = 0;
+    for (var n=0; n<ntSnap.docs.length; n++) {
+      var ndoc = ntSnap.docs[n];
+      var nd = ndoc.data();
+      if (nd.timetable && Array.isArray(nd.timetable)) {
+        var changed2 = false;
+        var newTT = nd.timetable.map(function(t) {
+          if (needsFix(t.subjectCode)) {
+            changed2 = true;
+            return Object.assign({}, t, {subjectCode: fixCode(t.subjectCode)});
+          }
+          return t;
+        });
+        if (changed2) {
+          batch.update(ndoc.ref, {timetable: newTT});
+          bc++; s4++; done++;
+          if (bc>=400){await batch.commit();batch=db.batch();bc=0;}
+        }
+      }
+    }
+    if (bc>0) await batch.commit();
+    mlog('Step 4 done: ' + s4 + ' notifications fixed','ok');
+
+    // DONE
+    setProg(100,'Fix Complete!','');
+    mlog('=== ALL DONE: ' + done + ' operations ===','hd');
+
+    try { await db.collection('adminLogs').add({
+      action:'FIX_MISSED_COLLECTIONS',
+      description:'dailyTopics:'+s1+', extraClasses:'+s2+', assignments:'+s3+', notifications:'+s4,
+      totalOps:done,
+      performedBy:auth.currentUser?auth.currentUser.email:'admin',
+      completedAt:firebase.firestore.FieldValue.serverTimestamp()
+    }); } catch(e){}
+
+    document.getElementById('doneCard').style.display='block';
+    document.getElementById('doneMsg').innerHTML=
+      '<strong>Fix Complete!</strong> ' + done + ' operations.<br><br>' +
+      'dailyTopics: ' + s1 + ' entries fixed (Logbook topics)<br>' +
+      'extraClasses: ' + s2 + ' fixed<br>' +
+      'assignments: ' + s3 + ' fixed<br>' +
+      'notifications: ' + s4 + ' fixed';
+    document.getElementById('doneCard').scrollIntoView({behavior:'smooth'});
+    btn.textContent='Done';
+  } catch(e) {
+    setProg(0,'Error',e.message);
+    mlog('ERROR: '+e.message,'err');
+    mlog('Safe to re-run.','err');
+    alert('Error: '+e.message);
+    btn.disabled=false; btn.textContent='Retry';
+  }
+}
+</script>
+</body>
+</html>

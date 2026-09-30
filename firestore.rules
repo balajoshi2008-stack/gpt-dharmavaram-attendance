@@ -67,6 +67,12 @@ service cloud.firestore {
       allow write: if isAdminOrFaculty();
     }
 
+    // ── Faculty Leave / OD ────────────────────────────────────────────────────
+    match /facultyLeaveOD/{docId} {
+      allow read: if true;
+      allow write: if isAdminOrFaculty();
+    }
+
     // ── Unit Marks ────────────────────────────────────────────────────────────
     match /unitMarks/{markId} {
       allow read: if true;
