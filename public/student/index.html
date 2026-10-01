@@ -2969,7 +2969,7 @@
                     else if (isLabSubject(e.subject)) dotColour = '#66bb6a';
                     else dotColour = TT_LEGEND_COLOURS[subColourMap[e.code] ?? 0];
 
-                    const displayCode = isActivity(e.subject) ? '—' : (e.code || '—');
+                    const displayCode = e.code || '—';
                     const liveSubjName = e.code && studentSubjects[e.code] ? studentSubjects[e.code].name : null;
                     const displayName = liveSubjName || e.fullName || e.subject || e.code || '—';
 
@@ -3038,7 +3038,7 @@
                         const cls   = cellClass(entry);
                         const liveLabel = entry.code && studentSubjects[entry.code] ? studentSubjects[entry.code].name : null;
                         const label = liveLabel || entry.subject || entry.code || '—';
-                        const code  = isActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                        const code  = `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
                         html += `<td colspan="${span}" class="tt-cell ${cls}">📖 ${label}${code}</td>`;
                         // If span crosses into lunch zone (p+span-1 > 4), we skip lunch cell too
                     }
@@ -3058,7 +3058,7 @@
                         const cls   = cellClass(entry);
                         const liveLabel2 = entry.code && studentSubjects[entry.code] ? studentSubjects[entry.code].name : null;
                         const label = liveLabel2 || entry.subject || entry.code || '—';
-                        const code  = isActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                        const code  = `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
                         const icon  = isActivity(entry.subject) ? '⭐' : isLabSubject(entry.subject) ? '🔬' : '📖';
                         html += `<td colspan="${span}" class="tt-cell ${cls}">${icon} ${label}${code}</td>`;
                     }

@@ -1914,8 +1914,14 @@
                         </div>
                         <div class="form-group">
                             <label>Academic Year</label>
-                            <input type="text" id="logbookAY" placeholder="e.g., 2025-26"
-                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span id="logbookAYDisplay"
+                                    style="display:inline-block;padding:9px 16px;background:#e8f5e9;border:2px solid #66bb6a;border-radius:8px;font-size:15px;font-weight:700;color:#1b5e20;min-width:110px;">
+                                    —
+                                </span>
+                                <span style="font-size:11px;color:#888;">(Set in Admin → Settings)</span>
+                            </div>
+                            <input type="hidden" id="logbookAY">
                         </div>
                         <div class="form-group">
                             <label>From Date</label>
@@ -1965,14 +1971,14 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Academic Year</label>
-                                <select id="dw_academicYear"
-                                        style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;">
-                                    <option value="">-- Select --</option>
-                                    <option value="2024-25">2024-25</option>
-                                    <option value="2025-26">2025-26</option>
-                                    <option value="2026-27">2026-27</option>
-                                    <option value="2027-28">2027-28</option>
-                                </select>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span id="dw_academicYearDisplay"
+                                        style="display:inline-block;padding:9px 16px;background:#e8f5e9;border:2px solid #66bb6a;border-radius:8px;font-size:15px;font-weight:700;color:#1b5e20;min-width:110px;">
+                                        —
+                                    </span>
+                                    <span style="font-size:11px;color:#888;">(Set in Admin → Settings)</span>
+                                </div>
+                                <input type="hidden" id="dw_academicYear">
                             </div>
                             <div class="form-group">
                                 <label>From Date</label>
@@ -3279,8 +3285,14 @@
                         </div>
                         <div class="form-group">
                             <label>Academic Year (A.Y)</label>
-                            <input type="text" id="labAcadYear" value="2025-26" placeholder="e.g. 2025-26"
-                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span id="labAcadYearDisplay"
+                                    style="display:inline-block;padding:9px 16px;background:#e8f5e9;border:2px solid #66bb6a;border-radius:8px;font-size:15px;font-weight:700;color:#1b5e20;min-width:110px;">
+                                    —
+                                </span>
+                                <span style="font-size:11px;color:#888;">(Set in Admin → Settings)</span>
+                            </div>
+                            <input type="hidden" id="labAcadYear">
                         </div>
                         <div class="form-group">
                             <label>Number of Experiments (1–40)</label>
@@ -3367,8 +3379,14 @@
                         </div>
                         <div class="form-group">
                             <label>Academic Year (A.Y)</label>
-                            <input type="text" id="pmAcadYear" value="2025-26" placeholder="e.g. 2025-26"
-                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span id="pmAcadYearDisplay"
+                                    style="display:inline-block;padding:9px 16px;background:#e8f5e9;border:2px solid #66bb6a;border-radius:8px;font-size:15px;font-weight:700;color:#1b5e20;min-width:110px;">
+                                    —
+                                </span>
+                                <span style="font-size:11px;color:#888;">(Set in Admin → Settings)</span>
+                            </div>
+                            <input type="hidden" id="pmAcadYear">
                         </div>
                         <div class="form-group">
                             <label>Viva Marks</label>
@@ -3476,8 +3494,29 @@
                         </select>
                     </div>
                 </div>
+                <!-- ── Central Academic Year Setting ── -->
+                <div style="background:#e8f5e9;border:1.5px solid #66bb6a;border-radius:12px;padding:18px 20px;margin-bottom:22px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <span style="font-size:20px;">🎓</span>
+                        <strong style="font-size:15px;color:#1b5e20;">Current Academic Year</strong>
+                        <span style="font-size:12px;color:#388e3c;margin-left:4px;">(Used in all logbooks & lab assessment reports)</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                        <select id="globalAcadYearSel" onchange="saveGlobalAcadYear()"
+                            style="padding:10px 14px;border:2px solid #66bb6a;border-radius:8px;font-size:15px;font-weight:700;color:#1b5e20;background:#f1f8e9;min-width:160px;">
+                            <option value="">-- Select Year --</option>
+                            <option value="2023-24">2023-24</option>
+                            <option value="2024-25">2024-25</option>
+                            <option value="2025-26">2025-26</option>
+                            <option value="2026-27">2026-27</option>
+                            <option value="2027-28">2027-28</option>
+                            <option value="2028-29">2028-29</option>
+                        </select>
+                        <span id="globalAYStatus" style="font-size:13px;color:#388e3c;font-weight:600;"></span>
+                    </div>
+                </div>
 
-                <!-- ── Half Day Settings per class ── -->
+
                 <div style="margin-top:22px;">
                     <div class="info-box" style="margin-bottom:14px;">
                         <strong>Half Day Count (Optional):</strong> Enable per class to count 0.5 day when a student attends between the half-day and full-day thresholds. Affects Att.Percentage tab and all downloaded reports.
@@ -4033,8 +4072,14 @@
                         </div>
                         <div class="form-group">
                             <label>Academic Year</label>
-                            <input type="text" id="clbAY" placeholder="e.g. 2025-26"
-                                style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span id="clbAYDisplay"
+                                    style="display:inline-block;padding:9px 16px;background:#e8f5e9;border:2px solid #66bb6a;border-radius:8px;font-size:15px;font-weight:700;color:#1b5e20;min-width:110px;">
+                                    —
+                                </span>
+                                <span style="font-size:11px;color:#888;">(Set in Admin → Settings)</span>
+                            </div>
+                            <input type="hidden" id="clbAY">
                         </div>
                         <div class="form-group">
                             <label>From Date</label>
@@ -5127,6 +5172,7 @@
         let PERIOD_FACULTY = {};
         let MIN_PERIODS_FOR_PRESENT = 3;
         let HALF_DAY_SETTINGS = {};
+        let GLOBAL_AY = '';        // Academic Year from admin settings (e.g. '2025-26'). Loaded at startup.
         // HALF_DAY_SETTINGS structure (per class, stored in Firestore 'settings/halfDaySettings'):
         // { '1-1': { enabled: false, minHalf: 2, minFull: 3 }, '2-3': { enabled: true, minHalf: 3, minFull: 5 }, ... }
         let UNIT_MARKS = {};
@@ -5223,6 +5269,13 @@
                 // half day settings (per class)
                 const hdDoc = await db.collection('settings').doc('halfDaySettings').get();
                 if (hdDoc.exists) { HALF_DAY_SETTINGS = hdDoc.data(); delete HALF_DAY_SETTINGS._v; }
+
+                // global academic year
+                const globalDoc = await db.collection('settings').doc('globalSettings').get();
+                if (globalDoc.exists && globalDoc.data().academicYear) {
+                    GLOBAL_AY = globalDoc.data().academicYear;
+                    _applyGlobalAYEverywhere();
+                }
 
                 // unit marks
                 UNIT_MARKS = {};
@@ -10110,7 +10163,50 @@
             const lb = document.getElementById('lastBackupTime');
             if (lb) lb.textContent = '';
             initHalfDayUI();
+            // Populate the central AY selector
+            const ayEl = document.getElementById('globalAcadYearSel');
+            if (ayEl && GLOBAL_AY) { ayEl.value = GLOBAL_AY; }
         }
+
+        // ---- Global Academic Year helpers ----
+
+        // Called when admin changes the AY dropdown in Settings
+        async function saveGlobalAcadYear() {
+            const sel = document.getElementById('globalAcadYearSel');
+            const statusEl = document.getElementById('globalAYStatus');
+            const val = sel ? sel.value.trim() : '';
+            if (!val) return;
+            try {
+                await db.collection('settings').doc('globalSettings').set({ academicYear: val }, { merge: true });
+                GLOBAL_AY = val;
+                _applyGlobalAYEverywhere();
+                if (statusEl) { statusEl.textContent = '✅ Saved: ' + val; setTimeout(() => { statusEl.textContent = ''; }, 3000); }
+            } catch(e) {
+                if (statusEl) statusEl.textContent = '❌ Save failed';
+                console.error('[GlobalAY] save error', e);
+            }
+        }
+
+        // Propagates GLOBAL_AY into every read-only AY display on the page
+        function _applyGlobalAYEverywhere() {
+            const ids = ['logbookAYDisplay','dw_academicYearDisplay','labAcadYearDisplay','pmAcadYearDisplay','clbAYDisplay'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = GLOBAL_AY || '—';
+            });
+            // Also keep hidden inputs in sync so existing JS reading them still works
+            const logAY = document.getElementById('logbookAY');
+            if (logAY) logAY.value = GLOBAL_AY;
+            const dwAY  = document.getElementById('dw_academicYear');
+            if (dwAY)  dwAY.value  = GLOBAL_AY;
+            const labAY = document.getElementById('labAcadYear');
+            if (labAY) labAY.value = GLOBAL_AY;
+            const pmAY  = document.getElementById('pmAcadYear');
+            if (pmAY)  pmAY.value  = GLOBAL_AY;
+            const clbAY = document.getElementById('clbAY');
+            if (clbAY) clbAY.value = GLOBAL_AY;
+        }
+
 
         // ---- Generic semester populator (for download/status/schol tabs) ----
         function populateSem(semEl, y) {
@@ -16182,7 +16278,7 @@ ${laSection}
 
         async function downloadLogbookPDF() {
             const subCode = document.getElementById('logbookSubject').value;
-            const ay = (document.getElementById('logbookAY').value || '2025-26').trim();
+            const ay = (document.getElementById('logbookAY').value || GLOBAL_AY || '').trim();
             const rows = await _buildLogbookRows(subCode);
             if (!rows) return;
 
@@ -18236,7 +18332,7 @@ ${laSection}
             const s = (y == 1) ? '1' : document.getElementById('clbSem').value;
             const from = document.getElementById('clbFromDate').value;
             const to = document.getElementById('clbToDate').value;
-            const ay = document.getElementById('clbAY').value || '2025-26';
+            const ay = document.getElementById('clbAY').value || GLOBAL_AY || '';
             const msgEl = document.getElementById('clbMsg');
 
             if (!y) { alert('Please select Year'); return; }
@@ -18296,7 +18392,7 @@ ${laSection}
             const s = (y == 1) ? '1' : document.getElementById('clbSem').value;
             const from = document.getElementById('clbFromDate').value;
             const to = document.getElementById('clbToDate').value;
-            const ay = document.getElementById('clbAY').value || '2025-26';
+            const ay = document.getElementById('clbAY').value || GLOBAL_AY || '';
             const msgEl = document.getElementById('clbMsg');
 
             if (!y) { alert('Please select Year'); return; }
@@ -20900,7 +20996,7 @@ function renderFacTimetable() {
             if (fttIsActivity(e.subject))   dot = '#ffd54f';
             else if (fttIsLab(e.subject))   dot = '#66bb6a';
             else dot = FTT_LEGEND_COLOURS[subColourMap[e.code] ?? 0];
-            const displayCode = fttIsActivity(e.subject) ? '—' : (e.code || '—');
+            const displayCode = e.code || '—';
             const liveSubjName = e.code && SUBJECTS[e.code] ? (SUBJECTS[e.code].name || SUBJECTS[e.code]) : null;
             const displayName  = liveSubjName || e.fullName || e.subject || e.code || '—';
             legHtml += `<tr style="border-bottom:1px solid #f0f0f0;">
@@ -20954,7 +21050,7 @@ function renderFacTimetable() {
                 const cls  = fttCellClass(entry);
                 const liveLabel = entry.code && SUBJECTS[entry.code] ? (SUBJECTS[entry.code].name || SUBJECTS[entry.code]) : null;
                 const label = liveLabel || entry.subject || entry.code || '—';
-                const code  = fttIsActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                const code  = `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
                 html += `<td colspan="${span}" class="ftt-cell ${cls}">📖 ${label}${code}</td>`;
             }
         }
@@ -20970,7 +21066,7 @@ function renderFacTimetable() {
                 const cls  = fttCellClass(entry);
                 const liveLabel = entry.code && SUBJECTS[entry.code] ? (SUBJECTS[entry.code].name || SUBJECTS[entry.code]) : null;
                 const label = liveLabel || entry.subject || entry.code || '—';
-                const code  = fttIsActivity(entry.subject) ? '' : `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
+                const code  = `<div style="font-size:10px;opacity:0.75;margin-top:2px;">${entry.code || ''}</div>`;
                 const icon  = fttIsActivity(entry.subject) ? '⭐' : fttIsLab(entry.subject) ? '🔬' : '📖';
                 html += `<td colspan="${span}" class="ftt-cell ${cls}">${icon} ${label}${code}</td>`;
             }
