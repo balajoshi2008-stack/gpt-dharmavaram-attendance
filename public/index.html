@@ -3464,7 +3464,7 @@
                     present</div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Minimum Periods for 1 Day Present</label>
+                        <label>Minimum Periods for 1 Full Day Present</label>
                         <select id="minPeriodsConfig" onchange="saveMinPeriodsSetting()">
                             <option value="1">1 Period</option>
                             <option value="2">2 Periods</option>
@@ -3476,8 +3476,137 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- ── Half Day Settings per class ── -->
+                <div style="margin-top:22px;">
+                    <div class="info-box" style="margin-bottom:14px;">
+                        <strong>Half Day Count (Optional):</strong> Enable per class to count 0.5 day when a student attends between the half-day and full-day thresholds. Affects Att.Percentage tab and all downloaded reports.
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+                        <!-- card template: repeated for each class -->
+                        <div style="background:#f8f9ff;border:1.5px solid #c5cae9;border-radius:12px;padding:16px 18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <span style="font-weight:700;color:#1e3c72;font-size:14px;">📚 1st Year</span>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#2a5298;">
+                                    <input type="checkbox" id="hd_enabled_1-1" onchange="saveHalfDaySetting('1-1')" style="width:16px;height:16px;">
+                                    Enable Half Day
+                                </label>
+                            </div>
+                            <div id="hd_fields_1-1" style="display:none;grid-template-columns:1fr 1fr;gap:10px;" class="form-grid">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for ½ Day</label>
+                                    <select id="hd_minHalf_1-1" onchange="saveHalfDaySetting('1-1')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for Full Day</label>
+                                    <select id="hd_minFull_1-1" onchange="saveHalfDaySetting('1-1')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                        <option value="7">7 Periods</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="hd_hint_1-1" style="font-size:11px;color:#888;margin-top:6px;"></div>
+                        </div>
+                        <div style="background:#f8f9ff;border:1.5px solid #c5cae9;border-radius:12px;padding:16px 18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <span style="font-weight:700;color:#1e3c72;font-size:14px;">📚 2nd Year – Sem 3</span>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#2a5298;">
+                                    <input type="checkbox" id="hd_enabled_2-3" onchange="saveHalfDaySetting('2-3')" style="width:16px;height:16px;">
+                                    Enable Half Day
+                                </label>
+                            </div>
+                            <div id="hd_fields_2-3" style="display:none;grid-template-columns:1fr 1fr;gap:10px;" class="form-grid">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for ½ Day</label>
+                                    <select id="hd_minHalf_2-3" onchange="saveHalfDaySetting('2-3')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for Full Day</label>
+                                    <select id="hd_minFull_2-3" onchange="saveHalfDaySetting('2-3')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                        <option value="7">7 Periods</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="hd_hint_2-3" style="font-size:11px;color:#888;margin-top:6px;"></div>
+                        </div>
+                        <div style="background:#f8f9ff;border:1.5px solid #c5cae9;border-radius:12px;padding:16px 18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <span style="font-weight:700;color:#1e3c72;font-size:14px;">📚 2nd Year – Sem 4</span>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#2a5298;">
+                                    <input type="checkbox" id="hd_enabled_2-4" onchange="saveHalfDaySetting('2-4')" style="width:16px;height:16px;">
+                                    Enable Half Day
+                                </label>
+                            </div>
+                            <div id="hd_fields_2-4" style="display:none;grid-template-columns:1fr 1fr;gap:10px;" class="form-grid">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for ½ Day</label>
+                                    <select id="hd_minHalf_2-4" onchange="saveHalfDaySetting('2-4')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for Full Day</label>
+                                    <select id="hd_minFull_2-4" onchange="saveHalfDaySetting('2-4')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                        <option value="7">7 Periods</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="hd_hint_2-4" style="font-size:11px;color:#888;margin-top:6px;"></div>
+                        </div>
+                        <div style="background:#f8f9ff;border:1.5px solid #c5cae9;border-radius:12px;padding:16px 18px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <span style="font-weight:700;color:#1e3c72;font-size:14px;">📚 3rd Year – Sem 5</span>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#2a5298;">
+                                    <input type="checkbox" id="hd_enabled_3-5" onchange="saveHalfDaySetting('3-5')" style="width:16px;height:16px;">
+                                    Enable Half Day
+                                </label>
+                            </div>
+                            <div id="hd_fields_3-5" style="display:none;grid-template-columns:1fr 1fr;gap:10px;" class="form-grid">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for ½ Day</label>
+                                    <select id="hd_minHalf_3-5" onchange="saveHalfDaySetting('3-5')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">Min Periods for Full Day</label>
+                                    <select id="hd_minFull_3-5" onchange="saveHalfDaySetting('3-5')">
+                                        <option value="1">1 Period</option><option value="2">2 Periods</option>
+                                        <option value="3">3 Periods</option><option value="4">4 Periods</option>
+                                        <option value="5">5 Periods</option><option value="6">6 Periods</option>
+                                        <option value="7">7 Periods</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="hd_hint_3-5" style="font-size:11px;color:#888;margin-top:6px;"></div>
+                        </div>
+                    </div>
+                    <div id="halfDayMsg" class="success-message hidden" style="margin-top:10px;"></div>
+                </div>
+
                 <div id="settingsMsg" class="success-message hidden"></div>
                 <hr style="margin:35px 0;border:none;border-top:2px solid #e0e0e0;">
+
                 <h3 style="color:#2a5298;margin-bottom:15px;">📅 Academic Calendar & Holidays</h3>
 
                 <!-- Academic Calendar -->
@@ -4646,7 +4775,7 @@
                             <div style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;">1</div>
                             <h3 style="margin:0;color:#1e3c72;font-size:16px;font-weight:700;">Form Identity</h3>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
                             <div>
                                 <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Year / Semester</label>
                                 <select id="fg_yearSem" onchange="formGen_buildTitle()" style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
@@ -4660,6 +4789,14 @@
                             <div>
                                 <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Form Type / Purpose</label>
                                 <input type="text" id="fg_formType" oninput="formGen_buildTitle()" placeholder="e.g. Key List, Viva Marks, Lab Record..." style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                            </div>
+                            <div>
+                                <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Gender Filter</label>
+                                <select id="fg_gender" style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                                    <option value="">All Students</option>
+                                    <option value="M">♂ Male Only</option>
+                                    <option value="F">♀ Female Only</option>
+                                </select>
                             </div>
                         </div>
                         <div style="margin-top:14px;">
@@ -4989,6 +5126,9 @@
         let FACULTY_MAP = {};
         let PERIOD_FACULTY = {};
         let MIN_PERIODS_FOR_PRESENT = 3;
+        let HALF_DAY_SETTINGS = {};
+        // HALF_DAY_SETTINGS structure (per class, stored in Firestore 'settings/halfDaySettings'):
+        // { '1-1': { enabled: false, minHalf: 2, minFull: 3 }, '2-3': { enabled: true, minHalf: 3, minFull: 5 }, ... }
         let UNIT_MARKS = {};
         let ATTENDANCE_CACHE = {}; // key: 'att_YYYY-MM-DD'
         let CALENDAR_DATES = {};
@@ -5079,6 +5219,10 @@
                 // min periods
                 const mpDoc = await db.collection('settings').doc('minPeriodsForPresent').get();
                 if (mpDoc.exists) MIN_PERIODS_FOR_PRESENT = mpDoc.data().value || 3;
+
+                // half day settings (per class)
+                const hdDoc = await db.collection('settings').doc('halfDaySettings').get();
+                if (hdDoc.exists) { HALF_DAY_SETTINGS = hdDoc.data(); delete HALF_DAY_SETTINGS._v; }
 
                 // unit marks
                 UNIT_MARKS = {};
@@ -8372,7 +8516,7 @@
             }
         }
 
-        function calculateDayBasedPercentage(pin, dates) {
+        function calculateDayBasedPercentage(pin, dates, yearSem) {
             let totalWorkingDays = 0, daysPresent = 0;
             dates.forEach(date => {
                 const att = getAttData(date);
@@ -8381,9 +8525,12 @@
                 for (let p = 1; p <= 7; p++) {
                     if (studentAtt[p]) { hasAtt = true; if (studentAtt[p].status === 'P') periodsPresent++; }
                 }
-                if (hasAtt) { totalWorkingDays++; if (periodsPresent >= MIN_PERIODS_FOR_PRESENT) daysPresent++; }
+                const v = calcDayValue(periodsPresent, hasAtt, yearSem || '');
+                if (v !== null) { totalWorkingDays++; daysPresent += v; }
             });
-            return { days: daysPresent, total: totalWorkingDays, pct: totalWorkingDays > 0 ? ((daysPresent / totalWorkingDays) * 100).toFixed(2) : '0.00' };
+            const pctNum = totalWorkingDays > 0 ? (daysPresent / totalWorkingDays) * 100 : 0;
+            return { days: daysPresent, total: totalWorkingDays, pct: pctNum.toFixed(2) };
+
         }
 
         function getWeekDates(date) {
@@ -8942,9 +9089,14 @@
                     }
 
                     if (hasAtt) {
-                        if (periodsPresent >= MIN_PERIODS_FOR_PRESENT) {
+                        const ysHalf = (y == 1) ? '1-1' : `${y}-${s}`;
+                        const v = calcDayValue(periodsPresent, hasAtt, ysHalf);
+                        if (v === 1.0) {
                             attendanceRow.push('P');
-                            daysPresent++;
+                            daysPresent += 1;
+                        } else if (v === 0.5) {
+                            attendanceRow.push('½P'); // Half day
+                            daysPresent += 0.5;
                         } else {
                             attendanceRow.push('A');
                         }
@@ -8953,7 +9105,7 @@
                     }
                 });
 
-                row.push(daysPresent);
+                row.push(daysPresent % 1 === 0 ? daysPresent : daysPresent.toFixed(1));
                 row.push(...attendanceRow);
                 data.push(row);
                 rowNum++;
@@ -9158,24 +9310,28 @@
                         for (let p = 1; p <= 7; p++) {
                             if (sa[p]) { hasAtt = true; if (sa[p].status === 'P') periodsPresent++; }
                         }
-                        if (hasAtt && periodsPresent >= MIN_PERIODS_FOR_PRESENT) daysPresent++;
+                        const v = calcDayValue(periodsPresent, hasAtt, yearSem);
+                        if (v !== null) daysPresent += v;
                     });
 
                     // Show present(workingDays) for months up to last admission month
                     const monthYM = `${year}-${String(month).padStart(2, '0')}`;
+                    const dpDisplay = daysPresent % 1 === 0 ? daysPresent : daysPresent.toFixed(1);
                     if (lastAdmMonth && monthYM <= lastAdmMonth && studentMonthWD[idx] !== workingDays) {
-                        row.push(`${daysPresent}(${studentMonthWD[idx]})`);
+                        row.push(`${dpDisplay}(${studentMonthWD[idx]})`);
                     } else {
-                        row.push(daysPresent);
+                        row.push(daysPresent % 1 === 0 ? daysPresent : daysPresent.toFixed(1));
                     }
                     totalPresent += daysPresent;
                 });
 
+
                 // Total column: show total(studentWorkingDays) if different from class total
+                const tpDisplay = totalPresent % 1 === 0 ? totalPresent : totalPresent.toFixed(1);
                 if (lastAdmMonth && studentWorkingDays !== totalWorkingDays) {
-                    row.push(`${totalPresent}(${studentWorkingDays})`);
+                    row.push(`${tpDisplay}(${studentWorkingDays})`);
                 } else {
-                    row.push(totalPresent);
+                    row.push(totalPresent % 1 === 0 ? totalPresent : totalPresent.toFixed(1));
                 }
                 const pct = studentWorkingDays > 0
                     ? ((totalPresent / studentWorkingDays) * 100).toFixed(2) + '%'
@@ -9953,6 +10109,7 @@
             if (el) el.value = String(MIN_PERIODS_FOR_PRESENT);
             const lb = document.getElementById('lastBackupTime');
             if (lb) lb.textContent = '';
+            initHalfDayUI();
         }
 
         // ---- Generic semester populator (for download/status/schol tabs) ----
@@ -9994,10 +10151,78 @@
             const val = document.getElementById('minPeriodsConfig').value;
             MIN_PERIODS_FOR_PRESENT = parseInt(val);
             saveSettings('minPeriodsForPresent', { value: parseInt(val) });
-            showMessage('settingsMsg', `✓ Setting saved: Minimum ${val} periods for 1 day`, 'success');
+            showMessage('settingsMsg', `✓ Setting saved: Minimum ${val} periods for 1 full day`, 'success');
         }
 
-        // ===================== BACKUP & RESTORE =====================
+        // ══════════════════════════════════════════════════
+        // HALF DAY SETTINGS
+        // ══════════════════════════════════════════════════
+
+        /**
+         * Core helper used by ALL attendance calculations.
+         * Returns: 1.0 (full day present), 0.5 (half day, if enabled for this class), or 0.0 (absent).
+         * @param {number} periodsPresent  - number of P-status periods for that day
+         * @param {boolean} hasAtt         - true if attendance was posted for that day at all
+         * @param {string}  yearSem        - e.g. '2-3'
+         */
+        function calcDayValue(periodsPresent, hasAtt, yearSem) {
+            if (!hasAtt) return null; // not a working day — do not count at all
+            const hds      = (HALF_DAY_SETTINGS && HALF_DAY_SETTINGS[yearSem]) || {};
+            const minFull  = hds.minFull  != null ? hds.minFull  : MIN_PERIODS_FOR_PRESENT;
+            const minHalf  = hds.minHalf  != null ? hds.minHalf  : 1;
+            const halfEnab = hds.enabled  || false;
+            if (periodsPresent >= minFull)               return 1.0;
+            if (halfEnab && periodsPresent >= minHalf)   return 0.5;
+            return 0.0;
+        }
+
+        /** Save half-day setting for one year-sem to Firestore + update UI hint */
+        function saveHalfDaySetting(ys) {
+            const enabled  = document.getElementById(`hd_enabled_${ys}`)?.checked || false;
+            const minHalf  = parseInt(document.getElementById(`hd_minHalf_${ys}`)?.value || 1);
+            const minFull  = parseInt(document.getElementById(`hd_minFull_${ys}`)?.value || MIN_PERIODS_FOR_PRESENT);
+            document.getElementById(`hd_fields_${ys}`).style.display = enabled ? 'grid' : 'none';
+            if (!HALF_DAY_SETTINGS) HALF_DAY_SETTINGS = {};
+            HALF_DAY_SETTINGS[ys] = { enabled, minHalf, minFull };
+            saveSettings('halfDaySettings', HALF_DAY_SETTINGS);
+            _updateHalfDayHint(ys);
+            showMessage('halfDayMsg', `✓ Half day setting saved for ${ys}`, 'success');
+        }
+
+        function _updateHalfDayHint(ys) {
+            const hintEl = document.getElementById(`hd_hint_${ys}`);
+            if (!hintEl) return;
+            const hds = HALF_DAY_SETTINGS?.[ys] || {};
+            if (!hds.enabled) {
+                hintEl.textContent = 'Half day disabled — only full day counted';
+            } else {
+                hintEl.textContent =
+                    `½ day: ≥${hds.minHalf} & <${hds.minFull} periods = 0.5 | Full: ≥${hds.minFull} periods = 1.0`;
+            }
+        }
+
+        /** Called after settings are loaded to restore UI state */
+        function initHalfDayUI() {
+            ['1-1','2-3','2-4','3-5'].forEach(ys => {
+                const hds = HALF_DAY_SETTINGS?.[ys] || {};
+                const cbEl = document.getElementById(`hd_enabled_${ys}`);
+                if (!cbEl) return;
+                cbEl.checked = !!hds.enabled;
+                document.getElementById(`hd_fields_${ys}`).style.display = hds.enabled ? 'grid' : 'none';
+                if (hds.minHalf) {
+                    const hEl = document.getElementById(`hd_minHalf_${ys}`);
+                    if (hEl) hEl.value = String(hds.minHalf);
+                }
+                if (hds.minFull) {
+                    const fEl = document.getElementById(`hd_minFull_${ys}`);
+                    if (fEl) fEl.value = String(hds.minFull);
+                }
+                _updateHalfDayHint(ys);
+            });
+        }
+        // ══════════════════════════════════════════════════
+
+
 
         function exportBackup() {
             const backup = {
@@ -20512,6 +20737,7 @@ let al_dates      = [];   // sorted unique dates in range
 let al_periods    = {};   // date → Set of period numbers that have data
 let al_subjectLabel = 'All Subjects';
 let al_ysLabel    = '';
+let al_yearSemStr = '';   // e.g. '2-3' — used by register / half-day helpers
 let al_dataLoaded = false;
 let al_sw_selectedPin = '';   // currently selected student PIN for student-wise view
 
@@ -20923,17 +21149,20 @@ async function attPct_load() {
                 for (let p = 1; p <= 7; p++) {
                     if (sa[p]) { hasAtt = true; if (sa[p].status === 'P') pp++; }
                 }
-                if (hasAtt && pp >= MIN_PERIODS_FOR_PRESENT) dp++;
+                const v = calcDayValue(pp, hasAtt, yearSem);
+                if (v !== null) dp += v;
             });
             totalPresent += dp;
 
             // Show present(workingDays) for months up to last admission month if different
             const monthYM = `${year}-${String(month).padStart(2, '0')}`;
+            const dpDisp = dp % 1 === 0 ? dp : dp.toFixed(1);
             if (lastAdmMonth && monthYM <= lastAdmMonth && studentMonthWD[idx] !== workingDays) {
-                return `${dp}<br><small style="color:#888;font-size:10px;">(${studentMonthWD[idx]})</small>`;
+                return `${dpDisp}<br><small style="color:#888;font-size:10px;">(${studentMonthWD[idx]})</small>`;
             }
-            return dp;
+            return dp % 1 === 0 ? dp : dp.toFixed(1);
         });
+
 
         const pctVal = studentWorkingDays > 0 ? (totalPresent / studentWorkingDays) * 100 : 0;
         const pctStr = pctVal.toFixed(2) + '%';
@@ -20998,6 +21227,7 @@ async function absList_loadData() {
 
     const ysLabels = { '1-1':'Year 1', '2-3':'Semester 3', '2-4':'Semester 4', '3-5':'Semester 5' };
     al_ysLabel = ysLabels[ys] || ys;
+    al_yearSemStr = ys;  // store for half-day helpers
     const [al_y, al_s] = ys.split('-');
 
     document.getElementById('al_results').style.display = 'none';
@@ -21271,33 +21501,39 @@ function absList_renderDaywise(container) {
 }
 
 // ─── VIEW 3: REGISTER FORMAT ─────────────────────────────────────────────
-// P/A per day uses MIN_PERIODS_FOR_PRESENT threshold
-function al_isDayPresent(pin, date) {
+// P/A/H per day uses calcDayValue (supports half-day)
+function al_isDayPresent(pin, date, yearSem) {
     const pMap = al_matrix[pin] || {};
     const periods = [...(al_periods[date] || [])];
     let periodsPresent = 0;
     periods.forEach(p => {
         if ((pMap[`${date}__P${p}`] || '') === 'P') periodsPresent++;
     });
-    const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
     const hasData = periods.some(p => pMap[`${date}__P${p}`]);
     if (!hasData) return null;
-    return periodsPresent >= threshold ? 'P' : 'A';
+    const v = calcDayValue(periodsPresent, hasData, yearSem || al_yearSemStr || '');
+    if (v === 1.0) return 'P';
+    if (v === 0.5) return 'H';
+    return 'A';
 }
 
 function absList_renderRegister(container) {
     if (!al_dataLoaded) return;
-    const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    const hds     = HALF_DAY_SETTINGS?.[al_yearSemStr] || {};
+    const minFull = hds.minFull || MIN_PERIODS_FOR_PRESENT;
+    const minHalf = hds.minHalf || 1;
+    const halfOn  = hds.enabled || false;
     const absentStudents = al_students
-        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
+        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date, al_yearSemStr) === 'A'))
         .sort((a, b) => a.pin.localeCompare(b.pin));
     if (!absentStudents.length) {
         container.innerHTML = '<div class="info-box" style="margin:20px 0;">✅ No absences found.</div>';
         return;
     }
     let html = `<div style="background:#e3f2fd;border-left:4px solid #1565c0;padding:10px 16px;margin-bottom:14px;border-radius:0 8px 8px 0;font-size:13px;color:#1565c0;">
-        <strong>ℹ️ Present threshold:</strong> ≥ <strong>${threshold}</strong> periods = <strong style="color:#2e7d32;">P</strong>. Below ${threshold} = <strong style="color:#c62828;">A</strong>.
-    </div>`;
+        <strong>ℹ️ Present threshold:</strong> ≥ <strong>${minFull}</strong> periods = <strong style="color:#2e7d32;">P</strong>.`
+        + (halfOn ? ` ≥ <strong>${minHalf}</strong> & < <strong>${minFull}</strong> = <strong style="color:#e65100;">½P (Half Day)</strong>. Below ${minHalf} = <strong style="color:#c62828;">A</strong>.` : ` Below ${minFull} = <strong style="color:#c62828;">A</strong>.`)
+        + `</div>`;
     html += '<div class="al-daytable-wrap"><table class="al-reg-table">';
     html += '<thead><tr><th>Sl.No</th><th>PIN</th><th>Name</th><th style="background:#0d47a1;color:#fff;min-width:120px;">📱 Parent Mobile</th>';
     al_dates.forEach(d => { html += `<th>${al_fmtShort(d)}<br>${al_dayName(d)}</th>`; });
@@ -21318,9 +21554,10 @@ function absList_renderRegister(container) {
             : `<span style="color:#bbb;font-size:12px;">—</span>`;
         html += `<tr><td>${idx + 1}</td><td style="font-weight:700;">${st.pin}</td><td style="text-align:left;">${st.name}</td><td style="background:#e8f4fd;padding:6px 8px;">${mobileCell}</td>`;
         al_dates.forEach(date => {
-            const status = al_isDayPresent(st.pin, date);
+            const status = al_isDayPresent(st.pin, date, al_yearSemStr);
             if (status === 'A') { colAbsCount[date]++; absDays++; html += '<td class="al-cell-a">A</td>'; }
             else if (status === 'P') { html += '<td class="al-cell-p">P</td>'; }
+            else if (status === 'H') { html += '<td style="background:#fff3e0;color:#e65100;font-weight:700;text-align:center;"><span style="font-size:0.65em;line-height:1;">½</span>P</td>'; }
             else { html += '<td class="al-cell-dash">–</td>'; }
         });
         html += `<td class="al-cell-total" style="background:#ffebee;color:#b71c1c;font-weight:900;font-size:15px;">${absDays}</td>`;
@@ -21452,9 +21689,10 @@ function absList_downloadPDF() {
     // -- PAGE 2: Register Format --
     doc.addPage();
     addHeader(doc, 'PAGE 2 - Register Format (Day-wise Absent/Present)');
-    const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    const hdsReg    = (HALF_DAY_SETTINGS && HALF_DAY_SETTINGS[al_yearSemStr]) || {};
+    const minFullReg = hdsReg.minFull != null ? hdsReg.minFull : MIN_PERIODS_FOR_PRESENT;
     const absStuReg = al_students
-        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date) === 'A'))
+        .filter(st => al_dates.some(date => al_isDayPresent(st.pin, date, al_yearSemStr) === 'A'))
         .sort((a, b) => a.pin.localeCompare(b.pin));
     const regHead = ['Sl.No', 'PIN', 'Name', ...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`), 'Total Days Absent'];
     const colAbsCount = {};
@@ -21463,7 +21701,7 @@ function absList_downloadPDF() {
         let absDays = 0;
         const row = [idx+1, st.pin, st.name];
         al_dates.forEach(date => {
-            const status = al_isDayPresent(st.pin, date);
+            const status = al_isDayPresent(st.pin, date, al_yearSemStr);
             if (status==='A') { colAbsCount[date]++; absDays++; }
             row.push(status || '-');
         });
@@ -21541,22 +21779,31 @@ function absList_downloadExcel() {
     ws1['!cols']=[{wch:14},{wch:12},{wch:10},{wch:28},{wch:70}];
     XLSX.utils.book_append_sheet(wb, ws1, 'Day-wise Summary');
 
-    // ── SHEET 2: Register Format (uses MIN_PERIODS_FOR_PRESENT threshold) ──
-    const thresholdXL = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    // ── SHEET 2: Register Format (respects half-day settings) ──
+    const hdsXL     = (HALF_DAY_SETTINGS && HALF_DAY_SETTINGS[al_yearSemStr]) || {};
+    const minFullXL = hdsXL.minFull != null ? hdsXL.minFull : MIN_PERIODS_FOR_PRESENT;
+    const minHalfXL = hdsXL.minHalf != null ? hdsXL.minHalf : 1;
+    const halfOnXL  = hdsXL.enabled || false;
+    let ruleTextXL;
+    if (halfOnXL) {
+        ruleTextXL = `Present rule: ≥${minFullXL} periods = P (Full day) | ≥${minHalfXL} periods = ½P (Half day, 0.5) | <${minHalfXL} periods = A (Absent)`;
+    } else {
+        ruleTextXL = `Present rule: ≥${minFullXL} periods present = P (Present day) | <${minFullXL} periods = A (Absent day)`;
+    }
     const absStuReg=al_students
-        .filter(st=>al_dates.some(date=>al_isDayPresent(st.pin,date)==='A'))
+        .filter(st=>al_dates.some(date=>al_isDayPresent(st.pin,date,al_yearSemStr)==='A'))
         .sort((a,b)=>a.pin.localeCompare(b.pin));
-    const s2=[[heading],[subHead],[`Present rule: >= ${thresholdXL} periods present = P (Present day) | < ${thresholdXL} periods = A (Absent day)`],['Sl.No','PIN','Name',...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`)]]; // no Total Absent Days col
+    const s2=[[heading],[subHead],[ruleTextXL],['Sl.No','PIN','Name',...al_dates.map(d=>`${al_fmtShort(d)} ${al_dayName(d)}`)]]; // no Total Absent Days col
     const colAbs={}; al_dates.forEach(d=>{colAbs[d]=0;});
     let totalAbsStu=0;
     absStuReg.forEach((st,idx)=>{
         const row=[idx+1,st.pin,st.name];
         al_dates.forEach(date=>{
-            const status=al_isDayPresent(st.pin,date);
+            const status=al_isDayPresent(st.pin,date,al_yearSemStr);
             if(status==='A') colAbs[date]++;
             row.push(status||'–');
         });
-        if(al_dates.some(date=>al_isDayPresent(st.pin,date)==='A'))totalAbsStu++;
+        if(al_dates.some(date=>al_isDayPresent(st.pin,date,al_yearSemStr)==='A'))totalAbsStu++;
         s2.push(row);
     });
     // Total row: merge first 3 cols as label, then per-date counts
@@ -21721,11 +21968,14 @@ function absList_renderStudentwise(container) {
         if (hasAbsent) absentDays.push(dayData);
     });
 
-    // Count total "days absent" using the same threshold logic as register format
+    // Count total "days absent/present" using the same threshold logic as register format
     let totalDaysAbsent = 0;
+    let totalDaysPresent = 0;
     al_dates.forEach(date => {
-        const status = al_isDayPresent(st.pin, date);
+        const status = al_isDayPresent(st.pin, date, al_yearSemStr);
         if (status === 'A') totalDaysAbsent++;
+        else if (status === 'P') totalDaysPresent++;
+        else if (status === 'H') totalDaysPresent += 0.5;
     });
 
     // ── Student info card ──
@@ -21746,14 +21996,15 @@ function absList_renderStudentwise(container) {
         ${mobileHtml}
     </div>`;
 
-    // Summary stats
-    const threshold = (typeof MIN_PERIODS_FOR_PRESENT !== 'undefined') ? MIN_PERIODS_FOR_PRESENT : 3;
+    // Summary stats — handle fractional days present (half-day)
+    const dispPresent = Number.isInteger(totalDaysPresent) ? totalDaysPresent : totalDaysPresent.toFixed(1);
+    const attPct = al_dates.length > 0 ? ((totalDaysPresent / al_dates.length) * 100).toFixed(1) : 0;
     html += `<div class="al-sw-summary-row">
         <span class="al-sw-stat al-sw-stat-blue">📅 ${al_dates.length} Working Days</span>
         <span class="al-sw-stat al-sw-stat-red">🚫 ${totalDaysAbsent} Days Absent</span>
         <span class="al-sw-stat al-sw-stat-orange">⏱ ${totalAbsentPeriods} Total Absent Periods</span>
-        <span class="al-sw-stat al-sw-stat-green">✅ ${al_dates.length - totalDaysAbsent} Days Present</span>
-        <span class="al-sw-stat al-sw-stat-blue">📊 ${al_dates.length > 0 ? (((al_dates.length - totalDaysAbsent) / al_dates.length) * 100).toFixed(1) : 0}% Attendance</span>
+        <span class="al-sw-stat al-sw-stat-green">✅ ${dispPresent} Days Present</span>
+        <span class="al-sw-stat al-sw-stat-blue">📊 ${attPct}% Attendance</span>
     </div>`;
 
     // PDF download button
@@ -21773,9 +22024,16 @@ function absList_renderStudentwise(container) {
     absentDays.forEach(d => Object.keys(d.periods).forEach(p => allPeriodNums.add(parseInt(p))));
     const sortedPeriods = [...allPeriodNums].sort((a, b) => a - b);
 
+    const hdsSW    = (HALF_DAY_SETTINGS && HALF_DAY_SETTINGS[al_yearSemStr]) || {};
+    const minFullSW = hdsSW.minFull != null ? hdsSW.minFull : MIN_PERIODS_FOR_PRESENT;
+    const minHalfSW = hdsSW.minHalf != null ? hdsSW.minHalf : 1;
+    const halfOnSW  = hdsSW.enabled || false;
+    const ruleNoteSW = halfOnSW
+        ? `≥ <strong>${minFullSW}</strong> periods = P (Full Day) | ≥ <strong>${minHalfSW}</strong> periods = ½P (Half Day) | below ${minHalfSW} = A`
+        : `≥ <strong>${minFullSW}</strong> periods present = P (Present day) | below ${minFullSW} = A`;
     html += `<div style="font-size:13px;color:#666;margin-bottom:8px;">
         <strong>ℹ️ Note:</strong> Only days with at least 1 absent period are shown below.
-        Day-level present/absent uses threshold ≥ <strong>${threshold}</strong> periods present = P.
+        Day-level rule: ${ruleNoteSW}
     </div>`;
 
     html += '<div class="al-daytable-wrap"><table class="al-sw-table">';
@@ -21850,8 +22108,12 @@ function alStudentwise_downloadPDF() {
     });
 
     let totalDaysAbsent = 0;
+    let totalDaysPresent = 0;
     al_dates.forEach(date => {
-        if (al_isDayPresent(st.pin, date) === 'A') totalDaysAbsent++;
+        const s = al_isDayPresent(st.pin, date, al_yearSemStr);
+        if (s === 'A') totalDaysAbsent++;
+        else if (s === 'P') totalDaysPresent++;
+        else if (s === 'H') totalDaysPresent += 0.5;
     });
 
     // All period numbers across absent days
@@ -21894,8 +22156,9 @@ function alStudentwise_downloadPDF() {
     doc.setFillColor(255, 243, 224);
     doc.roundedRect(10, y, pageW - 20, 14, 3, 3, 'F');
     doc.setFontSize(9); doc.setTextColor(30, 30, 30); doc.setFont(undefined, 'normal');
-    const pctVal = al_dates.length > 0 ? (((al_dates.length - totalDaysAbsent) / al_dates.length) * 100).toFixed(1) : '0.0';
-    doc.text(`Working Days: ${al_dates.length}   |   Days Absent: ${totalDaysAbsent}   |   Absent Periods: ${totalAbsentPeriods}   |   Days Present: ${al_dates.length - totalDaysAbsent}   |   Attendance: ${pctVal}%`, pageW / 2, y + 9, { align: 'center' });
+    const dispPresentPDF = Number.isInteger(totalDaysPresent) ? totalDaysPresent : totalDaysPresent.toFixed(1);
+    const pctVal = al_dates.length > 0 ? ((totalDaysPresent / al_dates.length) * 100).toFixed(1) : '0.0';
+    doc.text(`Working Days: ${al_dates.length}   |   Days Absent: ${totalDaysAbsent}   |   Absent Periods: ${totalAbsentPeriods}   |   Days Present: ${dispPresentPDF}   |   Attendance: ${pctVal}%`, pageW / 2, y + 9, { align: 'center' });
 
     // ── Table ──
     y += 20;
@@ -22220,6 +22483,11 @@ async function formGen_loadStudents(ys) {
     if (!students.length) {
         const snap = await db.collection('students').where('yearSem', '==', ys).get();
         snap.forEach(d => students.push(d.data()));
+    }
+    // Gender filter
+    const genderFilter = document.getElementById('fg_gender')?.value || '';
+    if (genderFilter) {
+        students = students.filter(st => st.gender === genderFilter);
     }
     // Sort by PIN: admission year → college code → roll number
     // PIN format: YYCCС-BR-RRR  e.g. 24170-CM-010

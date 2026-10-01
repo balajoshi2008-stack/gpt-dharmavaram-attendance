@@ -284,6 +284,16 @@
             font-weight: 700;
         }
 
+        .calendar-day.half-day {
+            background: #e3f2fd;
+            border-color: #1565c0;
+        }
+
+        .calendar-day.half-day .status {
+            color: #1565c0;
+            font-weight: 700;
+        }
+
         .periods-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -1565,6 +1575,19 @@
         let studentCalendarDates = {}; // Cache: { '2-3': {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ... }
         let allHolidays = []; // Cache: holiday docs from Firestore holidays/ collection
         const MIN_PERIODS_FOR_PRESENT = 3;
+        let HALF_DAY_SETTINGS = {}; // Loaded from Firestore settings/halfDaySettings
+
+        // Returns 1.0 (full), 0.5 (half-day if enabled), or 0.0 (absent) for a given student day.
+        function calcStudentDayValue(periodsPresent, hasAtt, yearSem) {
+            if (!hasAtt) return null;
+            const hds      = (HALF_DAY_SETTINGS && HALF_DAY_SETTINGS[yearSem]) || {};
+            const minFull  = hds.minFull  != null ? hds.minFull  : MIN_PERIODS_FOR_PRESENT;
+            const minHalf  = hds.minHalf  != null ? hds.minHalf  : 1;
+            const halfEnab = hds.enabled  || false;
+            if (periodsPresent >= minFull)              return 1.0;
+            if (halfEnab && periodsPresent >= minHalf)  return 0.5;
+            return 0.0;
+        }
 
         // Returns true if a date string (YYYY-MM-DD) is a holiday (not a working_day override)
         function isStudentHoliday(dateStr) {
@@ -1623,13 +1646,14 @@
                     currentStudent = restoredStudent;
                     showStudentApp();
                     // Fetch attendance data in background
-                    const [attSnap, marksSnap, ttDoc, calDoc, subjDoc, holSnap] = await Promise.all([
+                    const [attSnap, marksSnap, ttDoc, calDoc, subjDoc, holSnap, halfDayDoc] = await Promise.all([
                         db.collection('attendance').get(),
                         db.collection('unitMarks').get(),
                         db.collection('settings').doc('timetable').get(),
                         db.collection('settings').doc('calendarDates').get(),
                         db.collection('settings').doc('subjects').get(),
-                        db.collection('holidays').orderBy('date').get()
+                        db.collection('holidays').orderBy('date').get(),
+                        db.collection('settings').doc('halfDaySettings').get()
                     ]);
                     allAttendance = {};
                     attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
@@ -1639,6 +1663,7 @@
                     if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
                     if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
                     allHolidays = holSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (halfDayDoc.exists) { HALF_DAY_SETTINGS = halfDayDoc.data(); }
                     loadMonthlyReport();
                     loadTodayAttendance();
                     loadStudentNotifications(false); // auto-restore: no popup
@@ -1751,13 +1776,14 @@
                         showStudentApp();
 
                         // Batch-fetch ALL attendance, unit marks, timetable, academic calendar and holidays in parallel
-                        const [attSnap, marksSnap, ttDoc, calDoc, subjDoc, holSnap] = await Promise.all([
+                        const [attSnap, marksSnap, ttDoc, calDoc, subjDoc, holSnap, halfDayDoc] = await Promise.all([
                             db.collection('attendance').get(),
                             db.collection('unitMarks').get(),
                             db.collection('settings').doc('timetable').get(),
                             db.collection('settings').doc('calendarDates').get(),
                             db.collection('settings').doc('subjects').get(),
-                            db.collection('holidays').orderBy('date').get()
+                            db.collection('holidays').orderBy('date').get(),
+                            db.collection('settings').doc('halfDaySettings').get()
                         ]);
                         allAttendance = {};
                         attSnap.forEach(doc => { allAttendance[doc.id] = doc.data(); });
@@ -1767,6 +1793,7 @@
                         if (calDoc.exists) { studentCalendarDates = calDoc.data(); delete studentCalendarDates._v; }
                         if (subjDoc.exists) { studentSubjects = subjDoc.data(); }
                         allHolidays = holSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        if (halfDayDoc.exists) { HALF_DAY_SETTINGS = halfDayDoc.data(); }
 
                         loadMonthlyReport();
                         loadTodayAttendance();
@@ -1929,9 +1956,14 @@
                             const pData = periods[String(p)];
                             if (pData && pData.status === 'P') presentCount++;
                         }
-                        if (presentCount >= MIN_PERIODS_FOR_PRESENT) {
+                        const hasAtt = Object.keys(periods).length > 0;
+                        const dayVal = calcStudentDayValue(presentCount, hasAtt, currentStudent.yearSem || '');
+                        if (dayVal === 1.0) {
                             presentDays++;
                             dayStatus[date] = 'P';
+                        } else if (dayVal === 0.5) {
+                            presentDays += 0.5;
+                            dayStatus[date] = 'H';
                         } else {
                             dayStatus[date] = 'A';
                         }
@@ -1961,10 +1993,10 @@
                 } else {
                     document.getElementById('workingDays').textContent = workingDays;
                 }
-                document.getElementById('daysPresent').textContent = presentDays;
+                document.getElementById('daysPresent').textContent = Number.isInteger(presentDays) ? presentDays : presentDays.toFixed(1);
                 document.getElementById('daysAbsent').textContent = workingDays - presentDays;
-                const percentage = Math.round((presentDays / workingDays) * 100);
-                document.getElementById('percentage').textContent = percentage + '%';
+                const percentage = workingDays > 0 ? ((presentDays / workingDays) * 100) : 0;
+                document.getElementById('percentage').textContent = Number.isInteger(percentage) ? percentage + '%' : percentage.toFixed(1) + '%';
 
                 // Admission date info banner in monthly tab
                 let monthlyAdmBanner = document.getElementById('monthlyAdmBanner');
@@ -2040,6 +2072,9 @@
                 } else if (dayStatus[dateStr] === 'P' && showToday) {
                     cell.classList.add('present');
                     statusDiv.textContent = 'P';
+                } else if (dayStatus[dateStr] === 'H' && showToday) {
+                    cell.classList.add('half-day');
+                    statusDiv.textContent = '½P';
                 } else if (dayStatus[dateStr] === 'A' && showToday) {
                     cell.classList.add('absent');
                     statusDiv.textContent = 'A';
@@ -2236,8 +2271,11 @@
                         const pData = dayPeriods[String(p)];
                         if (pData && pData.status === 'P') presentCount++;
                     }
-                    const isPresent = presentCount >= MIN_PERIODS_FOR_PRESENT;
-                    if (isPresent) totalPresentDays++;
+                    const hasAtt = Object.keys(dayPeriods).length > 0;
+                    const dayVal = calcStudentDayValue(presentCount, hasAtt, currentStudent.yearSem || '');
+                    const isPresent = dayVal >= 0.5;
+                    if (dayVal === 1.0)  totalPresentDays++;
+                    else if (dayVal === 0.5) totalPresentDays += 0.5;
 
                     // Track per month
                     if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate) {
@@ -2247,7 +2285,8 @@
                             monthlyStats[ym] = { present: 0, working: 0, name: mDate.toLocaleString('default', { month: 'short' }) };
                         }
                         monthlyStats[ym].working++;
-                        if (isPresent) monthlyStats[ym].present++;
+                        if (dayVal === 1.0)  monthlyStats[ym].present++;
+                        else if (dayVal === 0.5) monthlyStats[ym].present += 0.5;
                     }
                 }
             }
@@ -2261,10 +2300,12 @@
             }
 
             // Update stats
-            const percentage = totalWorkingDays > 0 ? Math.round((totalPresentDays / totalWorkingDays) * 100) : 0;
+            const rawPct = totalWorkingDays > 0 ? (totalPresentDays / totalWorkingDays) * 100 : 0;
+            const percentage = Number.isInteger(rawPct) ? rawPct : parseFloat(rawPct.toFixed(1));
             document.getElementById('cumulativePercentage').textContent = percentage + '%';
+            const dispPresent = Number.isInteger(totalPresentDays) ? totalPresentDays : totalPresentDays.toFixed(1);
             document.getElementById('cumulativeStats').textContent =
-                `${totalPresentDays} Present / ${totalWorkingDays} Working Days`;
+                `${dispPresent} Present / ${totalWorkingDays} Working Days`;
 
             // Display month-wise breakdown for Year 1 late joiners
             let breakdownEl = document.getElementById('monthBreakdown');
