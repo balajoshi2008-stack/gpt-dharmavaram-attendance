@@ -5862,6 +5862,7 @@
                 navTabs.innerHTML += '<button class="nav-tab active" onclick="showTab(\'attendance\')">📋 Attendance</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'facTimetable\'); renderFacTimetable();">🗓️ Time Table</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'logbook\'); initLogbookTab();">📔 Logbook</button>';
+                navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'classlogbook\'); initClassLogbookTab();">📖 Class Logbook</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'extraclass\'); initExtraClassTab();">📚 Extra Class</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'unittests\')">📝 Unit Marks</button>';
                 navTabs.innerHTML += '<button class="nav-tab" onclick="showTab(\'labassessment\'); initLabAssessmentTab();">🧪 Lab Assessment</button>';
@@ -8808,11 +8809,10 @@
                 const weekStart = weekDates[0];
                 const weekEnd   = weekDates[weekDates.length - 1];
 
-                // Calculate total columns for this sheet
+                // Calculate total columns for this sheet (no weekly % column)
                 let totalCols = 3; // Sl.No, PIN, Name
-                weekDates.forEach((d, idx) => {
-                    totalCols += 7; // 7 periods
-                    if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) totalCols += 1; // Weekly%
+                weekDates.forEach(() => {
+                    totalCols += 7; // 7 periods only, no weekly %
                 });
 
                 // Title row
@@ -8825,72 +8825,46 @@
                     const dayName = DAY_NAMES[new Date(d).getDay()];
                     header1.push(formatDateDDMMYYYY(d) + ' - ' + dayName);
                     for (let i = 1; i < 7; i++) header1.push('');
-                    if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
-                        header1.push('Weekly %');
-                    }
-                    for (let p = 1; p <= 7; p++) header2.push(`P${p}`);
-                    if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
-                        header2.push('');
-                    }
+                    // Period sub-headers
+                    for (let p = 1; p <= 7; p++) header2.push('P' + p);
                 });
 
                 const data = [titleRow, header1, header2];
+
                 let rowIdx = 0;
+                [...activeStu, ...inactiveStu].forEach((st) => {
+                    const isInactive = st.status === 'transferred' || st.status === 'tc_issued';
+                    const inactiveDate = st.inactiveDate || '';
+                    const statusLabel  = st.status === 'transferred' ? '[Tr]' : (st.status === 'tc_issued' ? '[TC]' : '');
+                    const nameCell = statusLabel ? `${st.name} ${statusLabel}` : st.name;
+                    const row = [rowIdx + 1, st.pin, nameCell];
 
-                // ALL students (active + inactive) appear on ALL week sheets
-                // For inactive: show real P/A for dates < inactiveDate, show "TC"/"Tr" from inactiveDate onwards
-                stu.forEach((st) => {
-                    const inactiveDate = st.inactiveDate || '';   // FIRST day they are NOT in school
-                    const statusLabel  = st.status === 'transferred' ? 'Tr' : (st.status === 'tc_issued' ? 'TC' : '');
-                    const isInactive   = !!statusLabel;
-
-                    const row = [rowIdx + 1, st.pin, st.name];
-                    weekDates.forEach((d, idx) => {
+                    weekDates.forEach((d) => {
                         const att = getAttData(d);
                         const sa  = att[st.pin] || {};
 
                         if (y === '1' && st.admissionDate && d < st.admissionDate) {
                             for (let p = 1; p <= 7; p++) row.push('');
                         } else if (isInactive && inactiveDate && d >= inactiveDate) {
-                            // From leave date onwards — show TC / Tr for each period cell
                             for (let p = 1; p <= 7; p++) row.push(statusLabel);
                         } else {
-                            // Normal attendance
                             for (let p = 1; p <= 7; p++) row.push(sa[p]?.status || '');
                         }
-
-                        if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
-                            let validDates = weekDates.slice(0, idx + 1);
-                            if (y === '1' && st.admissionDate) {
-                                validDates = validDates.filter(wd => wd >= st.admissionDate);
-                            }
-                            if (isInactive && inactiveDate && inactiveDate <= weekEnd) {
-                                // Show %  only for days they attended (dates < inactiveDate in this week)
-                                validDates = validDates.filter(wd => wd < inactiveDate);
-                                const result = calculateDayBasedPercentage(st.pin, validDates);
-                                row.push(validDates.length ? result.pct + '% (' + statusLabel + ')' : statusLabel);
-                            } else {
-                                const result = calculateDayBasedPercentage(st.pin, validDates);
-                                row.push(validDates.length ? result.pct + '%' : '0%');
-                            }
-                        }
+                        // No weekly % column
                     });
                     data.push(row);
                     rowIdx++;
                 });
 
                 const facultyRow = ['', 'Faculty', ''];
-                weekDates.forEach((d, idx) => {
+                weekDates.forEach((d) => {
                     const pData = PERIOD_FACULTY[`${d}_${y}_${s}`] || {};
                     for (let p = 1; p <= 7; p++) facultyRow.push(pData[p]?.faculty || '');
-                    if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
-                        facultyRow.push('');
-                    }
                 });
                 data.push(facultyRow);
 
                 const subjectRow = ['', 'Subject', ''];
-                weekDates.forEach((d, idx) => {
+                weekDates.forEach((d) => {
                     const pData = PERIOD_FACULTY[`${d}_${y}_${s}`] || {};
                     for (let p = 1; p <= 7; p++) {
                         const sc = pData[p]?.subject || '';
@@ -8898,19 +8872,15 @@
                             sc === PROJECT_WORK_CODE ? 'Project Work' : sc;
                         subjectRow.push(display);
                     }
-                    if (idx === weekDates.length - 1 || new Date(d).getDay() === 6) {
-                        subjectRow.push('');
-                    }
                 });
                 data.push(subjectRow);
 
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 const merges = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }]; // Title merge
                 let col = 3;
-                weekDates.forEach((d, idx) => {
-                    merges.push({ s: { r: 1, c: col }, e: { r: 1, c: col + 6 } }); // shifted +1 for title row
-                    const hasWeeklyPct = (new Date(d).getDay() === 6) || (idx === weekDates.length - 1);
-                    col += hasWeeklyPct ? 8 : 7;
+                weekDates.forEach(() => {
+                    merges.push({ s: { r: 1, c: col }, e: { r: 1, c: col + 6 } });
+                    col += 7;
                 });
                 ws['!merges'] = merges;
                 ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }];
@@ -8950,7 +8920,7 @@
                 if (inactiveDate && statusLabel) {
                     // Days present: only count days before leave date
                     const attendedDates = allMonthDates.filter(d => d < inactiveDate);
-                    const result = calculateDayBasedPercentage(st.pin, attendedDates);
+                    const result = calculateDayBasedPercentage(st.pin, attendedDates, yearSem);
                     const pct = studentWorkingDays > 0
                         ? ((result.days / studentWorkingDays) * 100).toFixed(2) : '0.00';
                     summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, studentWorkingDays, pct + '%']);
@@ -8959,7 +8929,7 @@
                     if (y === '1' && st.admissionDate) {
                         validDates = allMonthDates.filter(d => d >= st.admissionDate);
                     }
-                    const result = calculateDayBasedPercentage(st.pin, validDates);
+                    const result = calculateDayBasedPercentage(st.pin, validDates, yearSem);
                     const pct = studentWorkingDays > 0
                         ? ((result.days / studentWorkingDays) * 100).toFixed(2) : '0.00';
                     summaryData.push([sumRowIdx + 1, st.pin, nameCell, result.days, studentWorkingDays, pct + '%']);
@@ -8979,6 +8949,7 @@
         }
 
         // ===================== SCHOLARSHIP FUNCTIONS =====================
+
 
         function clearActualDays() {
             const el = document.getElementById('scholActualDays');
