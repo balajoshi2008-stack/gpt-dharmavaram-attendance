@@ -1500,34 +1500,8 @@
                             </table>
                         </div>
 
-                        <!-- Results Table -->
-                        <div style="overflow-x:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-                            <table id="resultsTable" style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
-                                <thead>
-                                    <tr>
-                                        <th style="padding:8px 3px;text-align:left;font-weight:700;background:#e3f2fd;color:#0d47a1;width:50px;">Paper</th>
-                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fff3e0;color:#e65100;width:40px;">Ext</th>
-                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#f3e5f5;color:#6a1b9a;width:35px;">Int</th>
-                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e8f5e9;color:#2e7d32;width:40px;">Total</th>
-                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fffde7;color:#f57f17;width:35px;">Res</th>
-                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e8eaf6;color:#283593;width:35px;">GP</th>
-                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fce4ec;color:#880e4f;width:30px;">CE</th>
-                                        <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e0f2f1;color:#00695c;width:45px;">Grade</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="resultsTbody"></tbody>
-                            </table>
-                        </div>
-
-                        <!-- Summary -->
-                        <div id="resultsSummary" style="margin-top:16px;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border-radius:10px;padding:16px;">
-                            <table style="width:100%;border-collapse:collapse;font-size:14px;">
-                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;width:110px;">Grand Total</td><td id="resGrandTotal" style="padding:4px 8px;font-weight:700;"></td></tr>
-                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">GPA</td><td id="resGPA" style="padding:4px 8px;font-weight:700;"></td></tr>
-                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">Result</td><td id="resResult" style="padding:4px 8px;font-weight:700;"></td></tr>
-                                <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">Month & Year</td><td id="resMonthYear" style="padding:4px 8px;"></td></tr>
-                            </table>
-                        </div>
+                        <!-- All attempts rendered dynamically here -->
+                        <div id="resultsAttemptsContainer"></div>
                     </div>
 
                     <div id="resultsEmpty" style="display:none;text-align:center;padding:40px 20px;">
@@ -3394,39 +3368,116 @@
             document.getElementById('resName').textContent = cachedResultsDoc.name || currentStudent.name;
             document.getElementById('resBranch').textContent = cachedResultsDoc.branch || '';
 
-            // Fill papers table
-            const tbody = document.getElementById('resultsTbody');
-            tbody.innerHTML = '';
-            const papers = data.papers || {};
-            const paperCodes = Object.keys(papers).sort((a,b) => parseInt(a) - parseInt(b));
+            // Determine attempts to display
+            let attempts = [];
+            if (Array.isArray(data.attempts) && data.attempts.length > 0) {
+                attempts = data.attempts;
+            } else {
+                // Backward compatibility: single attempt from top-level data
+                attempts = [{
+                    examMonthYear: data.examMonthYear || '',
+                    grandTotal: data.grandTotal || 0,
+                    gpa: data.gpa || 0,
+                    result: data.result || '',
+                    papers: data.papers || {}
+                }];
+            }
 
-            paperCodes.forEach((code, i) => {
-                const p = papers[code];
-                const isPass = p.subResult === 'P';
-                const resultColor = isPass ? '#2e7d32' : '#c62828';
-                const gradeColor = p.grade === 'F' ? '#c62828' : '#00695c';
+            // Render all attempts into the container
+            const container = document.getElementById('resultsAttemptsContainer');
+            container.innerHTML = '';
 
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="padding:6px 3px;font-weight:700;color:#0d47a1;background:#f5f9ff;">${code}</td>
-                        <td style="padding:6px 3px;text-align:center;background:#fff8f0;">${p.ext}</td>
-                        <td style="padding:6px 3px;text-align:center;background:#fdf5ff;">${p.int}</td>
-                        <td style="padding:6px 3px;text-align:center;font-weight:600;background:#f5fff5;">${p.tot}</td>
-                        <td style="padding:6px 3px;text-align:center;font-weight:700;color:${resultColor};background:#fffff5;">${p.subResult}</td>
-                        <td style="padding:6px 3px;text-align:center;background:#f5f5ff;">${p.gp}</td>
-                        <td style="padding:6px 3px;text-align:center;background:#fff5f7;">${p.creditsEarned !== undefined ? p.creditsEarned : '-'}</td>
-                        <td style="padding:6px 3px;text-align:center;font-weight:600;color:${gradeColor};background:#f2fffd;">${p.grade}</td>
-                    </tr>`;
+            attempts.forEach((attempt, attemptIdx) => {
+                const papers = attempt.papers || {};
+                // Filter: only show papers where subResult is NOT 'N' (for supplementary)
+                // For first attempt, show all; for subsequent, only non-N
+                const paperCodes = Object.keys(papers)
+                    .filter(code => {
+                        if (attemptIdx === 0) return true; // first attempt: show all
+                        const sr = (papers[code].subResult || '').toUpperCase();
+                        return sr !== 'N'; // supplementary: hide N (not appeared)
+                    })
+                    .sort((a,b) => parseInt(a) - parseInt(b));
+
+                // Skip this attempt entirely if no papers to show (shouldn't happen but safety)
+                if (paperCodes.length === 0 && attemptIdx > 0) return;
+
+                let html = '';
+
+                // Attempt header/separator
+                if (attempts.length > 1) {
+                    if (attemptIdx === 0) {
+                        // First attempt header
+                        html += `<div style="background:linear-gradient(135deg,#1e3c72,#2a5298);color:#fff;padding:10px 16px;border-radius:10px 10px 0 0;margin-top:${attemptIdx > 0 ? '20px' : '0'};display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-weight:700;font-size:14px;">📋 Regular Exam</span>
+                            <span style="font-size:12px;opacity:0.85;">${attempt.examMonthYear || ''}</span>
+                        </div>`;
+                    } else {
+                        // Supplementary attempt header
+                        html += `<div style="background:linear-gradient(135deg,#e65100,#ff9800);color:#fff;padding:10px 16px;border-radius:10px 10px 0 0;margin-top:20px;display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-weight:700;font-size:14px;">🔄 Supplementary (Attempt ${attemptIdx + 1})</span>
+                            <span style="font-size:12px;opacity:0.9;">${attempt.examMonthYear || ''}</span>
+                        </div>`;
+                    }
+                }
+
+                // Results table
+                const borderTop = attempts.length > 1 ? 'border-radius:0 0 0 0;' : 'border-radius:10px;';
+                html += `<div style="overflow-x:auto;${borderTop}box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
+                        <thead>
+                            <tr>
+                                <th style="padding:8px 3px;text-align:left;font-weight:700;background:#e3f2fd;color:#0d47a1;width:50px;">Paper</th>
+                                <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fff3e0;color:#e65100;width:40px;">Ext</th>
+                                <th style="padding:8px 3px;text-align:center;font-weight:700;background:#f3e5f5;color:#6a1b9a;width:35px;">Int</th>
+                                <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e8f5e9;color:#2e7d32;width:40px;">Total</th>
+                                <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fffde7;color:#f57f17;width:35px;">Res</th>
+                                <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e8eaf6;color:#283593;width:35px;">GP</th>
+                                <th style="padding:8px 3px;text-align:center;font-weight:700;background:#fce4ec;color:#880e4f;width:30px;">CE</th>
+                                <th style="padding:8px 3px;text-align:center;font-weight:700;background:#e0f2f1;color:#00695c;width:45px;">Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                paperCodes.forEach((code) => {
+                    const p = papers[code];
+                    const isPass = p.subResult === 'P';
+                    const resultColor = isPass ? '#2e7d32' : '#c62828';
+                    const gradeColor = p.grade === 'F' ? '#c62828' : '#00695c';
+
+                    html += `
+                        <tr>
+                            <td style="padding:6px 3px;font-weight:700;color:#0d47a1;background:#f5f9ff;">${code}</td>
+                            <td style="padding:6px 3px;text-align:center;background:#fff8f0;">${p.ext}</td>
+                            <td style="padding:6px 3px;text-align:center;background:#fdf5ff;">${p.int}</td>
+                            <td style="padding:6px 3px;text-align:center;font-weight:600;background:#f5fff5;">${p.tot}</td>
+                            <td style="padding:6px 3px;text-align:center;font-weight:700;color:${resultColor};background:#fffff5;">${p.subResult}</td>
+                            <td style="padding:6px 3px;text-align:center;background:#f5f5ff;">${p.gp}</td>
+                            <td style="padding:6px 3px;text-align:center;background:#fff5f7;">${p.creditsEarned !== undefined ? p.creditsEarned : '-'}</td>
+                            <td style="padding:6px 3px;text-align:center;font-weight:600;color:${gradeColor};background:#f2fffd;">${p.grade}</td>
+                        </tr>`;
+                });
+
+                html += `</tbody></table></div>`;
+
+                // Summary section
+                const resultText = attempt.result || '';
+                const resultColor2 = resultText === 'PASS' || resultText === 'PROMOTED' ? '#2e7d32' : '#c62828';
+                const summaryBg = attemptIdx === 0 
+                    ? 'background:linear-gradient(135deg,#e8f5e9,#c8e6c9);' 
+                    : 'background:linear-gradient(135deg,#fff3e0,#ffe0b2);';
+                
+                html += `<div style="margin-top:0;${summaryBg}border-radius:0 0 10px 10px;padding:16px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                        <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;width:110px;">Grand Total</td><td style="padding:4px 8px;font-weight:700;">${attempt.grandTotal || ''}</td></tr>
+                        <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">GPA</td><td style="padding:4px 8px;font-weight:700;">${attempt.gpa || ''}</td></tr>
+                        <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">Result</td><td style="padding:4px 8px;font-weight:700;color:${resultColor2};">${resultText}</td></tr>
+                        <tr><td style="font-weight:700;color:#2e7d32;padding:4px 8px;">Month & Year</td><td style="padding:4px 8px;">${attempt.examMonthYear || ''}</td></tr>
+                    </table>
+                </div>`;
+
+                container.innerHTML += html;
             });
-
-            // Fill summary
-            document.getElementById('resGrandTotal').textContent = data.grandTotal || '';
-            document.getElementById('resGPA').textContent = data.gpa || '';
-            const resultText = data.result || '';
-            const resEl = document.getElementById('resResult');
-            resEl.textContent = resultText;
-            resEl.style.color = resultText === 'PASS' ? '#2e7d32' : '#c62828';
-            document.getElementById('resMonthYear').textContent = data.examMonthYear || '';
         }
 
 

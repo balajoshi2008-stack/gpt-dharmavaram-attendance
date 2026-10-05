@@ -2613,16 +2613,34 @@
                     <div class="form-group">
                         <label>Admission Year</label>
                         <select id="admYear" onchange="admYear_onChange()">
-                            <option value="26" selected>2026 (C26 — 26170CM001)</option>
-                            <option value="25">2025 (C23 — 25170-CM-001)</option>
-                            <option value="24">2024 (C23 — 24170-CM-001)</option>
-                            <option value="23">2023 (C23 — 23170-CM-001)</option>
                         </select>
+                        <script>
+                        (function() {
+                            const sel = document.getElementById('admYear');
+                            const now = new Date().getFullYear();
+                            // Show current year + next 2 years, plus previous years back to 2024
+                            const years = [];
+                            for (let y = now + 2; y >= 2024; y--) years.push(y);
+                            years.forEach(y => {
+                                const yy = String(y).slice(2);
+                                const isC26 = y >= 2026;
+                                const scheme = isC26 ? 'C26' : 'C23';
+                                const code = isC26 ? 'CS' : 'CM';
+                                const sep = isC26 ? '' : '-';
+                                const sample = isC26 ? `${yy}170${code}001` : `${yy}170${sep}${code}${sep}001`;
+                                const opt = document.createElement('option');
+                                opt.value = yy;
+                                opt.textContent = `${y} (${scheme} — ${sample})`;
+                                if (y === now) opt.selected = true;
+                                sel.appendChild(opt);
+                            });
+                        })();
+                        </script>
                     </div>
                 </div>
                 <!-- PIN format info bar -->
                 <div id="pinFormatInfo" style="background:#EFF6FF;border-left:4px solid #2E75B6;border-radius:0 8px 8px 0;padding:.6rem 1rem;font-size:.85rem;color:#1E40AF;margin-bottom:.8rem;">
-                    🎫 PIN format: <strong id="pinFormatSample">26170CM<strong>XXX</strong></strong>
+                    🎫 PIN format: <strong id="pinFormatSample">26170CS<strong>XXX</strong></strong>
                     &nbsp;&nbsp;<span id="pinSchemeBadge" style="background:#E8F5E9;color:#2E7D32;border-radius:8px;padding:.1rem .5rem;font-size:.75rem;font-weight:700;">C26</span>
                     &nbsp;&nbsp;<span id="pinBranchLabel" style="color:#555;">Computer Science &amp; Engineering</span>
                 </div>
@@ -2648,7 +2666,7 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>PIN</label>
-                        <input type="text" id="singlePin" placeholder="e.g. 26170CM067 or 24170-CM-067"
+                        <input type="text" id="singlePin" placeholder="e.g. 26170CS067 or 24170-CM-067"
                             style="text-transform:uppercase;">
                     </div>
                     <div class="form-group">
@@ -4943,6 +4961,28 @@
                                 </select>
                             </div>
                         </div>
+                        <!-- Exam Month & Year -->
+                        <div style="margin-top:14px;">
+                            <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Exam Month & Year</label>
+                            <input type="text" id="res_examMonthYear" placeholder="e.g., OCT/NOV 2025 or MAR/APR 2026" style="width:100%;padding:10px 12px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;background:#f7f9ff;outline:none;color:#1e3c72;">
+                        </div>
+                        <!-- Upload Type: Regular or Supplementary -->
+                        <div style="margin-top:14px;">
+                            <label style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">Upload Type</label>
+                            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:#1e3c72;font-weight:600;">
+                                    <input type="radio" name="res_uploadType" value="regular" checked style="width:18px;height:18px;cursor:pointer;">
+                                    📝 Regular (First Attempt)
+                                </label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:#e65100;font-weight:600;">
+                                    <input type="radio" name="res_uploadType" value="supplementary" style="width:18px;height:18px;cursor:pointer;">
+                                    🔄 Supplementary (Re-appear)
+                                </label>
+                            </div>
+                            <div id="res_suppInfo" style="display:none;margin-top:8px;padding:10px 14px;background:#fff3e0;border-left:3px solid #ff9800;border-radius:4px;font-size:12px;color:#e65100;">
+                                ⚠️ Supplementary upload: Only subjects with Sub.Result ≠ "N" (appeared subjects) will be stored. Results will be shown below the regular attempt in student portal.
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Step 2: Select Excel File -->
@@ -5015,7 +5055,7 @@
         // Generate subject codes
         const SUBJECT_CODES = [];
         // Activity codes (special - any faculty can handle, not assigned to any one)
-        SUBJECT_CODES.push('CM-100'); // Activity - 1st Year
+        // CM-100 migrated to 26CS112C; CM-300/400/500 still used for C23 semesters
         for (let i = 101; i <= 111; i++) SUBJECT_CODES.push(`CM-${i}`);
         // 2nd Year not used in this system (no sem 2)
         for (let i = 201; i <= 211; i++) SUBJECT_CODES.push(`CM-${i}`);
@@ -5027,7 +5067,7 @@
         for (let i = 501; i <= 511; i++) SUBJECT_CODES.push(`CM-${i}`);
 
         // Activity codes — not assigned to any faculty, any faculty of that year/sem can handle
-        const ACTIVITY_CODES = new Set(['CM-100', 'CM-300', 'CM-400', 'CM-500']);
+        const ACTIVITY_CODES = new Set(['CM-300', 'CM-400', 'CM-500']); // CM-100 migrated to 26CS112C
 
         // Project Work code — only for branch faculty (not General subjects faculty)
         // Changed to CM-509 so it appears in subject dropdown (501-511 range)
@@ -5067,12 +5107,20 @@
             // ── C23 subject codes (CM-xxx) — existing logic unchanged ────────
             const prefix = getYearSemPrefix(y, s);
             if (!prefix) return false;
-            // Activity codes: CM-100 for yr1, CM-300 for sem3, CM-400 for sem4, CM-500 for sem5
+            // Activity codes: CM-300 for sem3, CM-400 for sem4, CM-500 for sem5
+            // C26 Activity codes (e.g. 26CS112C) detected by number range
             if (ACTIVITY_CODES.has(code)) {
-                if (y == 1 && code === 'CM-100') return true;
                 if (s == 3 && code === 'CM-300') return true;
                 if (s == 4 && code === 'CM-400') return true;
                 if (s == 5 && code === 'CM-500') return true;
+                // C26 activity codes: determine year/sem from numeric part
+                if (/^\d{2}[A-Z]/.test(code)) {
+                    const num = parseInt(code.slice(4, 7)) || 0;
+                    if (num >= 100 && num < 200 && y == 1) return true;
+                    if (num >= 300 && num < 400 && s == 3) return true;
+                    if (num >= 400 && num < 500 && s == 4) return true;
+                    if (num >= 500 && num < 600 && s == 5) return true;
+                }
                 return false;
             }
             // Project Work: CM-509 for 5th sem only
@@ -5214,12 +5262,15 @@
                 if (subjectsDoc.exists) { SUBJECTS = subjectsDoc.data(); delete SUBJECTS._v; }
 
                 // ── Extend ACTIVITY_CODES with C26 activity subjects ──
-                // C23 has CM-100, CM-300, CM-400, CM-500. C26 equivalents are
-                // codes like 26CM100L, 26CM300A etc. Detect them and add to the set.
+                // C23 has CM-100, CM-300, CM-400, CM-500. C26 equivalents may have
+                // different numbering (e.g. 26CS112C for Activity). Detect by number
+                // pattern OR by subject name containing 'activity'.
                 Object.keys(SUBJECTS).forEach(code => {
                     if (!/^\d{2}[A-Z]/.test(code)) return; // not a C26 code
                     const num = parseInt(code.slice(4, 7)) || 0;
-                    if ([100, 300, 400, 500].includes(num)) {
+                    const subj = SUBJECTS[code];
+                    const name = (typeof subj === 'object' ? (subj.name || '') : String(subj)).toLowerCase();
+                    if ([100, 300, 400, 500].includes(num) || name.includes('activity')) {
                         ACTIVITY_CODES.add(code);
                     }
                 });
@@ -5409,7 +5460,7 @@
             const sub = SUBJECTS[code];
             if (sub) return typeof sub === 'string' ? sub : sub.name;
             // Fallback for C23 activity codes that may no longer be in SUBJECTS
-            if (code === 'CM-100' || code === 'CM-300' || code === 'CM-400' || code === 'CM-500') return 'Activity';
+            if (code === 'CM-300' || code === 'CM-400' || code === 'CM-500') return 'Activity';
             return code;
         }
 
@@ -6247,17 +6298,12 @@
                 });
 
                 // Add Activity for this year/sem if faculty handles any subject in it
-                const activityNum = y == 1 ? '100' : s == 3 ? '300' : s == 4 ? '400' : s == 5 ? '500' : null;
-                if (activityNum) {
-                    // Check if a C26 activity code exists in SUBJECTS (e.g. 26CM100L)
-                    const c26ActivityCode = Object.keys(SUBJECTS).find(code =>
-                        /^\d{2}[A-Z]/.test(code) && code.slice(4, 7) === activityNum
-                    );
-                    const activityCode = c26ActivityCode || (y == 1 ? 'CM-100' : s == 3 ? 'CM-300' : s == 4 ? 'CM-400' : 'CM-500');
-                    if (canFacultyHandleSubject(effectiveUser, activityCode, y, s)) {
-                        const actName = getSubjectName(activityCode);
-                        subjectsToShow.set(activityCode, (actName && actName !== activityCode) ? actName : 'Activity');
-                    }
+                // Find the correct activity code: prefer codes that exist in SUBJECTS (C26 migrated codes)
+                const matchingActivityCodes = [...ACTIVITY_CODES].filter(code => isSubjectForYearSem(code, y, s));
+                const activityCode = matchingActivityCodes.find(c => SUBJECTS[c]) || matchingActivityCodes[0];
+                if (activityCode && canFacultyHandleSubject(effectiveUser, activityCode, y, s)) {
+                    const actName = getSubjectName(activityCode);
+                    subjectsToShow.set(activityCode, (actName && actName !== activityCode) ? actName : 'Activity');
                 }
 
                 // Add Project Work for 5th sem if branch faculty
@@ -7873,9 +7919,8 @@
 
             filtered.forEach(item => {
                 const isActivity = ACTIVITY_CODES.has(item.code);
-                const displayCode = isActivity ? 'Activity' : item.code;
-                const displayName = getSubjectName(item.code) || item.subject;
-                per.innerHTML += `<option value="${item.periods}">${item.periods} — ${displayCode}: ${displayName}</option>`;
+                const displayName = getSubjectName(item.code) || item.subject || (isActivity ? 'Activity' : '');
+                per.innerHTML += `<option value="${item.periods}">${item.periods} — ${item.code}: ${displayName}</option>`;
             });
 
             per.disabled = filtered.length === 0;
@@ -8954,6 +8999,9 @@
         function clearActualDays() {
             const el = document.getElementById('scholActualDays');
             if (el) el.value = '';
+            // Also reset auto-calculated bonus days when inputs change
+            const dta = document.getElementById('scholDaysToAdd');
+            if (dta) dta.value = '0';
             const msg = document.getElementById('scholMsg');
             if (msg) msg.classList.add('hidden');
         }
@@ -8984,9 +9032,16 @@
             }
 
             document.getElementById('scholActualDays').value = actualDays + ' days';
-            document.getElementById('scholMsg').textContent = `✓ Actual working days: ${actualDays} (days where attendance was posted)`;
-            document.getElementById('scholMsg').classList.remove('hidden');
-            setTimeout(() => document.getElementById('scholMsg').classList.add('hidden'), 5000);
+
+            // Auto-calculate Days to Add = Scholarship Working Days - Actual Working Days (min 0)
+            const scholDays = parseInt(document.getElementById('scholTotalDays').value) || 0;
+            const autoBonus = scholDays > 0 ? Math.max(0, scholDays - actualDays) : 0;
+            document.getElementById('scholDaysToAdd').value = autoBonus;
+
+            const msgEl = document.getElementById('scholMsg');
+            msgEl.textContent = `✓ Actual working days: ${actualDays}${scholDays > 0 ? `  |  Days to Add auto-set to: ${autoBonus} (${scholDays} − ${actualDays})` : ''}`;
+            msgEl.classList.remove('hidden');
+            setTimeout(() => msgEl.classList.add('hidden'), 6000);
         }
 
         function downloadHalfMonthly(half) {
@@ -9496,6 +9551,24 @@
             if (!y || !month) { alert('Please fill Year and Month'); return; }
             if (y != 1 && !s) { alert('Please select Semester'); return; }
             if (!scholDays || scholDays < 1) { alert('Please enter Working Days as per Scholarship Section'); return; }
+
+            // Validate that Calculate Actual Working Days was clicked first
+            const actualDaysVal = (document.getElementById('scholActualDays').value || '').trim();
+            if (!actualDaysVal) {
+                const msgEl = document.getElementById('scholMsg');
+                msgEl.innerHTML = '⚠️ Please click <strong>Calculate Actual Working Days</strong> before downloading!';
+                msgEl.style.color = '#c0392b';
+                msgEl.style.background = '#fdecea';
+                msgEl.style.border = '1px solid #e74c3c';
+                msgEl.classList.remove('hidden');
+                setTimeout(() => {
+                    msgEl.classList.add('hidden');
+                    msgEl.style.color = '';
+                    msgEl.style.background = '';
+                    msgEl.style.border = '';
+                }, 7000);
+                return;
+            }
 
             const [mYear, mMonth] = month.split('-').map(Number);
             const monthStart = new Date(mYear, mMonth - 1, 1);
@@ -22818,11 +22891,18 @@ async function formGen_download() {
 // ╔══════════════ ADMIN RESULTS UPLOAD MODULE ═══════════════════╗
 
 let resParsedData = null; // holds parsed student data ready for Firestore
+let resUploadType = 'regular'; // 'regular' or 'supplementary'
 
 function initAdminResultsTab() {
     // Hide admin-only upload & summary sections for non-admin users (faculty)
     document.querySelectorAll('.res-admin-only').forEach(el => {
         el.style.display = (currentUserType === 'admin') ? '' : 'none';
+    });
+    // Toggle supplementary info box on radio change
+    document.querySelectorAll('input[name="res_uploadType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('res_suppInfo').style.display = this.value === 'supplementary' ? 'block' : 'none';
+        });
     });
     resLoadSummary();
 }
@@ -22847,6 +22927,18 @@ function resPreviewExcel() {
 
     if (!examSem) {
         resToast('Please select "Results Of" semester first!', 'error');
+        fileInput.value = '';
+        return;
+    }
+    const currentSemVal = document.getElementById('res_currentSem').value;
+    if (!currentSemVal) {
+        resToast('Please select "Students Currently In" first!', 'error');
+        fileInput.value = '';
+        return;
+    }
+    const examMonthYearVal = document.getElementById('res_examMonthYear').value.trim();
+    if (!examMonthYearVal) {
+        resToast('Please enter "Exam Month & Year" (e.g., OCT/NOV 2025)!', 'error');
         fileInput.value = '';
         return;
     }
@@ -22937,7 +23029,10 @@ function resPreviewExcel() {
             if (monthCol < 0 && statusCol >= 0) monthCol = statusCol + 1;
 
             // Parse all students — read ALL values directly from Excel, NO calculation
+            const isSupplementary = document.querySelector('input[name="res_uploadType"]:checked').value === 'supplementary';
+            const adminMonthYear = document.getElementById('res_examMonthYear').value.trim();
             resParsedData = [];
+            resUploadType = isSupplementary ? 'supplementary' : 'regular';
             dataRows.forEach(row => {
                 const pin = String(row[pinColFinal]).trim();
                 if (!pin) return;
@@ -22945,6 +23040,7 @@ function resPreviewExcel() {
                 const branch = branchColFinal >= 0 ? String(row[branchColFinal]).trim() : 'DIPLOMA IN COMPUTER ENGINEERING';
 
                 let papersObj = {};
+                let appearedCount = 0;
                 paperCols.forEach(pc => {
                     const ext = String(row[pc.extCol]).trim();
                     const intV = String(row[pc.intCol]).trim();
@@ -22953,6 +23049,11 @@ function resPreviewExcel() {
                     const ce = String(row[pc.ceCol]).trim();
                     const grade = String(row[pc.gradeCol]).trim();
                     const subResult = String(row[pc.subResCol]).trim();
+
+                    // For supplementary: skip subjects where student didn't appear (Sub.Result = N)
+                    if (isSupplementary && subResult.toUpperCase() === 'N') {
+                        return; // skip this paper
+                    }
 
                     papersObj[pc.code] = {
                         ext: ext,
@@ -22963,32 +23064,46 @@ function resPreviewExcel() {
                         grade: grade || '',
                         subResult: subResult || ''
                     };
+                    appearedCount++;
                 });
+
+                // For supplementary: skip student entirely if no subjects appeared
+                if (isSupplementary && appearedCount === 0) return;
 
                 const gt = parseInt(row[gtCol]) || 0;
                 const gpaVal = parseFloat(row[gpaCol]) || 0;
                 const status = statusCol >= 0 ? String(row[statusCol]).trim() : '';
                 const monthYear = monthCol >= 0 ? String(row[monthCol]).trim() : '';
 
+                // Use admin-entered month/year first, then Excel value, then fallback
+                const finalMonthYear = adminMonthYear || monthYear || '';
+
                 resParsedData.push({
                     pin, name, branch,
-                    semesters: {
-                        [examSem]: {
-                            examMonthYear: monthYear || 'MAR/APR 2026',
-                            grandTotal: gt,
-                            gpa: Math.round(gpaVal * 100) / 100,
-                            result: status,
-                            papers: papersObj
-                        }
-                    }
+                    _attemptData: {
+                        examMonthYear: finalMonthYear,
+                        grandTotal: gt,
+                        gpa: Math.round(gpaVal * 100) / 100,
+                        result: status,
+                        papers: papersObj,
+                        currentSem: document.getElementById('res_currentSem').value || '',
+                        uploadType: isSupplementary ? 'supplementary' : 'regular'
+                    },
+                    _examSem: examSem,
+                    _isSupplementary: isSupplementary
                 });
             });
 
             // Show preview
-            fileInfo.textContent = '✅ ' + file.name + ' — ' + resParsedData.length + ' students, ' + papers.length + ' papers (' + papers.join(', ') + ')';
+            const suppTag = isSupplementary ? ' [SUPPLEMENTARY]' : '';
+            fileInfo.textContent = '✅ ' + file.name + ' — ' + resParsedData.length + ' students, ' + papers.length + ' papers (' + papers.join(', ') + ')' + suppTag;
             
             // Build preview table (first 5 students)
-            let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#e3f2fd;">';
+            let html = '';
+            if (isSupplementary) {
+                html += '<div style="background:#fff3e0;padding:8px 14px;border-radius:6px;margin-bottom:8px;font-size:12px;color:#e65100;font-weight:600;">🔄 Supplementary Upload — Only appeared subjects (Sub.Result ≠ N) are included</div>';
+            }
+            html += '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#e3f2fd;">';
             html += '<th style="padding:6px;border:1px solid #ddd;">PIN</th>';
             html += '<th style="padding:6px;border:1px solid #ddd;">Name</th>';
             papers.forEach(p => html += '<th style="padding:6px;border:1px solid #ddd;">' + p + '</th>');
@@ -22999,14 +23114,14 @@ function resPreviewExcel() {
 
             const preview = resParsedData.slice(0, 5);
             preview.forEach(s => {
-                const sem = s.semesters[examSem];
+                const sem = s._attemptData;
                 html += '<tr>';
                 html += '<td style="padding:5px;border:1px solid #eee;font-weight:600;">' + s.pin + '</td>';
                 html += '<td style="padding:5px;border:1px solid #eee;">' + s.name + '</td>';
                 papers.forEach(p => {
                     const paper = sem.papers[p];
                     const color = paper && paper.subResult === 'F' ? '#c62828' : paper && paper.subResult === 'AB' ? '#ff9800' : '#333';
-                    html += '<td style="padding:5px;border:1px solid #eee;text-align:center;color:' + color + ';">' + (paper ? paper.tot : '-') + '</td>';
+                    html += '<td style="padding:5px;border:1px solid #eee;text-align:center;color:' + color + ';">' + (paper ? paper.tot : (isSupplementary ? '<span style=color:#ccc>—</span>' : '-')) + '</td>';
                 });
                 html += '<td style="padding:5px;border:1px solid #eee;text-align:center;font-weight:600;">' + sem.grandTotal + '</td>';
                 html += '<td style="padding:5px;border:1px solid #eee;text-align:center;">' + sem.gpa + '</td>';
@@ -23039,10 +23154,15 @@ async function resUploadToFirestore() {
         resToast('No data to upload. Select an Excel file first.', 'error');
         return;
     }
-    const examSem = document.getElementById('res_examSem').value;
+    const examSem = resParsedData[0]._examSem;
+    const isSupplementary = resParsedData[0]._isSupplementary;
     const semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+    const typeLabel = isSupplementary ? ' (SUPPLEMENTARY)' : ' (Regular)';
     
-    if (!confirm('Upload ' + resParsedData.length + ' students\' ' + (semLabels[examSem] || examSem) + ' results to Firestore?\n\nThis will merge with existing data (won\'t overwrite other semesters).')) {
+    if (!confirm('Upload ' + resParsedData.length + ' students\' ' + (semLabels[examSem] || examSem) + typeLabel + ' results to Firestore?\n\n' + 
+        (isSupplementary 
+            ? 'This will ADD a supplementary attempt below existing results for this semester.\nOnly appeared subjects (Sub.Result ≠ N) will be stored.' 
+            : 'This will set the primary results for this semester.\nExisting results for other semesters won\'t be affected.'))) {
         return;
     }
 
@@ -23053,22 +23173,125 @@ async function resUploadToFirestore() {
     statusBox.style.display = 'none';
 
     let done = 0, errors = 0;
-    // Batch write in groups of 400
-    for (let i = 0; i < resParsedData.length; i += 400) {
-        const batch = db.batch();
-        const chunk = resParsedData.slice(i, i + 400);
-        chunk.forEach(student => {
-            if (!student.pin) { errors++; return; }
-            const ref = db.collection('results').doc(student.pin);
-            batch.set(ref, student, { merge: true });
-        });
-        try {
-            await batch.commit();
-            done += chunk.length;
-            prog.textContent = '⏳ Uploaded ' + done + ' / ' + resParsedData.length + '...';
-        } catch (e) {
-            errors += chunk.length;
-            console.error('[Results] Batch error:', e);
+
+    if (!isSupplementary) {
+        // ── REGULAR UPLOAD: batch set with merge (backward compatible + attempts array) ──
+        for (let i = 0; i < resParsedData.length; i += 400) {
+            const batch = db.batch();
+            const chunk = resParsedData.slice(i, i + 400);
+            chunk.forEach(student => {
+                if (!student.pin) { errors++; return; }
+                const ref = db.collection('results').doc(student.pin);
+                const attemptData = student._attemptData;
+                // Build the document with backward-compatible top-level + attempts array
+                const docData = {
+                    pin: student.pin,
+                    name: student.name,
+                    branch: student.branch,
+                    semesters: {
+                        [examSem]: {
+                            // Top-level fields (backward compatible)
+                            examMonthYear: attemptData.examMonthYear,
+                            grandTotal: attemptData.grandTotal,
+                            gpa: attemptData.gpa,
+                            result: attemptData.result,
+                            papers: attemptData.papers,
+                            currentSem: attemptData.currentSem || '',
+                            // Attempts array with first attempt
+                            attempts: [attemptData]
+                        }
+                    }
+                };
+                batch.set(ref, docData, { merge: true });
+            });
+            try {
+                await batch.commit();
+                done += chunk.length;
+                prog.textContent = '⏳ Uploaded ' + done + ' / ' + resParsedData.length + '...';
+            } catch (e) {
+                errors += chunk.length;
+                console.error('[Results] Batch error:', e);
+            }
+        }
+    } else {
+        // ── SUPPLEMENTARY UPLOAD: read existing doc → append attempt ──
+        // Must process individually (cannot batch-read + write atomically)
+        for (let i = 0; i < resParsedData.length; i++) {
+            const student = resParsedData[i];
+            if (!student.pin) { errors++; continue; }
+            
+            try {
+                const ref = db.collection('results').doc(student.pin);
+                const doc = await ref.get();
+                const attemptData = student._attemptData;
+
+                if (doc.exists) {
+                    const existing = doc.data();
+                    const semData = (existing.semesters && existing.semesters[examSem]) || {};
+                    
+                    // Get existing attempts array, or create one from existing top-level data
+                    let attempts = semData.attempts || [];
+                    if (attempts.length === 0 && semData.papers) {
+                        // Migrate existing single-attempt data into attempts array
+                        attempts.push({
+                            examMonthYear: semData.examMonthYear || '',
+                            grandTotal: semData.grandTotal || 0,
+                            gpa: semData.gpa || 0,
+                            result: semData.result || '',
+                            papers: semData.papers || {}
+                        });
+                    }
+                    
+                    // Check if this exam month/year already exists (avoid duplicates)
+                    const existingAttemptIdx = attempts.findIndex(a => a.examMonthYear === attemptData.examMonthYear);
+                    if (existingAttemptIdx >= 0) {
+                        // Replace existing attempt for same month/year
+                        attempts[existingAttemptIdx] = attemptData;
+                    } else {
+                        // Append new attempt
+                        attempts.push(attemptData);
+                    }
+                    
+                    // Update the semester data
+                    await ref.set({
+                        pin: student.pin,
+                        name: student.name,
+                        branch: student.branch,
+                        semesters: {
+                            [examSem]: {
+                                ...semData,
+                                attempts: attempts
+                            }
+                        }
+                    }, { merge: true });
+                } else {
+                    // No existing doc — create with this as first attempt
+                    await ref.set({
+                        pin: student.pin,
+                        name: student.name,
+                        branch: student.branch,
+                        semesters: {
+                            [examSem]: {
+                                examMonthYear: attemptData.examMonthYear,
+                                grandTotal: attemptData.grandTotal,
+                                gpa: attemptData.gpa,
+                                result: attemptData.result,
+                                papers: attemptData.papers,
+                                currentSem: attemptData.currentSem || '',
+                                attempts: [attemptData]
+                            }
+                        }
+                    }, { merge: true });
+                }
+                
+                done++;
+                if (done % 10 === 0 || done === resParsedData.length) {
+                    prog.textContent = '⏳ Uploaded ' + done + ' / ' + resParsedData.length + '...';
+                }
+            } catch (e) {
+                errors++;
+                console.error('[Results] Error uploading ' + student.pin + ':', e);
+            }
         }
     }
 
@@ -23077,7 +23300,7 @@ async function resUploadToFirestore() {
         statusBox.style.background = '#e8f5e9';
         statusBox.style.border = '1px solid #4CAF50';
         statusBox.style.color = '#2e7d32';
-        statusBox.textContent = '✅ Successfully uploaded ' + done + ' students\' results!';
+        statusBox.textContent = '✅ Successfully uploaded ' + done + ' students\' results!' + typeLabel;
         resToast('Upload complete! ' + done + ' students.', 'success');
     } else {
         statusBox.style.display = 'block';
@@ -23106,33 +23329,97 @@ async function resLoadSummary() {
             return;
         }
 
-        // Count students per semester
-        let semCounts = {};
-        let semPINs = {};
+        const semLabels = {'1':'Year 1','1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+        const currentSemLabels = {'1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+
+        // Build a structure: { currentSem -> { examSem -> { monthYear -> { count, type } } } }
+        // Also build a flat list for display
+        let groups = {}; // currentSem -> array of { examSem, monthYear, count, attemptIdx, type }
+
         snapshot.forEach(doc => {
             const data = doc.data();
-            if (data.semesters) {
-                Object.keys(data.semesters).forEach(sem => {
-                    if (!semCounts[sem]) { semCounts[sem] = 0; semPINs[sem] = []; }
-                    semCounts[sem]++;
-                    semPINs[sem].push(doc.id);
-                });
-            }
+            if (!data.semesters) return;
+            Object.keys(data.semesters).forEach(sem => {
+                const semData = data.semesters[sem];
+                const attempts = Array.isArray(semData.attempts) ? semData.attempts : [];
+                
+                if (attempts.length > 0) {
+                    attempts.forEach((att, idx) => {
+                        const curSem = att.currentSem || semData.currentSem || '_unknown';
+                        const monthYear = att.examMonthYear || '(unknown)';
+                        const type = att.uploadType === 'supplementary' ? 'Supplementary' : 'Regular';
+                        const key = sem + '|' + monthYear + '|' + idx;
+                        
+                        if (!groups[curSem]) groups[curSem] = {};
+                        if (!groups[curSem][key]) {
+                            groups[curSem][key] = { examSem: sem, monthYear, attemptIdx: idx, type, count: 0 };
+                        }
+                        groups[curSem][key].count++;
+                    });
+                } else if (semData.papers) {
+                    // Legacy: no attempts array
+                    const curSem = semData.currentSem || '_unknown';
+                    const monthYear = semData.examMonthYear || '(unknown)';
+                    const key = sem + '|' + monthYear + '|0';
+                    
+                    if (!groups[curSem]) groups[curSem] = {};
+                    if (!groups[curSem][key]) {
+                        groups[curSem][key] = { examSem: sem, monthYear, attemptIdx: 0, type: 'Regular', count: 0 };
+                    }
+                    groups[curSem][key].count++;
+                }
+            });
         });
 
-        const semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
-        let html = '<table style="width:100%;border-collapse:collapse;font-size:14px;">';
-        html += '<thead><tr style="background:#f5f5f5;"><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Semester</th><th style="padding:10px;text-align:center;border-bottom:2px solid #ddd;">Students</th><th style="padding:10px;text-align:center;border-bottom:2px solid #ddd;">Action</th></tr></thead><tbody>';
-
-        Object.keys(semCounts).sort().forEach(sem => {
-            html += '<tr style="border-bottom:1px solid #eee;">';
-            html += '<td style="padding:10px;font-weight:600;">📋 ' + (semLabels[sem] || sem) + ' Results</td>';
-            html += '<td style="padding:10px;text-align:center;">' + semCounts[sem] + ' students</td>';
-            html += '<td style="padding:10px;text-align:center;">';
-            html += '<button onclick="resDeleteSemester(\'' + sem + '\')" style="padding:6px 14px;background:#f44336;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🗑️ Remove</button>';
-            html += '</td></tr>';
+        // Build HTML
+        let html = '';
+        const sortedCurrentSems = Object.keys(groups).sort((a, b) => {
+            if (a === '_unknown') return 1;
+            if (b === '_unknown') return -1;
+            return a.localeCompare(b);
         });
-        html += '</tbody></table>';
+
+        sortedCurrentSems.forEach(curSem => {
+            const curSemLabel = curSem === '_unknown' ? 'Unknown' : (currentSemLabels[curSem] || curSem);
+            const entries = groups[curSem];
+            const sortedKeys = Object.keys(entries).sort();
+
+            // Group header
+            html += '<div style="background:linear-gradient(135deg,#1e3c72,#2a5298);color:#fff;padding:10px 16px;border-radius:10px 10px 0 0;margin-top:16px;font-weight:700;font-size:14px;">';
+            html += '📚 Students Currently In: ' + curSemLabel;
+            html += '</div>';
+
+            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #d0d9f0;border-top:none;border-radius:0 0 10px 10px;overflow:hidden;">';
+            html += '<thead><tr style="background:#f0f4ff;">';
+            html += '<th style="padding:8px 10px;text-align:left;border-bottom:1px solid #ddd;font-weight:700;color:#1e3c72;">Results Of</th>';
+            html += '<th style="padding:8px 10px;text-align:center;border-bottom:1px solid #ddd;font-weight:700;color:#1e3c72;">Month & Year</th>';
+            html += '<th style="padding:8px 10px;text-align:center;border-bottom:1px solid #ddd;font-weight:700;color:#1e3c72;">Type</th>';
+            html += '<th style="padding:8px 10px;text-align:center;border-bottom:1px solid #ddd;font-weight:700;color:#1e3c72;">Students</th>';
+            html += '<th style="padding:8px 10px;text-align:center;border-bottom:1px solid #ddd;font-weight:700;color:#1e3c72;">Action</th>';
+            html += '</tr></thead><tbody>';
+
+            sortedKeys.forEach(key => {
+                const e = entries[key];
+                const typeColor = e.type === 'Supplementary' ? '#e65100' : '#2e7d32';
+                const typeIcon = e.type === 'Supplementary' ? '🔄' : '📝';
+                const escapedSem = e.examSem.replace(/'/g, "\\'");
+                const escapedMY = e.monthYear.replace(/'/g, "\\'");
+
+                const escapedCurSem = curSem.replace(/'/g, "\\'");
+
+                html += '<tr style="border-bottom:1px solid #eee;">';
+                html += '<td style="padding:8px 10px;font-weight:600;">📋 ' + (semLabels[e.examSem] || e.examSem) + '</td>';
+                html += '<td style="padding:8px 10px;text-align:center;font-weight:600;color:#1565c0;">' + e.monthYear + '</td>';
+                html += '<td style="padding:8px 10px;text-align:center;"><span style="color:' + typeColor + ';font-weight:600;">' + typeIcon + ' ' + e.type + '</span></td>';
+                html += '<td style="padding:8px 10px;text-align:center;">' + e.count + '</td>';
+                html += '<td style="padding:8px 10px;text-align:center;">';
+                html += '<button onclick="resDeleteAttempt(\'' + escapedSem + '\', \'' + escapedMY + '\', \'' + escapedCurSem + '\')" style="padding:5px 12px;background:#f44336;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">🗑️ Remove</button>';
+                html += '</td></tr>';
+            });
+
+            html += '</tbody></table>';
+        });
+
         html += '<div style="margin-top:10px;font-size:12px;color:#aaa;">Total documents in Firestore: ' + snapshot.size + '</div>';
         area.innerHTML = html;
 
@@ -23142,7 +23429,95 @@ async function resLoadSummary() {
     }
 }
 
-// ── Delete a semester's results from all documents ──
+// ── Delete a specific attempt from a semester's results ──
+async function resDeleteAttempt(examSem, monthYear, currentSem) {
+    const semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+    const currentSemLabels = {'1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
+    const label = (semLabels[examSem] || examSem) + ' — ' + monthYear + ' (Currently In: ' + (currentSemLabels[currentSem] || currentSem) + ')';
+
+    if (!confirm('⚠️ REMOVE "' + label + '" results from Firestore?\n\nThis will delete this specific upload ONLY for students in "Currently ' + (currentSemLabels[currentSem] || currentSem) + '".\nOther groups/uploads will NOT be affected.\n\nThis action cannot be undone!')) {
+        return;
+    }
+
+    const area = document.getElementById('res_summaryArea');
+    area.innerHTML = '<div style="text-align:center;color:#e65100;">⏳ Removing ' + label + ' results...</div>';
+
+    try {
+        const snapshot = await db.collection('results').get();
+        let modified = 0;
+        const deleteField = firebase.firestore.FieldValue.delete();
+
+        for (let i = 0; i < snapshot.docs.length; i++) {
+            const doc = snapshot.docs[i];
+            const data = doc.data();
+            if (!data.semesters || !data.semesters[examSem]) continue;
+
+            const semData = data.semesters[examSem];
+            const attempts = Array.isArray(semData.attempts) ? semData.attempts : [];
+
+            if (attempts.length > 0) {
+                // Filter: remove only attempts matching BOTH monthYear AND currentSem
+                const newAttempts = attempts.filter(a => {
+                    const attCurSem = a.currentSem || semData.currentSem || '_unknown';
+                    return !(a.examMonthYear === monthYear && attCurSem === currentSem);
+                });
+
+                if (newAttempts.length === attempts.length) continue; // nothing matched in this doc
+
+                if (newAttempts.length === 0) {
+                    // All attempts removed — delete entire semester
+                    await doc.ref.update({ ['semesters.' + examSem]: deleteField });
+                } else {
+                    // Update: keep remaining attempts, update top-level to first attempt
+                    const first = newAttempts[0];
+                    await doc.ref.update({
+                        ['semesters.' + examSem]: {
+                            examMonthYear: first.examMonthYear,
+                            grandTotal: first.grandTotal,
+                            gpa: first.gpa,
+                            result: first.result,
+                            papers: first.papers,
+                            currentSem: first.currentSem || '',
+                            attempts: newAttempts
+                        }
+                    });
+                }
+                modified++;
+            } else {
+                // Legacy: no attempts array — check top-level
+                const legacyCurSem = semData.currentSem || '_unknown';
+                if (semData.examMonthYear === monthYear && legacyCurSem === currentSem) {
+                    await doc.ref.update({ ['semesters.' + examSem]: deleteField });
+                    modified++;
+                }
+            }
+        }
+
+        // Clean up: delete documents that have no semesters left
+        const snapshot2 = await db.collection('results').get();
+        for (let i = 0; i < snapshot2.docs.length; i += 400) {
+            const batch = db.batch();
+            let needsCommit = false;
+            snapshot2.docs.slice(i, i + 400).forEach(doc => {
+                const data = doc.data();
+                if (!data.semesters || Object.keys(data.semesters).length === 0) {
+                    batch.delete(doc.ref);
+                    needsCommit = true;
+                }
+            });
+            if (needsCommit) await batch.commit();
+        }
+
+        resToast('Removed "' + label + '" results for ' + modified + ' students.', 'success');
+        resLoadSummary();
+    } catch (e) {
+        resToast('Error removing results: ' + e.message, 'error');
+        console.error('[Results] Delete attempt error:', e);
+        resLoadSummary();
+    }
+}
+
+// ── Delete ALL results for a semester (kept as fallback) ──
 async function resDeleteSemester(sem) {
     const semLabels = {'1-1':'Year 1','2-3':'Sem 3','2-4':'Sem 4','3-5':'Sem 5','3-6':'Sem 6'};
     const label = semLabels[sem] || sem;
@@ -24164,20 +24539,13 @@ function lod_getFacultySubjectsForYearSem(facultyId, year, sem) {
     }
 
     // 3. Activity — any faculty who has at least one subject in this year/sem
-    //    Prefer C26 codes (e.g. 26CM100L) over C23 codes (CM-100)
-    const actNumMap = { '1': '100', '3': '300', '4': '400', '5': '500' };
-    const actNum = actNumMap[String(year) === '1' ? '1' : String(sem)];
-    if (actNum) {
-        const c26Code = Object.keys(SUBJECTS).find(code =>
-            /^\d{2}[A-Z]/.test(code) && code.slice(4, 7) === actNum
-        );
-        const c23Map = { '100': 'CM-100', '300': 'CM-300', '400': 'CM-400', '500': 'CM-500' };
-        const actCode = c26Code || c23Map[actNum];
-        if (actCode && !addedCodes.has(actCode)) {
-            if (canFacultyHandleSubject(facultyId, actCode, year, sem)) {
-                subjects.push({ code: actCode, name: getSubjectName(actCode) || 'Activity' });
-                addedCodes.add(actCode);
-            }
+    //    Use ACTIVITY_CODES set; prefer codes that exist in SUBJECTS (C26 migrated)
+    const matchingActs = [...ACTIVITY_CODES].filter(code => isSubjectForYearSem(code, year, sem));
+    const actCode = matchingActs.find(c => SUBJECTS[c]) || matchingActs[0];
+    if (actCode && !addedCodes.has(actCode)) {
+        if (canFacultyHandleSubject(facultyId, actCode, year, sem)) {
+            subjects.push({ code: actCode, name: getSubjectName(actCode) || 'Activity' });
+            addedCodes.add(actCode);
         }
     }
 
@@ -24545,15 +24913,40 @@ async function ra_loadSemesters() {
             ra_allDocs = [];
             snap.forEach(doc => ra_allDocs.push(doc.data()));
         }
-        const sems = new Set();
-        ra_allDocs.forEach(d => { if(d.semesters) Object.keys(d.semesters).forEach(s => sems.add(s)); });
-        const sorted = [...sems].sort();
-        if (sorted.length === 0) {
+        // Build list of all unique attempts across all docs
+        // Format: sem|attemptIdx|monthYear|uploadType
+        const attemptSet = {};
+        ra_allDocs.forEach(d => {
+            if (!d.semesters) return;
+            Object.keys(d.semesters).forEach(sem => {
+                const semData = d.semesters[sem];
+                const attempts = Array.isArray(semData.attempts) ? semData.attempts : [];
+                if (attempts.length > 0) {
+                    attempts.forEach((att, idx) => {
+                        const my = att.examMonthYear || '(unknown)';
+                        const type = att.uploadType || (idx === 0 ? 'regular' : 'supplementary');
+                        const key = sem + '|' + idx + '|' + my + '|' + type;
+                        attemptSet[key] = { sem, idx, monthYear: my, type };
+                    });
+                } else {
+                    // Legacy
+                    const my = semData.examMonthYear || '(unknown)';
+                    const key = sem + '|0|' + my + '|regular';
+                    attemptSet[key] = { sem, idx: 0, monthYear: my, type: 'regular' };
+                }
+            });
+        });
+
+        const entries = Object.entries(attemptSet).sort((a, b) => a[0].localeCompare(b[0]));
+        if (entries.length === 0) {
             sel.innerHTML = '<option value="">No results uploaded</option>';
             document.getElementById('ra_content').innerHTML = '<div style="text-align:center;padding:60px;color:#999;font-size:16px;">No result data found. Upload results first.</div>';
             return;
         }
-        sel.innerHTML = sorted.map(s => `<option value="${s}">${ra_semLabels[s]||s} Results</option>`).join('');
+        sel.innerHTML = entries.map(([key, v]) => {
+            const label = (ra_semLabels[v.sem] || v.sem) + ' — ' + v.monthYear + (v.type === 'supplementary' ? ' (Supp)' : '');
+            return `<option value="${key}">${label}</option>`;
+        }).join('');
         ra_onSemChange();
     } catch(e) {
         sel.innerHTML = '<option value="">Error loading</option>';
@@ -24561,22 +24954,85 @@ async function ra_loadSemesters() {
     }
 }
 
+let ra_isSupplementary = false; // track if current view is supplementary
+
 function ra_onSemChange() {
-    const sem = document.getElementById('ra_semSelect').value;
-    if (!sem) return;
+    const key = document.getElementById('ra_semSelect').value;
+    if (!key) return;
+    const parts = key.split('|');
+    const sem = parts[0];
+    const attemptIdx = parseInt(parts[1]);
+    const monthYear = parts[2];
+    const uploadType = parts[3];
     ra_currentSem = sem;
+    ra_isSupplementary = (uploadType === 'supplementary');
     ra_destroyCharts();
+
     const students = [];
     ra_allDocs.forEach(d => {
-        if (d.semesters && d.semesters[sem]) {
-            students.push({ pin: d.pin, name: d.name, branch: d.branch, sem: d.semesters[sem] });
+        if (!d.semesters || !d.semesters[sem]) return;
+        const semData = d.semesters[sem];
+        const attempts = Array.isArray(semData.attempts) ? semData.attempts : [];
+        
+        let targetAttempt = null;
+        if (attempts.length > 0) {
+            // Find the attempt matching this monthYear and uploadType
+            targetAttempt = attempts.find((a, idx) => {
+                const aType = a.uploadType || (idx === 0 ? 'regular' : 'supplementary');
+                return a.examMonthYear === monthYear && aType === uploadType;
+            });
+        } else if (attemptIdx === 0) {
+            // Legacy: use top-level data
+            targetAttempt = semData;
+        }
+
+        if (targetAttempt && targetAttempt.papers) {
+            // For supplementary, filter out N papers
+            let papers = targetAttempt.papers;
+            if (ra_isSupplementary) {
+                const filtered = {};
+                Object.keys(papers).forEach(code => {
+                    if (papers[code].subResult && papers[code].subResult.toUpperCase() !== 'N') {
+                        filtered[code] = papers[code];
+                    }
+                });
+                if (Object.keys(filtered).length === 0) return; // skip student with no appeared subjects
+                papers = filtered;
+            }
+            students.push({
+                pin: d.pin, name: d.name, branch: d.branch,
+                sem: { ...targetAttempt, papers: papers }
+            });
         }
     });
+
     ra_analysis = ra_compute(students);
-    document.getElementById('ra_semLabel').textContent = (ra_semLabels[sem]||sem) + ' • ' + ra_analysis.totalStudents + ' students' + (ra_analysis.examMonthYear ? ' • ' + ra_analysis.examMonthYear : '');
-    // Show overview tab
-    document.querySelectorAll('.ra-tab-btn').forEach((b,i) => b.classList.toggle('ra-tab-active', i===0));
-    ra_showTab('overview');
+
+    const typeTag = ra_isSupplementary ? ' • 🔄 Supplementary' : ' • 📝 Regular';
+    document.getElementById('ra_semLabel').textContent = (ra_semLabels[sem]||sem) + ' • ' + ra_analysis.totalStudents + ' students • ' + monthYear + typeTag;
+
+    // Show/hide tabs based on type
+    const tabs = document.querySelectorAll('.ra-tab-btn');
+    if (ra_isSupplementary) {
+        // For supplementary: show only Students tab
+        tabs.forEach((b, i) => {
+            if (i === 1) { // Students tab
+                b.style.display = '';
+                b.classList.add('ra-tab-active');
+            } else {
+                b.style.display = 'none';
+                b.classList.remove('ra-tab-active');
+            }
+        });
+        ra_showTab('students');
+    } else {
+        // Regular: show all tabs, select Overview
+        tabs.forEach((b, i) => {
+            b.style.display = '';
+            b.classList.toggle('ra-tab-active', i === 0);
+        });
+        ra_showTab('overview');
+    }
 }
 
 // ── Core computation engine ──
@@ -24776,6 +25232,52 @@ function ra_renderOverview(c) {
 // ════════ TAB: STUDENTS ════════
 function ra_renderStudents(c) {
     const a = ra_analysis;
+
+    if (ra_isSupplementary) {
+        // ── SUPPLEMENTARY VIEW: show subjects appeared/cleared ──
+        // Compute summary stats
+        let totalAppeared = 0, totalCleared = 0, totalFailed = 0;
+        const studentRows = a.students.map(st => {
+            const papers = st.sem.papers || {};
+            const codes = Object.keys(papers).sort((a,b)=>parseInt(a)-parseInt(b));
+            const appeared = codes.length;
+            const cleared = codes.filter(c => papers[c].subResult === 'P' || papers[c].subResult === 'p').length;
+            const failed = codes.filter(c => papers[c].subResult === 'F' || papers[c].subResult === 'AB' || papers[c].subResult === 'f').length;
+            totalAppeared += appeared;
+            totalCleared += cleared;
+            totalFailed += failed;
+            return { ...st, codes, appeared, cleared, failed };
+        });
+
+        let html = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;">
+            <div class="ra-card ra-stat"><div class="ra-num">${a.totalStudents}</div><div class="ra-lbl">Students Appeared</div></div>
+            <div class="ra-card ra-stat"><div class="ra-num" style="color:#2e7d32;">${totalCleared}</div><div class="ra-lbl">Subjects Cleared</div></div>
+            <div class="ra-card ra-stat"><div class="ra-num" style="color:#c62828;">${totalFailed}</div><div class="ra-lbl">Subjects Failed</div></div>
+            <div class="ra-card ra-stat"><div class="ra-num">${totalAppeared}</div><div class="ra-lbl">Total Subjects Appeared</div></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+            <input id="ra_search" type="text" placeholder="🔍 Search PIN or Name..." oninput="ra_filterStudentsSupp()" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;">
+            <select id="ra_stuFilter" onchange="ra_filterStudentsSupp()" style="padding:10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:13px;">
+                <option value="all">All Students (${a.totalStudents})</option>
+                <option value="allclear">✅ All Cleared (${studentRows.filter(s=>s.failed===0).length})</option>
+                <option value="somefail">❌ Has Failures (${studentRows.filter(s=>s.failed>0).length})</option>
+            </select>
+        </div>
+        <div class="ra-card" style="overflow-x:auto;">
+            <table class="ra-tbl"><thead><tr>
+                <th>#</th><th>PIN</th><th>Name</th><th class="ra-ctr">Subjects Appeared</th><th class="ra-ctr">Cleared</th><th class="ra-ctr">Failed</th><th>Subjects & Status</th>
+            </tr></thead><tbody id="ra_stuBody"></tbody></table>
+        </div>`;
+        c.innerHTML = html;
+
+        // Store rows for filtering
+        window._ra_suppRows = studentRows;
+        ra_filterStudentsSupp();
+        return;
+    }
+
+    // ── REGULAR VIEW (existing code) ──
     let html = `<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
         <input id="ra_search" type="text" placeholder="🔍 Search PIN or Name..." oninput="ra_filterStudents()" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:14px;">
         <select id="ra_stuFilter" onchange="ra_filterStudents()" style="padding:10px;border:1.5px solid #d0d9f0;border-radius:8px;font-size:13px;">
@@ -24795,6 +25297,39 @@ function ra_renderStudents(c) {
     </div>`;
     c.innerHTML = html;
     ra_filterStudents();
+}
+
+// ── Supplementary students filter ──
+function ra_filterStudentsSupp() {
+    const query = (document.getElementById('ra_search').value||'').toLowerCase();
+    const mode = document.getElementById('ra_stuFilter').value;
+    let list = window._ra_suppRows || [];
+
+    if (mode === 'allclear') list = list.filter(s => s.failed === 0);
+    else if (mode === 'somefail') list = list.filter(s => s.failed > 0);
+    if (query) list = list.filter(s => s.pin.toLowerCase().includes(query) || s.name.toLowerCase().includes(query));
+
+    list.sort((a,b) => b.appeared - a.appeared || a.failed - b.failed);
+    const body = document.getElementById('ra_stuBody');
+    body.innerHTML = list.map((s, i) => {
+        const subjectBadges = s.codes.map(code => {
+            const p = s.sem.papers[code];
+            const isPass = p.subResult === 'P' || p.subResult === 'p';
+            const isFail = p.subResult === 'F' || p.subResult === 'AB' || p.subResult === 'f';
+            const cls = isPass ? 'ra-badge-p' : (isFail ? 'ra-badge-f' : '');
+            return `<span class="${cls}" style="margin:1px;display:inline-block;">${code}: ${p.subResult}</span>`;
+        }).join(' ');
+        return `<tr>
+            <td class="ra-ctr">${i+1}</td>
+            <td><span class="ra-link" onclick="ra_showStudentDetail('${s.pin}')">${s.pin}</span></td>
+            <td>${s.name}</td>
+            <td class="ra-ctr" style="font-weight:600;">${s.appeared}</td>
+            <td class="ra-ctr" style="font-weight:600;color:#2e7d32;">${s.cleared}</td>
+            <td class="ra-ctr" style="font-weight:600;color:${s.failed>0?'#c62828':'#2e7d32'};">${s.failed}</td>
+            <td>${subjectBadges}</td>
+        </tr>`;
+    }).join('');
+    if (!list.length) body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#999;">No students match the filter.</td></tr>';
 }
 
 function ra_filterStudents() {
