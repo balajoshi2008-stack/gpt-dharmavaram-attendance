@@ -1695,7 +1695,7 @@
                     </div>
                     <div class="form-group">
                         <label>Date</label>
-                        <input type="date" id="date">
+                        <input type="date" id="date" onchange="loadPeriodsFromDate()">
                     </div>
                 </div><!-- end form-grid: Year / Sem / Date -->
 
@@ -7823,6 +7823,8 @@
             document.getElementById('period').disabled = true;
             document.getElementById('attDateSection').classList.add('hidden');
             document.getElementById('otherSubject').innerHTML = '<option value="">-- Select Subject --</option>';
+            const _bannerY = document.getElementById('attBlockBanner');
+            if (_bannerY) _bannerY.style.display = 'none';
             clearAttendanceForm();
 
             if (!y) {
@@ -7858,6 +7860,8 @@
             document.getElementById('period').disabled = true;
             document.getElementById('attDateSection').classList.add('hidden');
             document.getElementById('otherSubject').innerHTML = '<option value="">-- Select Subject --</option>';
+            const _bannerS = document.getElementById('attBlockBanner');
+            if (_bannerS) _bannerS.style.display = 'none';
             clearAttendanceForm();
 
             // Refresh other subjects list if in other mode
@@ -11984,7 +11988,44 @@
             const y = document.getElementById('year').value;
             const s = (y == 1) ? '1' : document.getElementById('sem').value;
 
+            // Helper: hide all attendance controls and show a blocking message
+            function blockAttendance(htmlMsg) {
+                // Hide the whole date-dependent section (Period, Attendance Mode, buttons)
+                document.getElementById('attDateSection').classList.add('hidden');
+                // Show Day label so date is still visible
+                document.getElementById('dayDisplay').value = (() => {
+                    if (!date) return '';
+                    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    const [yy,mm,dd] = date.split('-').map(Number);
+                    return days[new Date(yy, mm-1, dd).getDay()];
+                })();
+                // Show the block message in a dedicated banner below the date row
+                let banner = document.getElementById('attBlockBanner');
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'attBlockBanner';
+                    banner.style.cssText = 'margin-top:16px;padding:14px 18px;border-radius:8px;background:#fff3cd;border:2px solid #f39c12;color:#7d4e00;font-size:15px;line-height:1.5;';
+                    // Insert right after the date form-grid
+                    const dateGrid = document.getElementById('date').closest('.form-grid');
+                    if (dateGrid) dateGrid.after(banner);
+                    else document.getElementById('attDateSection').before(banner);
+                }
+                // Also show day name in the banner
+                const dayLine = date ? `<div style="color:#555;font-size:13px;margin-bottom:6px;">📅 ${document.getElementById('dayDisplay').value}, ${date.split('-').reverse().join('/')}</div>` : '';
+                banner.innerHTML = dayLine + htmlMsg;
+                banner.style.display = '';
+                // Make sure attDateSection is hidden
+                document.getElementById('attDateSection').classList.add('hidden');
+            }
+
+            // Helper: clear the block banner and restore normal flow
+            function clearBlockBanner() {
+                const banner = document.getElementById('attBlockBanner');
+                if (banner) banner.style.display = 'none';
+            }
+
             if (!date || !y || !s) {
+                clearBlockBanner();
                 originalLoadPeriods();
                 return;
             }
@@ -11996,21 +12037,51 @@
             const selectedDate = new Date(sy, sm - 1, sd);
 
             if (selectedDate > today) {
-                alert('⚠️ Cannot mark attendance for future dates!');
-                document.getElementById('date').value = '';
+                blockAttendance('⛔ <strong>Cannot mark attendance for future dates!</strong>');
                 return;
             }
 
             if (isSecondSaturday(date)) {
-                alert('⚠️ 2nd Saturday is a holiday. Attendance cannot be marked.');
-                document.getElementById('date').value = '';
+                blockAttendance('⛔ <strong>2nd Saturday is a holiday.</strong> Attendance cannot be marked.');
                 return;
             }
 
             if (isHoliday(date)) {
-                alert('⚠️ This date is marked as a holiday. Attendance cannot be marked.');
-                document.getElementById('date').value = '';
+                const holEntry = hol_cache ? hol_cache.find(h => h.date === date) : null;
+                const reason = holEntry?.reason || 'Holiday';
+                blockAttendance(`⛔ <strong>"${reason}" is marked as a holiday.</strong> Attendance cannot be marked.`);
                 return;
+            }
+
+            // ── Leave/OD check: block controls immediately if faculty is on leave ──
+            const effFac = getEffectiveFaculty();
+            if (effFac) {
+                let leaveRec = lod_checkFacultyOnLeave(effFac, date);
+                if (!leaveRec) {
+                    // Try Firestore directly for fresh data
+                    try {
+                        const freshSnap = await db.collection('facultyLeaveOD')
+                            .where('facultyId', '==', effFac)
+                            .where('status', '==', 'ACTIVE')
+                            .get();
+                        freshSnap.forEach(doc => {
+                            const r = doc.data();
+                            if (r.fromDate && r.toDate && date >= r.fromDate && date <= r.toDate) {
+                                leaveRec = r;
+                            }
+                        });
+                    } catch(e) { console.warn('Leave check query failed:', e); }
+                }
+                if (leaveRec) {
+                    const effFacName = (USERS[effFac]?.name) || effFac;
+                    const fmt = d => { const [yy,mm,dd] = d.split('-'); return `${dd}/${mm}/${yy.slice(2)}`; };
+                    blockAttendance(
+                        `⛔ <strong>Cannot mark attendance.</strong><br>` +
+                        `<span style="color:#c0392b;">${effFacName} is on ${leaveRec.type} from ${fmt(leaveRec.fromDate)} to ${fmt(leaveRec.toDate)}.</span><br>` +
+                        `<span style="color:#555;font-size:13px;">${leaveRec.displayText || ''}</span>`
+                    );
+                    return;
+                }
             }
 
             // ── Always fetch fresh calendar from Firestore so extended/changed dates are picked up ──
@@ -12021,17 +12092,21 @@
                 const calendar = CALENDAR_DATES[yearSem];
                 if (calendar && (calendar.start || calendar.end)) {
                     const fmt = d => { if (!d) return '?'; const [yy,mm,dd] = d.split('-'); return `${parseInt(dd)}-${parseInt(mm)}-${yy}`; };
-                    alert(`⚠️ This date is outside the academic period for this class!\n📅 Academic period: ${fmt(calendar.start)} to ${fmt(calendar.end)}`);
+                    blockAttendance(
+                        `⛔ <strong>This date is outside the academic period for this class!</strong><br>` +
+                        `<span style="color:#555;">📅 Academic period: ${fmt(calendar.start)} to ${fmt(calendar.end)}</span>`
+                    );
                 } else if (!calendar) {
                     // No calendar set — allow but warn in console
                     console.warn('[Calendar] No calendar set for', yearSem, '— allowing attendance');
+                    clearBlockBanner();
                     originalLoadPeriods();
                     return;
                 }
-                document.getElementById('date').value = '';
                 return;
             }
 
+            clearBlockBanner();
             originalLoadPeriods();
         };
 
