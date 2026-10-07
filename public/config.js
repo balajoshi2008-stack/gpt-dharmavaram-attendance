@@ -12,6 +12,7 @@
 //  L = Lab       → Unit Marks tab ❌   Lab Assessment ✅
 //  A = Audit     → Unit Marks tab ❌   Lab Assessment ❌  (attendance only)
 //  P = Project   → Unit Marks tab ❌   Lab Assessment ❌  (already handled)
+//  C = Activity   → Unit Marks tab ❌   Lab Assessment ❌  (attendance only)
 //
 //  C23 subjects (CM-xxx): existing logic UNCHANGED for all tabs
 //  ATTENDANCE TAB: ALL subjects appear — no change for any type
@@ -107,6 +108,16 @@ const APP_CONFIG = {
             bgColor:         "#E0F7FA",
             badgeStyle:      "background:#00838F;color:#fff;",
             tabInfo:         "📅 Attendance only — Project work. Already handled separately."
+        },
+        C: {
+            label:           "Co-Curricular Activity",
+            showInUnitMarks: false,
+            showInLabAssess: false,
+            attendanceOnly:  true,
+            color:           "#AD1457",
+            bgColor:         "#FCE4EC",
+            badgeStyle:      "background:#AD1457;color:#fff;",
+            tabInfo:         "📅 Attendance only — Co-Curricular Activity. No marks."
         }
     },
 

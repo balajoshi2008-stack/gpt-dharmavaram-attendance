@@ -2437,15 +2437,13 @@
             <div id="timetable" class="tab-content">
                 <h2 style="color: #2a5298; margin-bottom: 20px;">Step 1: Add Subjects</h2>
 
-                <!-- Scheme / Admission Year selector -->
+                <!-- Scheme selector -->
                 <div class="form-grid" style="margin-bottom:1rem;">
                     <div class="form-group">
-                        <label>Scheme / Admission Year</label>
+                        <label>Scheme</label>
                         <select id="sub_year" onchange="sub_onYearChange()">
-                            <option value="2025">2025 (C23 — old format: CM-101)</option>
-                            <option value="2026" selected>2026 (C26 — new format: 26CS101T)</option>
-                            <option value="2027">2027 (C26)</option>
-                            <option value="2028">2028 (C26)</option>
+                            <option value="C26" selected>C26 — new format (26CS101T)</option>
+                            <option value="C23">C23 — old format (CM-101)</option>
                         </select>
                     </div>
                 </div>
@@ -2483,6 +2481,7 @@
                                 <option value="L">L — Lab / Practical (Lab Assessment)</option>
                                 <option value="A">A — Audit (Attendance only)</option>
                                 <option value="P">P — Project (Attendance only)</option>
+                                <option value="C">C — Co-Curricular Activity (Attendance only)</option>
                             </select>
                         </div>
                     </div>
@@ -2981,13 +2980,21 @@
                             <label>Select Month</label>
                             <input type="month" id="dlMonth">
                         </div>
+                        <!-- Cumulative Till Date — shown only for Cumulative type -->
+                        <div class="form-group" id="cumTillDateGroup" style="display:none;">
+                            <label>📅 Cumulative Till Date <span style="color:#888;font-size:0.85em;">(max: yesterday)</span></label>
+                            <input type="date" id="dlCumTillDate"
+                                style="border:2px solid #2a5298;border-radius:6px;padding:8px;"
+                                oninput="validateCumTillDate()">
+                            <span id="cumTillDateMsg" style="color:#c0392b;font-size:0.85em;display:none;">⚠️ Date cannot be today or a future date.</span>
+                        </div>
                     </div>
                     <button class="btn btn-success" onclick="downloadAttendanceReport()">📥 Download Excel</button>
                 </div>
                 <div class="info-box" style="margin-top:20px;">
                     <strong>Percentage Calculation:</strong> Day counted as Present if student attends ≥ <span
                         id="dlMinPeriodsInfo">3</span> periods<br>
-                    <strong>Reports:</strong> Full Month (all days) | First Half (1-15) | Second Half (16-End) | Cumulative (semester start to yesterday)
+                    <strong>Reports:</strong> Full Month (all days) | First Half (1-15) | Second Half (16-End) | Cumulative (semester start to selected date or yesterday)
                 </div>
 
                 <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
@@ -6790,8 +6797,8 @@
 
         // SUBJECT MANAGEMENT
         function addSubject() {
-            const schemeYear = parseInt(document.getElementById('sub_year')?.value || 2025);
-            const isC26      = schemeYear >= 2026;
+            const schemeVal = document.getElementById('sub_year')?.value || 'C26';
+            const isC26    = schemeVal === 'C26';
             const name       = document.getElementById('subName').value.trim();
             const totalPeriodsVal = document.getElementById('subTotalPeriods')?.value;
 
@@ -6810,17 +6817,17 @@
                 if (!num || parseInt(num) < 100 || parseInt(num) > 599) {
                     alert('Enter a valid 3-digit subject number (e.g. 101, 301, 501)'); return;
                 }
-                code = APP_CONFIG.generateSubjectCode(schemeYear, num, type);
+                code = APP_CONFIG.generateSubjectCode(2026, num, type);
                 if (SUBJECTS[code]) {
                     if (!confirm(`Subject ${code} already exists. Overwrite?`)) return;
                 }
                 const td = APP_CONFIG.subjectTypes[type] || APP_CONFIG.subjectTypes['T'];
                 subjectData = {
                     name,
-                    type,                              // 'T','E','L','A','P'
+                    type,                              // 'T','E','L','A','P','C'
                     typeLabel:       td.label,
                     scheme:          'C26',
-                    admissionYear:   schemeYear,
+                    admissionYear:   2026,
                     yearSem:         APP_CONFIG.c26NumberToYearSem(num),
                     showInUnitMarks: td.showInUnitMarks,
                     showInLabAssess: td.showInLabAssess,
@@ -6876,16 +6883,16 @@
         // ── C26 subject form helpers ──────────────────────────────────────────
 
         function sub_onYearChange() {
-            const yr    = parseInt(document.getElementById('sub_year').value);
-            const isC26 = yr >= 2026;
+            const val   = document.getElementById('sub_year').value;
+            const isC26 = val === 'C26';
             document.getElementById('sub_C23Block').style.display = isC26 ? 'none'  : 'block';
             document.getElementById('sub_c26Block').style.display = isC26 ? 'block' : 'none';
             sub_preview();
         }
 
         function sub_preview() {
-            const yr   = parseInt(document.getElementById('sub_year').value || 2026);
-            if (yr < 2026) return;   // C23 — no preview
+            const val  = document.getElementById('sub_year').value || 'C26';
+            if (val !== 'C26') return;   // C23 — no preview
             const num  = document.getElementById('sub_num')?.value;
             const type = document.getElementById('sub_type')?.value || 'T';
             const prev = document.getElementById('sub_codePreview');
@@ -6897,12 +6904,12 @@
                 if (warn) warn.style.display = 'none';
                 return;
             }
-            const code   = APP_CONFIG.generateSubjectCode(yr, num, type);
+            const code   = APP_CONFIG.generateSubjectCode(2026, num, type);
             const ysLbl  = APP_CONFIG.c26NumberToYearSemLabel(num);
             const td     = APP_CONFIG.subjectTypes[type];
             prev.textContent = `${code}   (${ysLbl})`;
             info.textContent  = td ? td.tabInfo : '';
-            if (warn) warn.style.display = type === 'A' ? 'block' : 'none';
+            if (warn) warn.style.display = (type === 'A' || type === 'C') ? 'block' : 'none';
         }
 
         function displaySubjects() {
@@ -8582,25 +8589,60 @@
         function updateDownloadFields() {
             const type = document.getElementById('reportType').value;
             const monthInput = document.getElementById('dlMonth');
+            const cumGroup = document.getElementById('cumTillDateGroup');
             // Show the action row for any valid type
             if (type) {
                 document.getElementById('monthlySelection').classList.remove('hidden');
             } else {
                 document.getElementById('monthlySelection').classList.add('hidden');
             }
-            // Disable month picker for Cumulative (no month needed)
+            // Disable month picker for Cumulative (no month needed); show till-date instead
             if (monthInput) {
                 if (type === 'cumulative') {
                     monthInput.disabled = true;
                     monthInput.value = '';
                     monthInput.style.opacity = '0.4';
+                    // Show till-date picker and default to yesterday
+                    if (cumGroup) {
+                        cumGroup.style.display = '';
+                        const tillInput = document.getElementById('dlCumTillDate');
+                        if (tillInput && !tillInput.value) {
+                            const yest = new Date();
+                            yest.setDate(yest.getDate() - 1);
+                            tillInput.value = localYMD(yest);
+                        }
+                        // Set max = yesterday
+                        if (tillInput) {
+                            const yest = new Date();
+                            yest.setDate(yest.getDate() - 1);
+                            tillInput.max = localYMD(yest);
+                        }
+                    }
                 } else {
                     monthInput.disabled = false;
                     monthInput.style.opacity = '1';
+                    if (cumGroup) cumGroup.style.display = 'none';
                 }
             }
             const el = document.getElementById('dlMinPeriodsInfo');
             if (el) el.textContent = MIN_PERIODS_FOR_PRESENT;
+        }
+
+        function validateCumTillDate() {
+            const tillInput = document.getElementById('dlCumTillDate');
+            const msgEl = document.getElementById('cumTillDateMsg');
+            if (!tillInput || !msgEl) return;
+            const todayStr = localYMD(new Date());
+            const yest = new Date(); yest.setDate(yest.getDate() - 1);
+            const yesterdayStr = localYMD(yest);
+            if (tillInput.value >= todayStr) {
+                // Force back to yesterday
+                tillInput.value = yesterdayStr;
+                msgEl.style.display = 'inline';
+                setTimeout(() => msgEl.style.display = 'none', 3000);
+            } else {
+                msgEl.style.display = 'none';
+            }
         }
 
         function downloadAttendanceReport() {
@@ -8921,6 +8963,14 @@
                 });
                 data.push(subjectRow);
 
+                // ── Signature row ──
+                const wkBlankRow = new Array(totalCols).fill('');
+                data.push(wkBlankRow);
+                const wkSignRow = new Array(totalCols).fill('');
+                wkSignRow[0] = 'Signature of Class Teacher';
+                wkSignRow[totalCols - 1] = 'Signature of Head of Section';
+                data.push(wkSignRow);
+
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 const merges = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }]; // Title merge
                 let col = 3;
@@ -8928,6 +8978,10 @@
                     merges.push({ s: { r: 1, c: col }, e: { r: 1, c: col + 6 } });
                     col += 7;
                 });
+                // Signature row merges
+                const wkSignRowIdx = data.length - 1;
+                merges.push({ s: { r: wkSignRowIdx, c: 0 }, e: { r: wkSignRowIdx, c: 1 } });           // Class Teacher (left)
+                merges.push({ s: { r: wkSignRowIdx, c: totalCols - 2 }, e: { r: wkSignRowIdx, c: totalCols - 1 } }); // Head of Section (right)
                 ws['!merges'] = merges;
                 ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }];
                 xlsCenterCol(ws, 0);  // centre Sl.No column
@@ -8984,12 +9038,23 @@
             });
             const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
             ws2['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 14 }, { wch: 20 }, { wch: 12 }];
-            ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
-            xlsCenterCol(ws2, 0);  // centre Sl.No
-            xlsCenterCol(ws2, 3);  // centre Days Present
-            xlsCenterCol(ws2, 4);  // centre Total Working Days
-            xlsCenterCol(ws2, 5);  // centre Monthly %
-            XLSX.utils.book_append_sheet(wb, ws2, 'Monthly Summary');
+            // Signature row for Monthly Summary
+            summaryData.push(['', '', '', '', '', '']); // blank
+            const sumSignRow = ['Signature of Class Teacher', '', '', 'Signature of Head of Section', '', ''];
+            summaryData.push(sumSignRow);
+            const ws2Final = XLSX.utils.aoa_to_sheet(summaryData);
+            ws2Final['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 14 }, { wch: 20 }, { wch: 12 }];
+            const sumSignRowIdx = summaryData.length - 1;
+            ws2Final['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },                                     // title
+                { s: { r: sumSignRowIdx, c: 0 }, e: { r: sumSignRowIdx, c: 1 } },              // Class Teacher (left)
+                { s: { r: sumSignRowIdx, c: 3 }, e: { r: sumSignRowIdx, c: 5 } }               // Head of Section (right)
+            ];
+            xlsCenterCol(ws2Final, 0);  // centre Sl.No
+            xlsCenterCol(ws2Final, 3);  // centre Days Present
+            xlsCenterCol(ws2Final, 4);  // centre Total Working Days
+            xlsCenterCol(ws2Final, 5);  // centre Monthly %
+            XLSX.utils.book_append_sheet(wb, ws2Final, 'Monthly Summary');
 
             XLSX.writeFile(wb, `Attendance_${monthName}${mYear}_Year${y}_Sem${s}.xlsx`);
         }
@@ -9207,9 +9272,21 @@
                 rowNum++;
             });
 
+            // ── Signature row ──
+            data.push(new Array(totalCols).fill('')); // blank row
+            const halfSignRow = new Array(totalCols).fill('');
+            halfSignRow[0] = 'Signature of Class Teacher';
+            halfSignRow[totalCols - 1] = 'Signature of Head of Section';
+            data.push(halfSignRow);
+
             // Create workbook
             const ws = XLSX.utils.aoa_to_sheet(data);
-            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }];
+            const halfSignRowIdx = data.length - 1;
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },                          // Title
+                { s: { r: halfSignRowIdx, c: 0 }, e: { r: halfSignRowIdx, c: 1 } },             // Class Teacher (left)
+                { s: { r: halfSignRowIdx, c: totalCols - 2 }, e: { r: halfSignRowIdx, c: totalCols - 1 } } // Head of Section (right)
+            ];
             ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 25 }, { wch: 12 }];
             dates.forEach(() => ws['!cols'].push({ wch: 8 }));
             xlsCenterCol(ws, 0);  // centre Sl.No
@@ -9251,20 +9328,28 @@
                 ? (CALENDAR_DATES[yearSem].start || '') : '';
             if (!acadStart) { alert('Academic start date not set in Settings → Academic Calendar for this class'); return; }
 
-            // Yesterday (up to which we count)
+            // Till date: use input if provided, else default to yesterday
             const todayLocal = new Date();
             const yesterday = new Date(todayLocal);
             yesterday.setDate(todayLocal.getDate() - 1);
             const yesterdayStr = localYMD(yesterday);
 
-            if (acadStart > yesterdayStr) {
-                alert('Academic year has not started yet (start date is in the future)');
+            const tillInput = document.getElementById('dlCumTillDate');
+            let tillDateStr = tillInput ? tillInput.value : '';
+            // Validate: must not be today or future
+            if (!tillDateStr || tillDateStr >= localYMD(todayLocal)) {
+                tillDateStr = yesterdayStr;
+                if (tillInput) tillInput.value = yesterdayStr;
+            }
+
+            if (acadStart > tillDateStr) {
+                alert('Academic year has not started yet (start date is after the selected till date)');
                 return;
             }
 
-            // Build list of calendar months from acadStart to yesterday
+            // Build list of calendar months from acadStart to tillDate
             const [aY, aM] = acadStart.split('-').map(Number);
-            const [eY, eM] = yesterdayStr.split('-').map(Number);
+            const [eY, eM] = tillDateStr.split('-').map(Number);
 
             const months = []; // { year, month (1-based) }
             let cy = aY, cm = aM;
@@ -9276,18 +9361,18 @@
 
             if (!months.length) { alert('No months to process'); return; }
 
-            // For each month, compute dates in range (capped at yesterday for current month)
-            // A date is a working day for the class if attendance was posted for at least one student
+            // For each month, compute dates in range (capped at tillDate for last month)
             const monthData = months.map(({ year, month }) => {
                 const monthStart = new Date(year, month - 1, 1);
                 const rawMonthEnd = new Date(year, month, 0);       // last calendar day of month
-                // Cap at yesterday
-                const monthEnd = rawMonthEnd < yesterday ? rawMonthEnd : yesterday;
+                // Cap at tillDate
+                const tillDateObj = new Date(tillDateStr);
+                const monthEnd = rawMonthEnd < tillDateObj ? rawMonthEnd : tillDateObj;
 
                 const dates = [];
                 for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
                     const ds = localYMD(d);
-                    if (!isSunday(ds) && !isHoliday(ds) && ds >= acadStart && ds <= yesterdayStr) {
+                    if (!isSunday(ds) && !isHoliday(ds) && ds >= acadStart && ds <= tillDateStr) {
                         dates.push(ds);
                     }
                 }
@@ -9311,7 +9396,6 @@
             const totalWorkingDays = validMonths.reduce((sum, m) => sum + m.workingDays, 0);
 
             // ── Determine last admission month (Year 1 only) ──
-            // Used to decide which month columns show per-student working days in ()
             let lastAdmMonth = ''; // 'YYYY-MM' format
             if (y === '1') {
                 stu.forEach(st => {
@@ -9324,11 +9408,9 @@
 
             const classLabel = y == 1 ? '1st Year' : (y == 2 ? `2nd Year – Sem ${s}` : `3rd Year – Sem ${s}`);
 
-            // Format yesterday's date as DD/MM/YYYY
-            const dd = String(yesterday.getDate()).padStart(2, '0');
-            const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
-            const yyyy = yesterday.getFullYear();
-            const tillDateStr = `${dd}/${mm}/${yyyy}`;
+            // Format till date as DD/MM/YYYY for display
+            const tillDateParts = tillDateStr.split('-');
+            const tillDateDisplay = `${tillDateParts[2]}/${tillDateParts[1]}/${tillDateParts[0]}`;
 
             // ── Build header rows ──
             const totalCols = 3 + validMonths.length + 2; // Sl.No + PIN + Name + months + Total + Percentage
@@ -9345,7 +9427,7 @@
             const blankRow = new Array(totalCols).fill('');
 
             // Row 3: Title with Till date
-            const titleRow = [`${classLabel}  |  Cumulative Attendance Summary Till ${tillDateStr}`];
+            const titleRow = [`${classLabel}  |  Cumulative Attendance Summary Till ${tillDateDisplay}`];
             for (let i = 1; i < totalCols; i++) titleRow.push('');
 
             // Row 4: blank
@@ -9441,7 +9523,8 @@
             data.push(new Array(totalCols).fill('')); // blank row
             data.push(new Array(totalCols).fill('')); // blank row
             const signRow = new Array(totalCols).fill('');
-            signRow[totalCols - 3] = 'Signature of Class Teacher';
+            signRow[0] = 'Signature of Class Teacher';
+            signRow[totalCols - 3] = 'Signature of Head of Section';
             data.push(signRow);
 
             // ── Build worksheet ──
@@ -9452,14 +9535,15 @@
             // Row 1 (Branch Name): full width
             // Row 3 (Title): full width
             // Row 5 ("Days Present" label): spans month columns (col 3 to 3+validMonths.length-1)
-            // Signature row: merge last 3 cols
+            // Signature row: merge first 2 cols (Class Teacher) + last 3 cols (Head of Section)
             const signRowIdx = data.length - 1;
             const merges = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // College Name
                 { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } }, // Branch Name
                 { s: { r: 3, c: 0 }, e: { r: 3, c: totalCols - 1 } }, // Title
                 { s: { r: 5, c: 3 }, e: { r: 5, c: 3 + validMonths.length - 1 } }, // "Days Present" label
-                { s: { r: signRowIdx, c: totalCols - 3 }, e: { r: signRowIdx, c: totalCols - 1 } } // Signature
+                { s: { r: signRowIdx, c: 0 }, e: { r: signRowIdx, c: 1 } },                        // Class Teacher (left)
+                { s: { r: signRowIdx, c: totalCols - 3 }, e: { r: signRowIdx, c: totalCols - 1 } } // Head of Section (right)
             ];
             ws['!merges'] = merges;
 
@@ -9702,7 +9786,8 @@
             data.push(new Array(scholTotalCols).fill('')); // blank row
             data.push(new Array(scholTotalCols).fill('')); // blank row
             const scholSignRow = new Array(scholTotalCols).fill('');
-            scholSignRow[scholTotalCols - 3] = 'Signature of Class Teacher';
+            scholSignRow[0] = 'Signature of Class Teacher';
+            scholSignRow[scholTotalCols - 3] = 'Signature of Head of Section';
             data.push(scholSignRow);
 
             // Create worksheet
@@ -9723,7 +9808,8 @@
                 { s: { r: 4, c: 0 }, e: { r: 4, c: 7 } },  // Year/Sem/Month
                 { s: { r: 5, c: 0 }, e: { r: 5, c: 7 } },  // Working Days info
                 { s: { r: 6, c: 0 }, e: { r: 6, c: 7 } },  // Rule
-                { s: { r: scholSignRowIdx, c: scholTotalCols - 3 }, e: { r: scholSignRowIdx, c: scholTotalCols - 1 } } // Signature
+                { s: { r: scholSignRowIdx, c: 0 }, e: { r: scholSignRowIdx, c: 1 } },                               // Class Teacher (left)
+                { s: { r: scholSignRowIdx, c: scholTotalCols - 3 }, e: { r: scholSignRowIdx, c: scholTotalCols - 1 } } // Head of Section (right)
             ];
 
             // ── Style college/branch/signature rows ──
