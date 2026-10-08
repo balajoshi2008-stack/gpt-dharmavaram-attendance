@@ -1952,6 +1952,12 @@
                 <div id="logbookTableArea" style="display:none;">
                     <h3 style="color:#2a5298;margin-bottom:12px;">📋 Logbook Preview</h3>
                     <div id="logbookTableContainer" style="overflow-x:auto;"></div>
+                    <div style="text-align:center;margin-top:14px;">
+                        <button onclick="document.getElementById('logbookTableArea').style.display='none'; document.getElementById('logbookPreview').style.display='none'; document.getElementById('logbookPreviewText').innerHTML='';"
+                                style="padding:10px 28px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+                            ✕ Close Preview
+                        </button>
+                    </div>
                 </div>
 
                 <!-- ══════════════════════════════════════════════════════════════
@@ -9873,11 +9879,22 @@
             const todayAtt = getAttData(today);
             document.getElementById('dashTodayPosts').textContent = Object.keys(todayAtt).length;
 
-            // Today's activity
-            const classes = [
-                { y: '1', s: '1', name: '1st Year' }, { y: '2', s: '3', name: '2nd Year Sem 3' },
-                { y: '2', s: '4', name: '2nd Year Sem 4' }, { y: '3', s: '5', name: '3rd Year Sem 5' }
+            // All possible classes
+            const allClasses = [
+                { y: '1', s: '1', name: '1st Year' },
+                { y: '2', s: '3', name: '2nd Year Sem 3' },
+                { y: '2', s: '4', name: '2nd Year Sem 4' },
+                { y: '3', s: '5', name: '3rd Year Sem 5' }
             ];
+
+            // Filter to only classes that have an academic calendar set (ongoing)
+            const classes = allClasses.filter(cls => {
+                const key = cls.y == 1 ? '1-1' : `${cls.y}-${cls.s}`;
+                const cal = CALENDAR_DATES && CALENDAR_DATES[key];
+                return cal && (cal.start || cal.end); // has a calendar → ongoing
+            });
+
+            // Today's activity
             let actHtml = '';
             classes.forEach(cls => {
                 const pData = PERIOD_FACULTY[`${today}_${cls.y}_${cls.s}`] || {};
@@ -9885,7 +9902,8 @@
                 const color = posted === 7 ? '#28a745' : (posted > 0 ? '#e6a817' : '#dc3545');
                 actHtml += `<p style="margin:6px 0;"><strong>${cls.name}:</strong> <span style="color:${color};font-weight:bold;">${posted}/7</span> periods posted</p>`;
             });
-            document.getElementById('todayActivity').innerHTML = actHtml || '<p>No attendance posted today</p>';
+            if (!actHtml) actHtml = '<p style="color:#999;">No ongoing classes found. Set Academic Calendar in Settings → Calendar.</p>';
+            document.getElementById('todayActivity').innerHTML = actHtml;
 
             // Alerts
             let alerts = '';
