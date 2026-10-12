@@ -23386,42 +23386,54 @@ async function resUploadToFirestore() {
     let done = 0, errors = 0;
 
     if (!isSupplementary) {
-        // ── REGULAR UPLOAD: batch set with merge (backward compatible + attempts array) ──
-        for (let i = 0; i < resParsedData.length; i += 400) {
-            const batch = db.batch();
-            const chunk = resParsedData.slice(i, i + 400);
-            chunk.forEach(student => {
-                if (!student.pin) { errors++; return; }
+        // ── REGULAR UPLOAD: read existing doc → replace regular attempt, preserve supplementary ──
+        for (let i = 0; i < resParsedData.length; i++) {
+            const student = resParsedData[i];
+            if (!student.pin) { errors++; continue; }
+
+            try {
                 const ref = db.collection('results').doc(student.pin);
+                const doc = await ref.get();
                 const attemptData = student._attemptData;
-                // Build the document with backward-compatible top-level + attempts array
+
+                let existingAttempts = [];
+                if (doc.exists) {
+                    const existing = doc.data();
+                    const semData = (existing.semesters && existing.semesters[examSem]) || {};
+                    const attempts = Array.isArray(semData.attempts) ? semData.attempts : [];
+                    // Keep only supplementary attempts (preserve them)
+                    existingAttempts = attempts.filter(a => {
+                        return a.uploadType === 'supplementary';
+                    });
+                }
+
+                // Build attempts array: regular first, then preserved supplementary
+                const finalAttempts = [attemptData, ...existingAttempts];
+
                 const docData = {
                     pin: student.pin,
                     name: student.name,
                     branch: student.branch,
                     semesters: {
                         [examSem]: {
-                            // Top-level fields (backward compatible)
                             examMonthYear: attemptData.examMonthYear,
                             grandTotal: attemptData.grandTotal,
                             gpa: attemptData.gpa,
                             result: attemptData.result,
                             papers: attemptData.papers,
                             currentSem: attemptData.currentSem || '',
-                            // Attempts array with first attempt
-                            attempts: [attemptData]
+                            attempts: finalAttempts
                         }
                     }
                 };
-                batch.set(ref, docData, { merge: true });
-            });
-            try {
-                await batch.commit();
-                done += chunk.length;
-                prog.textContent = '⏳ Uploaded ' + done + ' / ' + resParsedData.length + '...';
+                await ref.set(docData, { merge: true });
+                done++;
+                if (done % 20 === 0 || done === resParsedData.length) {
+                    prog.textContent = '⏳ Uploaded ' + done + ' / ' + resParsedData.length + '...';
+                }
             } catch (e) {
-                errors += chunk.length;
-                console.error('[Results] Batch error:', e);
+                errors++;
+                console.error('[Results] Error uploading ' + student.pin + ':', e);
             }
         }
     } else {

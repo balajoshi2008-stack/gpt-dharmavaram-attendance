@@ -3405,25 +3405,25 @@
 
             attempts.forEach((attempt, attemptIdx) => {
                 const papers = attempt.papers || {};
+                const isSupp = attempt.uploadType === 'supplementary' || (attemptIdx > 0 && !attempt.uploadType);
                 // Filter: only show papers where subResult is NOT 'N' (for supplementary)
-                // For first attempt, show all; for subsequent, only non-N
                 const paperCodes = Object.keys(papers)
                     .filter(code => {
-                        if (attemptIdx === 0) return true; // first attempt: show all
+                        if (!isSupp) return true; // regular attempt: show all
                         const sr = (papers[code].subResult || '').toUpperCase();
                         return sr !== 'N'; // supplementary: hide N (not appeared)
                     })
                     .sort((a,b) => parseInt(a) - parseInt(b));
 
-                // Skip this attempt entirely if no papers to show (shouldn't happen but safety)
-                if (paperCodes.length === 0 && attemptIdx > 0) return;
+                // Skip this attempt entirely if no papers to show
+                if (paperCodes.length === 0 && isSupp) return;
 
                 let html = '';
 
                 // Attempt header/separator
                 if (attempts.length > 1) {
-                    if (attemptIdx === 0) {
-                        // First attempt header
+                    if (!isSupp) {
+                        // Regular attempt header
                         html += `<div style="background:linear-gradient(135deg,#1e3c72,#2a5298);color:#fff;padding:10px 16px;border-radius:10px 10px 0 0;margin-top:${attemptIdx > 0 ? '20px' : '0'};display:flex;align-items:center;justify-content:space-between;">
                             <span style="font-weight:700;font-size:14px;">📋 Regular Exam</span>
                             <span style="font-size:12px;opacity:0.85;">${attempt.examMonthYear || ''}</span>
@@ -3479,7 +3479,7 @@
                 // Summary section
                 const resultText = attempt.result || '';
                 const resultColor2 = resultText === 'PASS' || resultText === 'PROMOTED' ? '#2e7d32' : '#c62828';
-                const summaryBg = attemptIdx === 0 
+                const summaryBg = !isSupp
                     ? 'background:linear-gradient(135deg,#e8f5e9,#c8e6c9);' 
                     : 'background:linear-gradient(135deg,#fff3e0,#ffe0b2);';
                 
