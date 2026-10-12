@@ -10443,9 +10443,14 @@
         function calcDayValue(periodsPresent, hasAtt, yearSem) {
             if (!hasAtt) return null; // not a working day — do not count at all
             const hds      = (HALF_DAY_SETTINGS && HALF_DAY_SETTINGS[yearSem]) || {};
-            const minFull  = hds.minFull  != null ? hds.minFull  : MIN_PERIODS_FOR_PRESENT;
-            const minHalf  = hds.minHalf  != null ? hds.minHalf  : 1;
-            const halfEnab = hds.enabled  || false;
+            const halfEnab = hds.enabled || false;
+            // When half-day is DISABLED: always use global MIN_PERIODS_FOR_PRESENT as full-day threshold.
+            // This prevents hds.minFull (e.g. 5, set for half-day mode) from reducing counts
+            // when the feature is off — which caused totals to go UP when half-day was later enabled.
+            const minFull  = halfEnab
+                ? (hds.minFull != null ? hds.minFull : MIN_PERIODS_FOR_PRESENT)
+                : MIN_PERIODS_FOR_PRESENT;
+            const minHalf  = hds.minHalf != null ? hds.minHalf : 1;
             if (periodsPresent >= minFull)               return 1.0;
             if (halfEnab && periodsPresent >= minHalf)   return 0.5;
             return 0.0;
