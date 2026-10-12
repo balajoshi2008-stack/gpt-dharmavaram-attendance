@@ -1555,9 +1555,13 @@
         function calcStudentDayValue(periodsPresent, hasAtt, yearSem) {
             if (!hasAtt) return null;
             const hds      = (HALF_DAY_SETTINGS && HALF_DAY_SETTINGS[yearSem]) || {};
-            const minFull  = hds.minFull  != null ? hds.minFull  : MIN_PERIODS_FOR_PRESENT;
-            const minHalf  = hds.minHalf  != null ? hds.minHalf  : 1;
-            const halfEnab = hds.enabled  || false;
+            const halfEnab = hds.enabled || false;
+            // When half-day is DISABLED: always use global MIN_PERIODS_FOR_PRESENT as full-day threshold.
+            // This prevents hds.minFull (set for half-day mode) from silently raising the threshold.
+            const minFull  = halfEnab
+                ? (hds.minFull != null ? hds.minFull : MIN_PERIODS_FOR_PRESENT)
+                : MIN_PERIODS_FOR_PRESENT;
+            const minHalf  = hds.minHalf != null ? hds.minHalf : 1;
             if (periodsPresent >= minFull)              return 1.0;
             if (halfEnab && periodsPresent >= minHalf)  return 0.5;
             return 0.0;
@@ -1921,26 +1925,32 @@
 
                     // Use in-memory cache (loaded at login) — no extra Firestore reads
                     const attData = allAttendance[date] || {};
+
+                    // Working day = any student in class has attendance data (class-level, matches Att.Percentage)
+                    const classHasData = Object.keys(attData).length > 0;
+                    if (!classHasData) continue; // no attendance posted for class on this date — skip
+
+                    workingDays++;
+
                     const periods = getStudentDayData(attData, currentStudent.pin);
+                    let presentCount = 0;
+                    const hasAtt = periods && Object.keys(periods).length > 0;
                     if (periods) {
-                        workingDays++;
-                        let presentCount = 0;
                         for (let p = 1; p <= 7; p++) {
                             // Keys stored in Firestore are always strings ("1", "2"...)
                             const pData = periods[String(p)];
                             if (pData && pData.status === 'P') presentCount++;
                         }
-                        const hasAtt = Object.keys(periods).length > 0;
-                        const dayVal = calcStudentDayValue(presentCount, hasAtt, currentStudent.yearSem || '');
-                        if (dayVal === 1.0) {
-                            presentDays++;
-                            dayStatus[date] = 'P';
-                        } else if (dayVal === 0.5) {
-                            presentDays += 0.5;
-                            dayStatus[date] = 'H';
-                        } else {
-                            dayStatus[date] = 'A';
-                        }
+                    }
+                    const dayVal = calcStudentDayValue(presentCount, hasAtt, currentStudent.yearSem || '');
+                    if (dayVal === 1.0) {
+                        presentDays++;
+                        dayStatus[date] = 'P';
+                    } else if (dayVal === 0.5) {
+                        presentDays += 0.5;
+                        dayStatus[date] = 'H';
+                    } else {
+                        dayStatus[date] = 'A';
                     }
                 }
 
@@ -2235,33 +2245,39 @@
             const startDate = new Date(startStr + 'T00:00:00');
             for (let d = new Date(startDate); toLocalDateStr(d) <= cutoffStr; d.setDate(d.getDate() + 1)) {
                 const dateStr = toLocalDateStr(d);
+                if (isStudentSunday(dateStr) || isStudentSecondSaturday(dateStr) || isStudentHoliday(dateStr)) continue;
+
                 const attData = allAttendance[dateStr] || {};
 
+                // Working day = any student in class has data (class-level, matches Att.Percentage)
+                const classHasData = Object.keys(attData).length > 0;
+                if (!classHasData) continue;
+
+                totalWorkingDays++;
+
                 const dayPeriods = getStudentDayData(attData, currentStudent.pin);
+                let presentCount = 0;
+                const hasAtt = dayPeriods && Object.keys(dayPeriods).length > 0;
                 if (dayPeriods) {
-                    totalWorkingDays++;
-                    let presentCount = 0;
                     for (let p = 1; p <= 7; p++) {
                         const pData = dayPeriods[String(p)];
                         if (pData && pData.status === 'P') presentCount++;
                     }
-                    const hasAtt = Object.keys(dayPeriods).length > 0;
-                    const dayVal = calcStudentDayValue(presentCount, hasAtt, currentStudent.yearSem || '');
-                    const isPresent = dayVal >= 0.5;
-                    if (dayVal === 1.0)  totalPresentDays++;
-                    else if (dayVal === 0.5) totalPresentDays += 0.5;
+                }
+                const dayVal = calcStudentDayValue(presentCount, hasAtt, currentStudent.yearSem || '');
+                if (dayVal === 1.0)  totalPresentDays++;
+                else if (dayVal === 0.5) totalPresentDays += 0.5;
 
-                    // Track per month
-                    if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate) {
-                        const ym = dateStr.substring(0, 7); // 'YYYY-MM'
-                        if (!monthlyStats[ym]) {
-                            const mDate = new Date(parseInt(ym.split('-')[0]), parseInt(ym.split('-')[1]) - 1, 1);
-                            monthlyStats[ym] = { present: 0, working: 0, name: mDate.toLocaleString('default', { month: 'short' }) };
-                        }
-                        monthlyStats[ym].working++;
-                        if (dayVal === 1.0)  monthlyStats[ym].present++;
-                        else if (dayVal === 0.5) monthlyStats[ym].present += 0.5;
+                // Track per month
+                if (currentStudent.yearSem === '1-1' && currentStudent.admissionDate) {
+                    const ym = dateStr.substring(0, 7); // 'YYYY-MM'
+                    if (!monthlyStats[ym]) {
+                        const mDate = new Date(parseInt(ym.split('-')[0]), parseInt(ym.split('-')[1]) - 1, 1);
+                        monthlyStats[ym] = { present: 0, working: 0, name: mDate.toLocaleString('default', { month: 'short' }) };
                     }
+                    monthlyStats[ym].working++;
+                    if (dayVal === 1.0)  monthlyStats[ym].present++;
+                    else if (dayVal === 0.5) monthlyStats[ym].present += 0.5;
                 }
             }
 
