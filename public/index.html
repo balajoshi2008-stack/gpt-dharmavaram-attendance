@@ -8395,12 +8395,21 @@
                 return;
             }
 
-            // Build updated in-memory structures
+            // Build updated in-memory structures + lightweight DELTA for Firestore
             const facultyKey = `${date}_${y}_${s}`;
             if (!PERIOD_FACULTY[facultyKey]) PERIOD_FACULTY[facultyKey] = {};
 
+            // ── Delta objects: contain ONLY this submission's changes ──
+            // Instead of sending the entire accumulated todayAttendance / PERIOD_FACULTY
+            // (which grows huge as more faculty submit throughout the day), we send only
+            // the current 60 students. merge:true preserves everything else in Firestore.
+            const attDelta = {};
+            const pfDelta  = {};
+            pfDelta[facultyKey] = {};
+
             stu.forEach((st, i) => {
                 if (!todayAttendance[st.pin]) todayAttendance[st.pin] = {};
+                if (!attDelta[st.pin]) attDelta[st.pin] = {};
                 const cb = document.getElementById(`cb_${i}`);
                 const status = cb.checked ? 'P' : 'A';
                 periodList.forEach(period => {
@@ -8416,14 +8425,16 @@
                         attRecord.auditedBy     = currentUser;
                         attRecord.auditedByName = currentUserName || currentUser;
                     }
-                    todayAttendance[st.pin][pKey] = attRecord;
+                    todayAttendance[st.pin][pKey] = attRecord;  // in-memory cache
+                    attDelta[st.pin][pKey] = attRecord;          // delta for Firestore
 
                     const lockRecord = { faculty: effFacName, subject: subCode };
                     if (currentUserType === 'powerUser') {
                         lockRecord.auditedBy     = currentUser;
                         lockRecord.auditedByName = currentUserName || currentUser;
                     }
-                    PERIOD_FACULTY[facultyKey][pKey] = lockRecord;
+                    PERIOD_FACULTY[facultyKey][pKey] = lockRecord;  // in-memory cache
+                    pfDelta[facultyKey][pKey] = lockRecord;          // delta for Firestore
                 });
             });
 
@@ -8433,23 +8444,28 @@
                 periodList.forEach(period => {
                     const pKey = String(period);
                     if (!todayAttendance[st.pin][pKey]) { // don't overwrite existing record
-                        todayAttendance[st.pin][pKey] = {
+                        const absentRecord = {
                             status: 'A',
                             faculty: effFacName,
                             subject: subCode,
                             longAbsent: true
                         };
+                        todayAttendance[st.pin][pKey] = absentRecord;  // in-memory cache
+                        if (!attDelta[st.pin]) attDelta[st.pin] = {};
+                        attDelta[st.pin][pKey] = absentRecord;          // delta for Firestore
                     }
                 });
             });
 
             // ── Atomic WriteBatch: both writes succeed or neither does ──
+            // Writes ONLY the delta (current submission), not the full accumulated objects.
+            // This dramatically reduces payload size and Firestore merge overhead.
             try {
                 const batch = db.batch();
-                // Write 1: attendance document
-                batch.set(db.collection('attendance').doc(date), todayAttendance, { merge: true });
-                // Write 2: periodFaculty lock
-                batch.set(db.collection('settings').doc('periodFaculty'), PERIOD_FACULTY, { merge: true });
+                // Write 1: attendance — only current students/periods
+                batch.set(db.collection('attendance').doc(date), attDelta, { merge: true });
+                // Write 2: periodFaculty — only current faculty key
+                batch.set(db.collection('settings').doc('periodFaculty'), pfDelta, { merge: true });
                 await batch.commit();
                 // Update cache only after successful commit
                 ATTENDANCE_CACHE['att_' + date] = todayAttendance;
@@ -19179,11 +19195,16 @@ ${laSection}
         function splitCIAIA(marks) {
             function clamp(v, mn, mx) { return Math.max(mn, Math.min(mx, v)); }
             function rand(mn, mx) { return Math.floor(Math.random() * (mx - mn + 1)) + mn; }
-            let cia = marks / 2 + rand(-2, 2);
-            cia = clamp(Math.round(cia), 0, 20);
-            let ia = marks - cia;
+            // Absent student — zero total means zero everywhere
+            if (marks === 0) return { cia: 0, ia: 0 };
+            // CIA must be ≥ 10 so generateExperimentMarks never gets an unreachable target.
+            const halfBase = Math.round(marks / 2);
+            let cia = clamp(halfBase + rand(-2, 2), 10, 20);
+            let ia  = marks - cia;
             if (ia > 20) { ia = 20; cia = marks - ia; }
-            if (cia > 20) { cia = 20; ia = marks - cia; }
+            if (ia < 0)  { ia = 0;  cia = marks; }
+            cia = clamp(cia, 10, 20);
+            ia  = marks - cia;
             return { cia, ia };
         }
 
@@ -19582,6 +19603,11 @@ ${laSection}
             const ce = () => new Array(cT).fill('');
             const ciaData = _labStudents.map(st => {
                 const avg = ciaAvgs[st.pin] ?? 15;
+                // Absent student (avg=0): fill everything with 0, skip generation
+                if (avg === 0) {
+                    const zeroExp = { c1: 0, c2: 0, c3: 0, c4: 0, c5: 0, total: 0 };
+                    return { pin: st.pin, name: st.name, exps: Array(nEx).fill(zeroExp), grandTotal: 0, avg: 0 };
+                }
                 const { marks, finalTotal } = generateExperimentMarks(avg, nEx);
                 return {
                     pin: st.pin, name: st.name,
@@ -19617,6 +19643,11 @@ ${laSection}
             const ie = () => new Array(iT).fill('');
             const iaData = _labStudents.map(st => {
                 const avg = iaAvgs[st.pin] ?? 15;
+                // Absent student (avg=0): all zeros, skip generation
+                if (avg === 0) {
+                    const zeroA = { ia1: 0, ia2: 0, ia3: 0, total: 0 };
+                    return { pin: st.pin, assesses: Array(noIA).fill(zeroA), avg: 0 };
+                }
                 const tots = generateIAMarks(avg, noIA);
                 const assesses = tots.map(t => ({ ...splitIA(t), total: t }));
                 return { pin: st.pin, assesses, avg: Math.round(tots.reduce((a, b) => a + b, 0) / noIA) };
