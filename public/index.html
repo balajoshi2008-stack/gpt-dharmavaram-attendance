@@ -2961,7 +2961,7 @@
                             <option value="monthly">Full Month Report</option>
                             <option value="firsthalf">First Half (1-15)</option>
                             <option value="secondhalf">Second Half (16-End)</option>
-                            <option value="cumulative">Cumulative Attendance</option>
+                            <option value="cumulative">Consolidate Attendance</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -2986,9 +2986,9 @@
                             <label>Select Month</label>
                             <input type="month" id="dlMonth">
                         </div>
-                        <!-- Cumulative Till Date — shown only for Cumulative type -->
+                        <!-- Consolidate Till Date — shown only for Consolidate type -->
                         <div class="form-group" id="cumTillDateGroup" style="display:none;">
-                            <label>📅 Cumulative Till Date <span style="color:#888;font-size:0.85em;">(max: yesterday)</span></label>
+                            <label>📅 Consolidate Till Date <span style="color:#888;font-size:0.85em;">(max: yesterday)</span></label>
                             <input type="date" id="dlCumTillDate"
                                 style="border:2px solid #2a5298;border-radius:6px;padding:8px;"
                                 oninput="validateCumTillDate()">
@@ -3000,7 +3000,7 @@
                 <div class="info-box" style="margin-top:20px;">
                     <strong>Percentage Calculation:</strong> Day counted as Present if student attends ≥ <span
                         id="dlMinPeriodsInfo">3</span> periods<br>
-                    <strong>Reports:</strong> Full Month (all days) | First Half (1-15) | Second Half (16-End) | Cumulative (semester start to selected date or yesterday)
+                    <strong>Reports:</strong> Full Month (all days) | First Half (1-15) | Second Half (16-End) | Consolidate (semester start to selected date or yesterday)
                 </div>
 
                 <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
@@ -8615,7 +8615,7 @@
             } else {
                 document.getElementById('monthlySelection').classList.add('hidden');
             }
-            // Disable month picker for Cumulative (no month needed); show till-date instead
+            // Disable month picker for Consolidate (no month needed); show till-date instead
             if (monthInput) {
                 if (type === 'cumulative') {
                     monthInput.disabled = true;
@@ -9322,7 +9322,7 @@
 
         // ===================== CUMULATIVE ATTENDANCE =====================
         /**
-         * Downloads a cumulative attendance summary from the semester start date
+         * Downloads a consolidate attendance summary from the semester start date
          * to yesterday (inclusive).
          *
          * Columns: Sl.No | PIN | Name | MonthName(WorkingDays) per month … | Total(TotalWD) | Percentage
@@ -9446,7 +9446,7 @@
             const blankRow = new Array(totalCols).fill('');
 
             // Row 3: Title with Till date
-            const titleRow = [`${classLabel}  |  Cumulative Attendance Summary Till ${tillDateDisplay}`];
+            const titleRow = [`${classLabel}  |  Consolidate Attendance Summary Till ${tillDateDisplay}`];
             for (let i = 1; i < totalCols; i++) titleRow.push('');
 
             // Row 4: blank
@@ -9653,11 +9653,11 @@
             }
 
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Cumulative Summary');
+            XLSX.utils.book_append_sheet(wb, ws, 'Consolidate Summary');
 
             const firstMonth = validMonths[0];
             const lastMonth  = validMonths[validMonths.length - 1];
-            const fname = `Cumulative_Attendance_${firstMonth.monthName}${firstMonth.year}_to_${lastMonth.monthName}${lastMonth.year}_Year${y}_Sem${s}.xlsx`;
+            const fname = `Consolidate_Attendance_${firstMonth.monthName}${firstMonth.year}_to_${lastMonth.monthName}${lastMonth.year}_Year${y}_Sem${s}.xlsx`;
             XLSX.writeFile(wb, fname);
         }
 
