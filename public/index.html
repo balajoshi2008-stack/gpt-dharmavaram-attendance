@@ -11718,7 +11718,11 @@
         function hol_dateRange(from, to) {
             const dates = [], cur = new Date(from + 'T00:00:00'), end = new Date(to + 'T00:00:00');
             while (cur <= end) {
-                dates.push(cur.toISOString().split('T')[0]);
+                // Use local date parts — toISOString() gives UTC and shifts date back by 1 day in IST
+                const y = cur.getFullYear();
+                const m = String(cur.getMonth() + 1).padStart(2, '0');
+                const d = String(cur.getDate()).padStart(2, '0');
+                dates.push(`${y}-${m}-${d}`);
                 cur.setDate(cur.getDate() + 1);
             }
             return dates;
