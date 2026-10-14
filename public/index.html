@@ -19197,7 +19197,9 @@ ${laSection}
             function rand(mn, mx) { return Math.floor(Math.random() * (mx - mn + 1)) + mn; }
             // Absent student — zero total means zero everywhere
             if (marks === 0) return { cia: 0, ia: 0 };
-            // CIA must be ≥ 10 so generateExperimentMarks never gets an unreachable target.
+            // Marks too low to guarantee CIA ≥ 10 — give all to CIA, IA = 0
+            if (marks < 10) return { cia: marks, ia: 0 };
+            // Normal case: CIA ≥ 10 so generateExperimentMarks never infinite-loops
             const halfBase = Math.round(marks / 2);
             let cia = clamp(halfBase + rand(-2, 2), 10, 20);
             let ia  = marks - cia;
@@ -19603,10 +19605,17 @@ ${laSection}
             const ce = () => new Array(cT).fill('');
             const ciaData = _labStudents.map(st => {
                 const avg = ciaAvgs[st.pin] ?? 15;
-                // Absent student (avg=0): fill everything with 0, skip generation
+                // Absent student (avg=0): all zeros
                 if (avg === 0) {
                     const zeroExp = { c1: 0, c2: 0, c3: 0, c4: 0, c5: 0, total: 0 };
                     return { pin: st.pin, name: st.name, exps: Array(nEx).fill(zeroExp), grandTotal: 0, avg: 0 };
+                }
+                // Low avg (< 10): generateExperimentMarks has MIN_EXP=10 and would freeze.
+                // Use splitCriteria (existing logic) per experiment at the actual avg level.
+                if (avg < 10) {
+                    return { pin: st.pin, name: st.name,
+                        exps: Array.from({ length: nEx }, () => ({ ...splitCriteria(avg), total: avg })),
+                        grandTotal: avg * nEx, avg };
                 }
                 const { marks, finalTotal } = generateExperimentMarks(avg, nEx);
                 return {
@@ -19643,10 +19652,18 @@ ${laSection}
             const ie = () => new Array(iT).fill('');
             const iaData = _labStudents.map(st => {
                 const avg = iaAvgs[st.pin] ?? 15;
-                // Absent student (avg=0): all zeros, skip generation
+                // Absent or low-mark student: skip generation to avoid wrong clamped values
                 if (avg === 0) {
                     const zeroA = { ia1: 0, ia2: 0, ia3: 0, total: 0 };
                     return { pin: st.pin, assesses: Array(noIA).fill(zeroA), avg: 0 };
+                }
+                if (avg < 10) {
+                    // Distribute avg across ia1(5)+ia2(8)+ia3(7) proportionally
+                    const ia1 = Math.min(Math.round(avg * 5 / 20), 5);
+                    const ia2 = Math.min(Math.round(avg * 8 / 20), 8);
+                    const ia3 = Math.max(0, avg - ia1 - ia2);
+                    const lowA = { ia1, ia2, ia3, total: avg };
+                    return { pin: st.pin, assesses: Array(noIA).fill(lowA), avg };
                 }
                 const tots = generateIAMarks(avg, noIA);
                 const assesses = tots.map(t => ({ ...splitIA(t), total: t }));
